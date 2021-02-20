@@ -14,8 +14,8 @@ namespace SteamScrapper
         private static readonly IEnumerable<string> LinksAllowedForExploration = new HashSet<string>
         {
             "https://store.steampowered.com/",
-            "https://store.steampowered.com/macos",
             "https://store.steampowered.com/linux",
+            "https://store.steampowered.com/macos",
         };
 
         private static readonly IEnumerable<string> LinkPrefixesAllowedForExploration = new[]
@@ -50,13 +50,24 @@ namespace SteamScrapper
             this.enableLoggingIgnoredLinks = enableLoggingIgnoredLinks;
         }
 
-        public async Task DiscoverSteamLinksAsync(Uri startingUri)
+        public async Task DiscoverSteamLinksAsync(IEnumerable<Uri> startingUris)
         {
+            if (startingUris is null)
+            {
+                throw new ArgumentNullException(nameof(startingUris));
+            }
+
             var consoleOriginalForeground = Console.ForegroundColor;
             var redisKeyDateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
-            startingUri = LinkSanitizer.GetSanitizedLinkWithoutQueryAndFragment(startingUri);
 
-            await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:ToBeExplored", startingUri.AbsoluteUri);
+            var normalizedStartingUris = startingUris
+                .Select(startingUri => LinkSanitizer.GetSanitizedLinkWithoutQueryAndFragment(startingUri))
+                .Select(startingUri => startingUri.AbsoluteUri)
+                .Distinct()
+                .Select(startingUri => new RedisValue(startingUri))
+                .ToArray();
+
+            await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:ToBeExplored", normalizedStartingUris);
 
             while (true)
             {
