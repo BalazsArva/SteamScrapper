@@ -41,5 +41,37 @@ namespace SteamScrapper.Extensions
                 queue.Enqueue(item);
             }
         }
+
+        public static IEnumerable<IEnumerable<T>> Segmentate<T>(this IEnumerable<T> source, int segmentSize)
+        {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (segmentSize < 1)
+            {
+                throw new ArgumentException($"The value of the '{nameof(segmentSize)}' parameter must be at least 1.", nameof(segmentSize));
+            }
+
+            var resultsHolder = new List<T>(segmentSize);
+
+            foreach (var item in source)
+            {
+                resultsHolder.Add(item);
+
+                if (resultsHolder.Count == segmentSize)
+                {
+                    yield return resultsHolder;
+
+                    resultsHolder = new List<T>(segmentSize);
+                }
+            }
+
+            if (resultsHolder.Count > 0)
+            {
+                yield return resultsHolder;
+            }
+        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using StackExchange.Redis;
+using SteamScrapper.PageModels;
 using SteamScrapper.Services;
 
 namespace SteamScrapper
@@ -12,6 +13,8 @@ namespace SteamScrapper
 
         private static async Task Main()
         {
+            var developerListPage = await DeveloperListPage.CreateAsync();
+
             var connectionMultiplexer = await ConnectionMultiplexer.ConnectAsync("host.docker.internal:6379");
             redisDatabase = connectionMultiplexer.GetDatabase(2);
 
