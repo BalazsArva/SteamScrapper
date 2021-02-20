@@ -28,6 +28,7 @@ namespace SteamScrapper
             "https://store.steampowered.com/explore/",
             "https://store.steampowered.com/genre/",
             "https://store.steampowered.com/recommended/",
+            "https://store.steampowered.com/curator/",
             "https://store.steampowered.com/sale/",
             "https://store.steampowered.com/games/",
             "https://store.steampowered.com/developer/",
