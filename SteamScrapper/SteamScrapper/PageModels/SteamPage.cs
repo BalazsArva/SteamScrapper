@@ -121,20 +121,9 @@ namespace SteamScrapper.PageModels
             foreach (var node in HtmlLinks.Where(x => x.Attributes.Count > 0))
             {
                 var hrefAttribute = node.Attributes.FirstOrDefault(a => a.Name == "href" && a.Value.StartsWith(linkPrefix));
-                if (hrefAttribute is not null && Uri.TryCreate(hrefAttribute.Value, UriKind.Absolute, out var uri))
+                if (hrefAttribute is not null)
                 {
-                    var segments = uri.Segments;
-                    if ((segments.Length == 3 || segments.Length == 4) && segments[0] == "/" && segments[1] == "app/")
-                    {
-                        // Apps links can be the following format:
-                        // - https://store.steampowered.com/app/292030/
-                        // - https://store.steampowered.com/app/292030/The_Witcher_3_Wild_Hunt/
-                        // We want to detect the links which refer to the same, so we drop the game name and make use of the Id only.
-                        var normalizedSegments = string.Concat(segments.Skip(1).Take(2));
-                        var builder = new UriBuilder(uri.Scheme, uri.Host, uri.Port, normalizedSegments);
-
-                        yield return builder.Uri;
-                    }
+                    yield return new Uri(hrefAttribute.Value, UriKind.Absolute);
                 }
             }
         }
