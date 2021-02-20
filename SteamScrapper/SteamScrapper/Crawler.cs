@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using StackExchange.Redis;
+using SteamScrapper.PageModels;
 using SteamScrapper.Services;
 using SteamScrapper.Utilities;
 
@@ -86,7 +87,17 @@ namespace SteamScrapper
                     continue;
                 }
 
-                var steamPage = await steamService.CreateSteamPageAsync(addressToProcessUri);
+                SteamPage steamPage;
+
+                // TODO: Improve this
+                if (addressToProcessUri.AbsoluteUri == "https://store.steampowered.com/developer/")
+                {
+                    steamPage = await DeveloperListPage.CreateAsync();
+                }
+                else
+                {
+                    steamPage = await steamService.CreateSteamPageAsync(addressToProcessUri);
+                }
 
                 var helperSetId = $"Crawler:{redisKeyDateStamp}:HelperSets:{Guid.NewGuid():n}";
                 var toBeExploredLinks = steamPage.NormalizedLinks.Where(uri => IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
