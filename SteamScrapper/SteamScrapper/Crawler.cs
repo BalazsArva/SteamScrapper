@@ -24,7 +24,6 @@ namespace SteamScrapper
             "https://store.steampowered.com/app/",
             "https://store.steampowered.com/bundle/",
             "https://store.steampowered.com/controller/",
-            "https://store.steampowered.com/curator/",
             "https://store.steampowered.com/demos/",
             "https://store.steampowered.com/developer/",
             "https://store.steampowered.com/dlc/",
