@@ -10,6 +10,7 @@ namespace SteamScrapper.Factories
     {
         public const string DeveloperListPageAddress = "https://store.steampowered.com/developer/";
         public const string BundlePagePrefix = "https://store.steampowered.com/bundle/";
+        public const string SubPagePrefix = "https://store.steampowered.com/sub/";
 
         private readonly ISteamService steamService;
 
@@ -34,6 +35,15 @@ namespace SteamScrapper.Factories
 
                 doc.LoadHtml(html);
                 return new BundlePage(uri, doc);
+            }
+
+            if (absoluteUri.StartsWith(SubPagePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var html = await steamService.DownloadPageHtmlAsync(uri);
+                var doc = new HtmlDocument();
+
+                doc.LoadHtml(html);
+                return new SubPage(uri, doc);
             }
 
             // TODO: Account for other special types of pages.

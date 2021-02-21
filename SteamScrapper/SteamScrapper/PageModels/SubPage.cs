@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Threading.Tasks;
 using HtmlAgilityPack;
 
 namespace SteamScrapper.PageModels
@@ -9,8 +8,6 @@ namespace SteamScrapper.PageModels
     {
         public const string UnknownSubName = "Unknown product";
         public const string PageTypePrefix = "https://store.steampowered.com/sub/";
-
-        private static readonly HtmlWeb Downloader = new HtmlWeb();
 
         public SubPage(Uri address, HtmlDocument pageHtml)
             : base(address, pageHtml)
@@ -29,18 +26,6 @@ namespace SteamScrapper.PageModels
         public int SubId { get; }
 
         public decimal Price { get; }
-
-        public static async Task<SubPage> CreateAsync(string address)
-        {
-            var doc = await Downloader.LoadFromWebAsync(address);
-
-            return new SubPage(new Uri(address), doc);
-        }
-
-        public static async Task<SubPage> CreateAsync(int subId)
-        {
-            return await CreateAsync($"{PageTypePrefix}{subId}");
-        }
 
         protected override string ExtractFriendlyName()
         {
