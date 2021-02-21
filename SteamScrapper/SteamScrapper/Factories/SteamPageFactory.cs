@@ -11,6 +11,7 @@ namespace SteamScrapper.Factories
         public const string DeveloperListPageAddress = "https://store.steampowered.com/developer/";
         public const string BundlePagePrefix = "https://store.steampowered.com/bundle/";
         public const string SubPagePrefix = "https://store.steampowered.com/sub/";
+        public const string AppPagePrefix = "https://store.steampowered.com/app/";
 
         private readonly ISteamService steamService;
 
@@ -46,7 +47,15 @@ namespace SteamScrapper.Factories
                 return new SubPage(uri, doc);
             }
 
-            // TODO: Account for other special types of pages.
+            if (absoluteUri.StartsWith(AppPagePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var html = await steamService.DownloadPageHtmlAsync(uri);
+                var doc = new HtmlDocument();
+
+                doc.LoadHtml(html);
+                return new GamePage(uri, doc);
+            }
+
             return await SteamPage.CreateAsync(absoluteUri);
         }
     }
