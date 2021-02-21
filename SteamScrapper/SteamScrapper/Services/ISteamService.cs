@@ -5,7 +5,7 @@ namespace SteamScrapper.Services
 {
     public interface ISteamService
     {
-        Task<string> DownloadPageHtmlAsync(Uri uri);
+        Task<string> GetPageHtmlAsync(Uri uri);
 
         Task<TResult> GetJsonAsync<TResult>(Uri uri);
     }

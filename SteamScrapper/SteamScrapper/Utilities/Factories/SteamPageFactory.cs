@@ -27,7 +27,7 @@ namespace SteamScrapper.Utilities.Factories
 
             if (absoluteUri.StartsWith(PageUrlPrefixes.Bundle, StringComparison.OrdinalIgnoreCase))
             {
-                var html = await steamService.DownloadPageHtmlAsync(uri);
+                var html = await steamService.GetPageHtmlAsync(uri);
                 var doc = new HtmlDocument();
 
                 doc.LoadHtml(html);
@@ -36,7 +36,7 @@ namespace SteamScrapper.Utilities.Factories
 
             if (absoluteUri.StartsWith(PageUrlPrefixes.Sub, StringComparison.OrdinalIgnoreCase))
             {
-                var html = await steamService.DownloadPageHtmlAsync(uri);
+                var html = await steamService.GetPageHtmlAsync(uri);
                 var doc = new HtmlDocument();
 
                 doc.LoadHtml(html);
@@ -45,7 +45,7 @@ namespace SteamScrapper.Utilities.Factories
 
             if (absoluteUri.StartsWith(PageUrlPrefixes.App, StringComparison.OrdinalIgnoreCase))
             {
-                var html = await steamService.DownloadPageHtmlAsync(uri);
+                var html = await steamService.GetPageHtmlAsync(uri);
                 var doc = new HtmlDocument();
 
                 doc.LoadHtml(html);

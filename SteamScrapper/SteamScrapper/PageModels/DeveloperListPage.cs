@@ -26,7 +26,7 @@ namespace SteamScrapper.PageModels
             var doc = new HtmlDocument();
             var addressUri = new Uri(PageUrls.DeveloperList, UriKind.Absolute);
 
-            var result = await steamService.DownloadPageHtmlAsync(addressUri);
+            var result = await steamService.GetPageHtmlAsync(addressUri);
 
             doc.LoadHtml(result);
 

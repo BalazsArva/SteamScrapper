@@ -26,7 +26,7 @@ namespace SteamScrapper.Services
             client = new HttpClient(new HttpClientHandler { CookieContainer = cookieContainer });
         }
 
-        public async Task<string> DownloadPageHtmlAsync(Uri uri)
+        public async Task<string> GetPageHtmlAsync(Uri uri)
         {
             if (uri is null)
             {
