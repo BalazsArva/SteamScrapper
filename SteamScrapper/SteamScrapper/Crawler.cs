@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -91,7 +92,7 @@ namespace SteamScrapper
                 // TODO: Improve this
                 if (addressToProcessUri.AbsoluteUri == "https://store.steampowered.com/developer/")
                 {
-                    steamPage = await DeveloperListPage.CreateAsync();
+                    steamPage = await DeveloperListPage.CreateAsync(steamService);
                 }
                 else
                 {

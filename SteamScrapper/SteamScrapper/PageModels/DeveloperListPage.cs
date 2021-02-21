@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using SteamScrapper.Extensions;
+using SteamScrapper.Services;
 using SteamScrapper.Utilities;
 
 namespace SteamScrapper.PageModels
@@ -22,21 +21,14 @@ namespace SteamScrapper.PageModels
         {
         }
 
-        public static async Task<DeveloperListPage> CreateAsync()
+        public static async Task<DeveloperListPage> CreateAsync(ISteamService steamService)
         {
-            const string baseAddress = "https://store.steampowered.com/";
-            const string pageAddress = "https://store.steampowered.com/developer/";
+            const string address = "https://store.steampowered.com/developer/";
 
-            var cookieContainer = new CookieContainer();
-            using var handler = new HttpClientHandler { CookieContainer = cookieContainer };
-            using var client = new HttpClient(handler);
-
-            cookieContainer.Add(new Uri(baseAddress), new Cookie("lastagecheckage", "1-0-1980"));
-            cookieContainer.Add(new Uri(baseAddress), new Cookie("birthtime", "312850801"));
-            cookieContainer.Add(new Uri(baseAddress), new Cookie("wants_mature_content", "1"));
-
-            var result = await client.GetStringAsync(pageAddress);
             var doc = new HtmlDocument();
+            var addressUri = new Uri(address, UriKind.Absolute);
+
+            var result = await steamService.DownloadPageHtmlAsync(addressUri);
 
             doc.LoadHtml(result);
 
@@ -50,7 +42,7 @@ namespace SteamScrapper.PageModels
                 totalPages = (int)Math.Ceiling(total / (double)ResultsPerPage);
             }
 
-            foreach (var pageResult in await GetAllPagesAsync(client, totalPages))
+            foreach (var pageResult in await GetAllPagesAsync(steamService, totalPages))
             {
                 // The results don't have a single root. Need to add an artificial wrapper around them so there is 1 root node only.
                 var resultsHtmlWrapper = string.Concat("<div>", pageResult.ResultsHtml, "</div>");
@@ -60,25 +52,43 @@ namespace SteamScrapper.PageModels
                 recommendationRows.AppendChildren(resultsWrapperNode.ChildNodes);
             }
 
-            return new DeveloperListPage(new Uri(pageAddress, UriKind.Absolute), doc);
+            return new DeveloperListPage(addressUri, doc);
         }
 
-        private static async Task<IEnumerable<PagingResult>> GetAllPagesAsync(HttpClient client, int totalPages)
+        private static async Task<IEnumerable<PagingResult>> GetAllPagesAsync(ISteamService steamService, int totalPages)
         {
             const int parallelDownloads = 16;
 
             var finalResults = new List<PagingResult>(totalPages);
-            var allPagesSegmentated = Enumerable
+            var segmentedPages = Enumerable
                 .Range(0, totalPages)
                 .Segmentate(parallelDownloads)
                 .ToList();
 
-            foreach (var segment in allPagesSegmentated)
+            foreach (var segment in segmentedPages)
             {
                 var tasks = new List<Task<PagingResult>>();
                 foreach (var page in segment)
                 {
-                    tasks.Add(Task.Run(async () => await DownloadPageWithRetryAsync(client, page)));
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        var start = page * ResultsPerPage;
+                        var address = $"https://store.steampowered.com/curators/ajaxgettopcreatorhomes/render/?start={start}&count={ResultsPerPage}";
+
+                        try
+                        {
+                            Console.WriteLine($"Attempting to download result page from URL '{address}'...");
+
+                            return await steamService.GetJsonAsync<PagingResult>(new Uri(address, UriKind.Absolute));
+                        }
+                        catch (Exception e)
+                        {
+                            // TODO: Improve Logging
+                            Console.WriteLine($"Could not download from URL '{address}'.");
+
+                            return null;
+                        }
+                    }));
                 }
 
                 var results = await Task.WhenAll(tasks);
@@ -87,40 +97,6 @@ namespace SteamScrapper.PageModels
             }
 
             return finalResults;
-        }
-
-        private static async Task<PagingResult> DownloadPageWithRetryAsync(HttpClient client, int page)
-        {
-            var start = page * ResultsPerPage;
-            var address = $"https://store.steampowered.com/curators/ajaxgettopcreatorhomes/render/?start={start}&count={ResultsPerPage}";
-
-            // TODO: Extract retry to a helper, or use Polly
-            for (var i = 0; i < WebRequestRetryLimit; ++i)
-            {
-                Console.WriteLine($"Attempt #{i + 1} for downloading from URL '{address}'...");
-
-                try
-                {
-                    var pageResponseJson = await client.GetStringAsync(address);
-
-                    return JsonConvert.DeserializeObject<PagingResult>(pageResponseJson);
-                }
-                catch (HttpRequestException e) when (
-                    e.StatusCode == HttpStatusCode.Forbidden ||
-                    e.StatusCode == HttpStatusCode.BadGateway ||
-                    e.StatusCode == HttpStatusCode.ServiceUnavailable)
-                {
-                    Console.WriteLine($"Could not download from URL '{address}'.");
-
-                    // TODO: Improve Logging
-                    if (i < WebRequestRetryLimit - 1)
-                    {
-                        await Task.Delay(WebRequestRetryDelayMillis);
-                    }
-                }
-            }
-
-            return null;
         }
 
         private class PagingResult

@@ -1,19 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using Newtonsoft.Json;
 using SteamScrapper.PageModels;
 
 namespace SteamScrapper.Services
 {
-    public class SteamService
+    public class SteamService : ISteamService
     {
         public const string baseAddress = "https://store.steampowered.com/";
         public const int WebRequestRetryLimit = 10;
         public const int WebRequestRetryDelayMillis = 1000;
 
-        private HttpClient client;
+        private readonly HttpClient client;
 
         public SteamService()
         {
@@ -48,6 +50,39 @@ namespace SteamScrapper.Services
             }
 
             throw exceptionThrown;
+        }
+
+        public async Task<TResult> GetJsonAsync<TResult>(Uri uri)
+        {
+            if (uri is null)
+            {
+                throw new ArgumentNullException(nameof(uri));
+            }
+
+            var capturedExceptions = new List<Exception>(WebRequestRetryLimit);
+
+            for (var i = 0; i < WebRequestRetryLimit; ++i)
+            {
+                try
+                {
+                    var responseJson = await client.GetStringAsync(uri);
+
+                    return JsonConvert.DeserializeObject<TResult>(responseJson);
+                }
+                catch (Exception e)
+                {
+                    capturedExceptions.Add(e);
+
+                    if (i < WebRequestRetryLimit - 1)
+                    {
+                        await Task.Delay(WebRequestRetryDelayMillis);
+                    }
+                }
+            }
+
+            throw new AggregateException(
+                $"One or more errors occurred during the execution of GET JSON request to '{uri.AbsoluteUri}'.",
+                capturedExceptions);
         }
 
         public async Task<SteamPage> CreateSteamPageAsync(Uri uri)
