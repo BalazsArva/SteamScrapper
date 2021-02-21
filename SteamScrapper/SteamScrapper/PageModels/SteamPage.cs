@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using HtmlAgilityPack;
 using SteamScrapper.Constants;
+using SteamScrapper.PageModels.SpecialLinks;
 using SteamScrapper.Utilities;
 using SteamScrapper.Utilities.EqualityComparers;
 
@@ -35,11 +36,13 @@ namespace SteamScrapper.PageModels
             AppLinks = NormalizedLinks
                 .Where(uri => uri.AbsoluteUri.StartsWith(PageUrlPrefixes.App))
                 .OrderBy(x => x.AbsoluteUri)
+                .Select(x => new AppLink(x))
                 .ToList();
 
             BundleLinks = NormalizedLinks
                 .Where(uri => uri.AbsoluteUri.StartsWith(PageUrlPrefixes.Bundle))
                 .OrderBy(x => x.AbsoluteUri)
+                .Select(x => new BundleLink(x))
                 .ToList();
 
             DlcLinks = NormalizedLinks
@@ -58,13 +61,13 @@ namespace SteamScrapper.PageModels
 
         public IEnumerable<Uri> NormalizedLinks { get; }
 
-        public IEnumerable<Uri> AppLinks { get; }
+        public IEnumerable<AppLink> AppLinks { get; }
 
-        public IEnumerable<Uri> BundleLinks { get; }
+        public IEnumerable<BundleLink> BundleLinks { get; }
 
         public IEnumerable<Uri> DlcLinks { get; }
 
-        public IEnumerable<Uri> GetLinksForSubs()
+        public IEnumerable<SubLink> GetLinksForSubs()
         {
             var addToCartForms = PageHtml
                 .DocumentNode
@@ -80,7 +83,7 @@ namespace SteamScrapper.PageModels
                 })
                 .ToList();
 
-            var results = new List<Uri>(addToCartForms.Count);
+            var results = new List<SubLink>(addToCartForms.Count);
             for (var i = 0; i < addToCartForms.Count; ++i)
             {
                 var form = addToCartForms[i];
@@ -104,7 +107,7 @@ namespace SteamScrapper.PageModels
                     continue;
                 }
 
-                results.Add(new Uri($"https://store.steampowered.com/sub/{subId}/", UriKind.Absolute));
+                results.Add(new SubLink(new Uri($"https://store.steampowered.com/sub/{subId}/", UriKind.Absolute)));
             }
 
             return results;

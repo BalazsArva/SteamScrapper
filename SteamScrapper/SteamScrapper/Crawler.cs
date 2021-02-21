@@ -92,7 +92,9 @@ namespace SteamScrapper
                 var steamPage = await steamPageFactory.CreateSteamPageAsync(addressToProcessUri);
 
                 var helperSetId = $"Crawler:{redisKeyDateStamp}:HelperSets:{Guid.NewGuid():n}";
-                var toBeExploredLinks = steamPage.NormalizedLinks.Concat(steamPage.GetLinksForSubs()).Where(uri => IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
+
+                // TODO: Include Sub links here as well.
+                var toBeExploredLinks = steamPage.NormalizedLinks.Where(uri => IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
                 var ignoredLinks = steamPage.NormalizedLinks.Where(uri => !IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
 
                 var updateExplorationStatusTransaction = redisDatabase.CreateTransaction();
@@ -123,57 +125,45 @@ namespace SteamScrapper
                 Console.WriteLine("  Found app links:");
                 foreach (var appLink in steamPage.AppLinks)
                 {
-                    var appId = appLink.Segments.ElementAtOrDefault(2)?.TrimEnd('/');
-                    var appLinkIsNotYetExplored = notYetExploredLinks.Contains(appLink.AbsoluteUri);
+                    var appLinkIsNotYetExplored = notYetExploredLinks.Contains(appLink.Address.AbsoluteUri);
 
-                    if (!string.IsNullOrWhiteSpace(appId))
+                    Console.ForegroundColor = appLinkIsNotYetExplored ? ConsoleColor.Green : consoleOriginalForeground;
+                    Console.WriteLine($"    App={appLink.AppId}: {appLink}");
+                    Console.ForegroundColor = consoleOriginalForeground;
+
+                    if (appLinkIsNotYetExplored)
                     {
-                        Console.ForegroundColor = appLinkIsNotYetExplored ? ConsoleColor.Green : consoleOriginalForeground;
-                        Console.WriteLine($"    App={appId}: {appLink}");
-                        Console.ForegroundColor = consoleOriginalForeground;
-
-                        if (appLinkIsNotYetExplored)
-                        {
-                            var addAppIdTask = registerFoundItemsTransaction.SetAddAsync("Apps", appId.ToString(CultureInfo.InvariantCulture));
-                        }
+                        var addAppIdTask = registerFoundItemsTransaction.SetAddAsync("Apps", appLink.AppId.ToString(CultureInfo.InvariantCulture));
                     }
                 }
 
                 Console.WriteLine("  Found bundle links:");
                 foreach (var bundleLink in steamPage.BundleLinks)
                 {
-                    var bundleId = bundleLink.Segments.ElementAtOrDefault(2)?.TrimEnd('/');
-                    var bundleLinkIsNotYetExplored = notYetExploredLinks.Contains(bundleLink.AbsoluteUri);
+                    var bundleLinkIsNotYetExplored = notYetExploredLinks.Contains(bundleLink.Address.AbsoluteUri);
 
-                    if (!string.IsNullOrWhiteSpace(bundleId))
+                    Console.ForegroundColor = bundleLinkIsNotYetExplored ? ConsoleColor.Green : consoleOriginalForeground;
+                    Console.WriteLine($"    Bundle={bundleLink.BundleId}: {bundleLink}");
+                    Console.ForegroundColor = consoleOriginalForeground;
+
+                    if (bundleLinkIsNotYetExplored)
                     {
-                        Console.ForegroundColor = bundleLinkIsNotYetExplored ? ConsoleColor.Green : consoleOriginalForeground;
-                        Console.WriteLine($"    Bundle={bundleId}: {bundleLink}");
-                        Console.ForegroundColor = consoleOriginalForeground;
-
-                        if (bundleLinkIsNotYetExplored)
-                        {
-                            var addBundleIdTask = registerFoundItemsTransaction.SetAddAsync("Bundles", bundleId);
-                        }
+                        var addBundleIdTask = registerFoundItemsTransaction.SetAddAsync("Bundles", bundleLink.BundleId.ToString(CultureInfo.InvariantCulture));
                     }
                 }
 
                 Console.WriteLine("  Found sub links:");
                 foreach (var subLink in steamPage.GetLinksForSubs())
                 {
-                    var subId = subLink.Segments.ElementAtOrDefault(2)?.TrimEnd('/');
-                    var subLinkIsNotYetExplored = notYetExploredLinks.Contains(subLink.AbsoluteUri);
+                    var subLinkIsNotYetExplored = notYetExploredLinks.Contains(subLink.Address.AbsoluteUri);
 
-                    if (!string.IsNullOrWhiteSpace(subId))
+                    Console.ForegroundColor = subLinkIsNotYetExplored ? ConsoleColor.Green : consoleOriginalForeground;
+                    Console.WriteLine($"    Sub={subLink.SubId}: {subLink}");
+                    Console.ForegroundColor = consoleOriginalForeground;
+
+                    if (subLinkIsNotYetExplored)
                     {
-                        Console.ForegroundColor = subLinkIsNotYetExplored ? ConsoleColor.Green : consoleOriginalForeground;
-                        Console.WriteLine($"    Sub={subId}: {subLink}");
-                        Console.ForegroundColor = consoleOriginalForeground;
-
-                        if (subLinkIsNotYetExplored)
-                        {
-                            var addSubIdTask = registerFoundItemsTransaction.SetAddAsync("Subs", subId);
-                        }
+                        var addSubIdTask = registerFoundItemsTransaction.SetAddAsync("Subs", subLink.SubId.ToString(CultureInfo.InvariantCulture));
                     }
                 }
 
