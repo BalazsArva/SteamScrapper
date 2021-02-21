@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using StackExchange.Redis;
-using SteamScrapper.Factories;
 using SteamScrapper.Services;
+using SteamScrapper.Utilities.Factories;
 
 namespace SteamScrapper
 {

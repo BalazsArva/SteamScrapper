@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using HtmlAgilityPack;
 using SteamScrapper.Constants;
 using SteamScrapper.Utilities;
+using SteamScrapper.Utilities.EqualityComparers;
 
 namespace SteamScrapper.PageModels
 {

@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using SteamScrapper.PageModels;
 
-namespace SteamScrapper.Factories
+namespace SteamScrapper.Utilities.Factories
 {
     public interface ISteamPageFactory
     {

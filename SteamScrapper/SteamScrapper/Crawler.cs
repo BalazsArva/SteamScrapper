@@ -5,8 +5,8 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using StackExchange.Redis;
-using SteamScrapper.Factories;
 using SteamScrapper.Utilities;
+using SteamScrapper.Utilities.Factories;
 
 namespace SteamScrapper
 {

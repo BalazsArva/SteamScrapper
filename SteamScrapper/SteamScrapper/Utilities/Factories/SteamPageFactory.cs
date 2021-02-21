@@ -5,7 +5,7 @@ using SteamScrapper.Constants;
 using SteamScrapper.PageModels;
 using SteamScrapper.Services;
 
-namespace SteamScrapper.Factories
+namespace SteamScrapper.Utilities.Factories
 {
     public class SteamPageFactory : ISteamPageFactory
     {

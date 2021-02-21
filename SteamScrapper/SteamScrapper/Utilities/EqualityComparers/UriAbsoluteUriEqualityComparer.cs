@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace SteamScrapper.Utilities
+namespace SteamScrapper.Utilities.EqualityComparers
 {
     public class UriAbsoluteUriEqualityComparer : IEqualityComparer<Uri>
     {
