@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using HtmlAgilityPack;
 
 namespace SteamScrapper.PageModels
@@ -29,31 +26,6 @@ namespace SteamScrapper.PageModels
         public int BundleId { get; }
 
         public decimal Price { get; }
-
-        public static async Task<BundlePage> CreateAsync(string address)
-        {
-            const string baseAddress = "https://store.steampowered.com/";
-
-            var cookieContainer = new CookieContainer();
-            using var handler = new HttpClientHandler { CookieContainer = cookieContainer };
-            using var client = new HttpClient(handler);
-
-            cookieContainer.Add(new Uri(baseAddress), new Cookie("lastagecheckage", "1-0-1980"));
-            cookieContainer.Add(new Uri(baseAddress), new Cookie("birthtime", "312850801"));
-            cookieContainer.Add(new Uri(baseAddress), new Cookie("wants_mature_content", "1"));
-
-            var result = await client.GetStringAsync(address);
-            var doc = new HtmlDocument();
-
-            doc.LoadHtml(result);
-
-            return new BundlePage(new Uri(address), doc);
-        }
-
-        public static async Task<BundlePage> CreateAsync(int bundleId)
-        {
-            return await CreateAsync($"{PageTypePrefix}{bundleId}");
-        }
 
         protected override string ExtractFriendlyName()
         {
