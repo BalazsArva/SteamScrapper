@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using StackExchange.Redis;
+using SteamScrapper.Constants;
 using SteamScrapper.Utilities;
 using SteamScrapper.Utilities.Factories;
 
@@ -14,29 +15,31 @@ namespace SteamScrapper
     {
         private static readonly IEnumerable<string> LinksAllowedForExploration = new HashSet<string>
         {
-            "https://store.steampowered.com/",
+            PageUrls.SteamStore,
+
+            // Note: these two usually don't have a trailing '/' in the HTML.
             "https://store.steampowered.com/linux",
             "https://store.steampowered.com/macos",
         };
 
         private static readonly IEnumerable<string> LinkPrefixesAllowedForExploration = new[]
         {
-            "https://store.steampowered.com/app/",
-            "https://store.steampowered.com/bundle/",
-            "https://store.steampowered.com/controller/",
-            "https://store.steampowered.com/demos/",
-            "https://store.steampowered.com/developer/",
-            "https://store.steampowered.com/dlc/",
-            "https://store.steampowered.com/explore/",
-            "https://store.steampowered.com/franchise/",
-            "https://store.steampowered.com/games/",
-            "https://store.steampowered.com/genre/",
-            "https://store.steampowered.com/publisher/",
-            "https://store.steampowered.com/recommended/",
-            "https://store.steampowered.com/sale/",
-            "https://store.steampowered.com/specials/",
-            "https://store.steampowered.com/sub/",
-            "https://store.steampowered.com/tags/",
+            PageUrlPrefixes.App,
+            PageUrlPrefixes.Bundle,
+            PageUrlPrefixes.Controller,
+            PageUrlPrefixes.Demos,
+            PageUrlPrefixes.Developer,
+            PageUrlPrefixes.Dlc,
+            PageUrlPrefixes.Explore,
+            PageUrlPrefixes.Franchise,
+            PageUrlPrefixes.Games,
+            PageUrlPrefixes.Genre,
+            PageUrlPrefixes.Publisher,
+            PageUrlPrefixes.Recommended,
+            PageUrlPrefixes.Sale,
+            PageUrlPrefixes.Specials,
+            PageUrlPrefixes.Sub,
+            PageUrlPrefixes.Tags,
         };
 
         private readonly IDatabase redisDatabase;
@@ -161,7 +164,9 @@ namespace SteamScrapper
         {
             var absoluteUri = uri.AbsoluteUri;
 
-            return LinksAllowedForExploration.Contains(absoluteUri) || LinkPrefixesAllowedForExploration.Any(x => absoluteUri.StartsWith(x));
+            return
+                LinksAllowedForExploration.Contains(absoluteUri) ||
+                LinkPrefixesAllowedForExploration.Any(x => absoluteUri.StartsWith(x));
         }
 
         private async Task<bool> TryRegisterLinkAsExploredAsync(string redisKeyDateStamp, Uri addressToProcessUri)
