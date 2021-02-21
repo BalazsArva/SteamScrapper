@@ -28,7 +28,12 @@ namespace SteamScrapper.Services
 
         public async Task<string> DownloadPageHtmlAsync(Uri uri)
         {
-            Exception exceptionThrown = null;
+            if (uri is null)
+            {
+                throw new ArgumentNullException(nameof(uri));
+            }
+
+            var capturedExceptions = new List<Exception>(WebRequestRetryLimit);
 
             for (var i = 0; i < WebRequestRetryLimit; ++i)
             {
@@ -36,9 +41,9 @@ namespace SteamScrapper.Services
                 {
                     return await client.GetStringAsync(uri);
                 }
-                catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.BadGateway || e.StatusCode == HttpStatusCode.ServiceUnavailable)
+                catch (Exception e)
                 {
-                    exceptionThrown = e;
+                    capturedExceptions.Add(e);
 
                     if (i < WebRequestRetryLimit - 1)
                     {
@@ -47,7 +52,9 @@ namespace SteamScrapper.Services
                 }
             }
 
-            throw exceptionThrown;
+            throw new AggregateException(
+                $"One or more errors occurred during the execution of GET page HTML request to '{uri.AbsoluteUri}'.",
+                capturedExceptions);
         }
 
         public async Task<TResult> GetJsonAsync<TResult>(Uri uri)
