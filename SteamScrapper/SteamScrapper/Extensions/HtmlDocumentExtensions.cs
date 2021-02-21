@@ -2,7 +2,7 @@
 using System.Linq;
 using HtmlAgilityPack;
 
-namespace SteamScrapper.Utilities
+namespace SteamScrapper.Extensions
 {
     public static class HtmlDocumentExtensions
     {

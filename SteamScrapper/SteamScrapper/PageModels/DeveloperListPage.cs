@@ -7,7 +7,6 @@ using Newtonsoft.Json;
 using SteamScrapper.Constants;
 using SteamScrapper.Extensions;
 using SteamScrapper.Services;
-using SteamScrapper.Utilities;
 
 namespace SteamScrapper.PageModels
 {
