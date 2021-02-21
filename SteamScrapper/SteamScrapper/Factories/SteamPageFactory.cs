@@ -53,7 +53,7 @@ namespace SteamScrapper.Factories
                 var doc = new HtmlDocument();
 
                 doc.LoadHtml(html);
-                return new GamePage(uri, doc);
+                return new AppPage(uri, doc);
             }
 
             return await SteamPage.CreateAsync(absoluteUri);
