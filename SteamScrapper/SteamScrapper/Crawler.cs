@@ -153,7 +153,7 @@ namespace SteamScrapper
                 }
 
                 Console.WriteLine("  Found sub links:");
-                foreach (var subLink in steamPage.GetLinksForSubs())
+                foreach (var subLink in steamPage.SubLinks)
                 {
                     var subLinkIsNotYetExplored = notYetExploredLinks.Contains(subLink.Address.AbsoluteUri);
 
