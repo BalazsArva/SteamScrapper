@@ -2,6 +2,7 @@
 using System.Linq;
 using HtmlAgilityPack;
 using SteamScrapper.Constants;
+using SteamScrapper.Utilities.LinkHelpers;
 
 namespace SteamScrapper.PageModels
 {
@@ -19,7 +20,7 @@ namespace SteamScrapper.PageModels
                     nameof(address));
             }
 
-            SubId = ExtractSubId(address);
+            SubId = SteamLinkHelper.ExtractSubId(address);
             Price = ExtractPrice();
         }
 
@@ -32,27 +33,6 @@ namespace SteamScrapper.PageModels
             var appNameDiv = PageHtml.DocumentNode.Descendants("h2").FirstOrDefault(x => x.Attributes.Any(a => a.Name == "class" && a.Value == "pageheader"));
 
             return appNameDiv is null ? UnknownSubName : appNameDiv.InnerText;
-        }
-
-        private static int ExtractSubId(Uri address)
-        {
-            var segmentsWithoutSlashes = address.Segments.Select(x => x.TrimEnd('/')).ToList();
-
-            if (segmentsWithoutSlashes.Count < 3)
-            {
-                throw new ArgumentException(
-                    $"The provided address is invalid. Valid addresses must contain the sub Id after '{PageUrlPrefixes.Sub}'.",
-                    nameof(address));
-            }
-
-            if (!int.TryParse(segmentsWithoutSlashes[2], out var subId) || subId < 1)
-            {
-                throw new ArgumentException(
-                   $"The provided address is invalid. The sub Id in a valid address must be a positive integer.",
-                   nameof(address));
-            }
-
-            return subId;
         }
 
         private decimal ExtractPrice()
