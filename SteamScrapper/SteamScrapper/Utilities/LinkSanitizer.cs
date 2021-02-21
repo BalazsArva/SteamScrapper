@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Linq;
 using System.Text.RegularExpressions;
+using SteamScrapper.Constants;
 
 namespace SteamScrapper.Utilities
 {
     public static class LinkSanitizer
     {
         public const string SteamStoreHost = "store.steampowered.com";
-        public const string SteamAppLinkPrefix = "https://store.steampowered.com/app/";
-        public const string SteamBundleLinkPrefix = "https://store.steampowered.com/bundle/";
-        public const string SteamDlcLinkPrefix = "https://store.steampowered.com/dlc/";
 
         private static readonly Regex MultipleSlashReplacer = new Regex("//+", RegexOptions.Compiled);
 
@@ -39,30 +37,30 @@ namespace SteamScrapper.Utilities
 
             // If the link is an app link, then those are sometimes like 'https://store.steampowered.com/app/378648/The_Witcher_3_Wild_Hunt__Blood_and_Wine/',
             // other times without the title: 'https://store.steampowered.com/app/378648/'. For consistency, strip the title.
-            if (absoluteUri.StartsWith(SteamAppLinkPrefix))
+            if (absoluteUri.StartsWith(PageUrlPrefixes.App, StringComparison.OrdinalIgnoreCase))
             {
-                var appId = new string(absoluteUri.Skip(SteamAppLinkPrefix.Length).TakeWhile(char.IsDigit).ToArray());
-                var appUriString = string.Concat(SteamAppLinkPrefix, appId, "/");
+                var appId = new string(absoluteUri.Skip(PageUrlPrefixes.App.Length).TakeWhile(char.IsDigit).ToArray());
+                var appUriString = string.Concat(PageUrlPrefixes.App, appId, "/");
 
                 return new Uri(appUriString, UriKind.Absolute);
             }
 
             // If the link is a bundle link, then those are sometimes like 'https://store.steampowered.com/bundle/12231/Shadow_of_the_Tomb_Raider_Definitive_Edition/',
             // other times without the title: 'https://store.steampowered.com/bundle/12231/'. For consistency, strip the title.
-            if (absoluteUri.StartsWith(SteamBundleLinkPrefix))
+            if (absoluteUri.StartsWith(PageUrlPrefixes.Bundle))
             {
-                var bundleId = new string(absoluteUri.Skip(SteamBundleLinkPrefix.Length).TakeWhile(char.IsDigit).ToArray());
-                var bundleUriString = string.Concat(SteamBundleLinkPrefix, bundleId, "/");
+                var bundleId = new string(absoluteUri.Skip(PageUrlPrefixes.Bundle.Length).TakeWhile(char.IsDigit).ToArray());
+                var bundleUriString = string.Concat(PageUrlPrefixes.Bundle, bundleId, "/");
 
                 return new Uri(bundleUriString, UriKind.Absolute);
             }
 
             // If the link is a DLCs link, then those are sometimes like 'https://store.steampowered.com/dlc/391220/Rise_of_the_Tomb_Raider/',
             // other times without the title: 'https://store.steampowered.com/dlc/391220/'. For consistency, strip the title.
-            if (absoluteUri.StartsWith(SteamDlcLinkPrefix))
+            if (absoluteUri.StartsWith(PageUrlPrefixes.Dlc))
             {
-                var dlcForGameId = new string(absoluteUri.Skip(SteamDlcLinkPrefix.Length).TakeWhile(char.IsDigit).ToArray());
-                var dlcForGameUriString = string.Concat(SteamDlcLinkPrefix, dlcForGameId, "/");
+                var dlcForGameId = new string(absoluteUri.Skip(PageUrlPrefixes.Dlc.Length).TakeWhile(char.IsDigit).ToArray());
+                var dlcForGameUriString = string.Concat(PageUrlPrefixes.Dlc, dlcForGameId, "/");
 
                 return new Uri(dlcForGameUriString, UriKind.Absolute);
             }
