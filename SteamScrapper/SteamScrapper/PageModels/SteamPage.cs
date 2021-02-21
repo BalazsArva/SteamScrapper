@@ -5,17 +5,13 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using SteamScrapper.Constants;
 using SteamScrapper.Utilities;
 
 namespace SteamScrapper.PageModels
 {
     public class SteamPage
     {
-        public const string SteamStoreLinkPrefix = "https://store.steampowered.com";
-        public const string AppLinkPrefix = "https://store.steampowered.com/app/";
-        public const string BundleLinkPrefix = "https://store.steampowered.com/bundle/";
-        public const string DlcLinkPrefix = "https://store.steampowered.com/dlc/";
-
         public const string LinkHtmlTagName = "a";
 
         public SteamPage(Uri address, HtmlDocument pageHtml)
@@ -32,24 +28,24 @@ namespace SteamScrapper.PageModels
             NormalizedLinks = HtmlLinks
                 .Select(x => x.GetAttributeValue("href", null))
                 .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Where(x => x.StartsWith(SteamStoreLinkPrefix, StringComparison.OrdinalIgnoreCase))
+                .Where(x => x.StartsWith(PageUrlPrefixes.Steam, StringComparison.OrdinalIgnoreCase))
                 .Select(x => LinkSanitizer.GetSanitizedLinkWithoutQueryAndFragment(new Uri(x, UriKind.Absolute)))
                 .Distinct(UriAbsoluteUriEqualityComparer.Instance)
                 .OrderBy(x => x.AbsoluteUri)
                 .ToList();
 
             AppLinks = NormalizedLinks
-                .Where(uri => uri.AbsoluteUri.StartsWith(AppLinkPrefix))
+                .Where(uri => uri.AbsoluteUri.StartsWith(PageUrlPrefixes.App))
                 .OrderBy(x => x.AbsoluteUri)
                 .ToList();
 
             BundleLinks = NormalizedLinks
-                .Where(uri => uri.AbsoluteUri.StartsWith(BundleLinkPrefix))
+                .Where(uri => uri.AbsoluteUri.StartsWith(PageUrlPrefixes.Bundle))
                 .OrderBy(x => x.AbsoluteUri)
                 .ToList();
 
             DlcLinks = NormalizedLinks
-                .Where(uri => uri.AbsoluteUri.StartsWith(DlcLinkPrefix))
+                .Where(uri => uri.AbsoluteUri.StartsWith(PageUrlPrefixes.Dlc))
                 .OrderBy(x => x.AbsoluteUri)
                 .ToList();
         }

@@ -1,21 +1,21 @@
 ﻿using System;
 using System.Linq;
 using HtmlAgilityPack;
+using SteamScrapper.Constants;
 
 namespace SteamScrapper.PageModels
 {
     public class BundlePage : SteamPage
     {
         public const string UnknownBundleName = "Unknown bundle";
-        public const string PageTypePrefix = "https://store.steampowered.com/bundle/";
 
         public BundlePage(Uri address, HtmlDocument pageHtml)
             : base(address, pageHtml)
         {
-            if (!(address.AbsoluteUri ?? string.Empty).StartsWith(PageTypePrefix, StringComparison.OrdinalIgnoreCase))
+            if (!(address.AbsoluteUri ?? string.Empty).StartsWith(PageUrlPrefixes.Bundle, StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentException(
-                    $"The provided address is invalid. Valid addresses must start with '{PageTypePrefix}'.",
+                    $"The provided address is invalid. Valid addresses must start with '{PageUrlPrefixes.Bundle}'.",
                     nameof(address));
             }
 
@@ -42,7 +42,7 @@ namespace SteamScrapper.PageModels
             if (segmentsWithoutSlashes.Count < 3)
             {
                 throw new ArgumentException(
-                    $"The provided address is invalid. Valid addresses must contain the bundle Id after '{PageTypePrefix}'.",
+                    $"The provided address is invalid. Valid addresses must contain the bundle Id after '{PageUrlPrefixes.Bundle}'.",
                     nameof(address));
             }
 

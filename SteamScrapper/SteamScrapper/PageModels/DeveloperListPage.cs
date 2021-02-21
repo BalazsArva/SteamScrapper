@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
+using SteamScrapper.Constants;
 using SteamScrapper.Extensions;
 using SteamScrapper.Services;
 using SteamScrapper.Utilities;
@@ -23,10 +24,8 @@ namespace SteamScrapper.PageModels
 
         public static async Task<DeveloperListPage> CreateAsync(ISteamService steamService)
         {
-            const string address = "https://store.steampowered.com/developer/";
-
             var doc = new HtmlDocument();
-            var addressUri = new Uri(address, UriKind.Absolute);
+            var addressUri = new Uri(PageUrls.DeveloperList, UriKind.Absolute);
 
             var result = await steamService.DownloadPageHtmlAsync(addressUri);
 

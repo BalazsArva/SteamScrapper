@@ -1,21 +1,21 @@
 ﻿using System;
 using System.Linq;
 using HtmlAgilityPack;
+using SteamScrapper.Constants;
 
 namespace SteamScrapper.PageModels
 {
     public class SubPage : SteamPage
     {
         public const string UnknownSubName = "Unknown product";
-        public const string PageTypePrefix = "https://store.steampowered.com/sub/";
 
         public SubPage(Uri address, HtmlDocument pageHtml)
             : base(address, pageHtml)
         {
-            if (!(address.AbsoluteUri ?? string.Empty).StartsWith(PageTypePrefix, StringComparison.OrdinalIgnoreCase))
+            if (!(address.AbsoluteUri ?? string.Empty).StartsWith(PageUrlPrefixes.Sub, StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentException(
-                    $"The provided address is invalid. Valid addresses must start with '{PageTypePrefix}'.",
+                    $"The provided address is invalid. Valid addresses must start with '{PageUrlPrefixes.Sub}'.",
                     nameof(address));
             }
 
@@ -41,7 +41,7 @@ namespace SteamScrapper.PageModels
             if (segmentsWithoutSlashes.Count < 3)
             {
                 throw new ArgumentException(
-                    $"The provided address is invalid. Valid addresses must contain the sub Id after '{PageTypePrefix}'.",
+                    $"The provided address is invalid. Valid addresses must contain the sub Id after '{PageUrlPrefixes.Sub}'.",
                     nameof(address));
             }
 

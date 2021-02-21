@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using SteamScrapper.Constants;
 using SteamScrapper.PageModels;
 using SteamScrapper.Services;
 
@@ -8,11 +9,6 @@ namespace SteamScrapper.Factories
 {
     public class SteamPageFactory : ISteamPageFactory
     {
-        public const string DeveloperListPageAddress = "https://store.steampowered.com/developer/";
-        public const string BundlePagePrefix = "https://store.steampowered.com/bundle/";
-        public const string SubPagePrefix = "https://store.steampowered.com/sub/";
-        public const string AppPagePrefix = "https://store.steampowered.com/app/";
-
         private readonly ISteamService steamService;
 
         public SteamPageFactory(ISteamService steamService)
@@ -24,12 +20,12 @@ namespace SteamScrapper.Factories
         {
             var absoluteUri = uri.AbsoluteUri;
 
-            if (string.Equals(DeveloperListPageAddress, absoluteUri, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(PageUrls.DeveloperList, absoluteUri, StringComparison.OrdinalIgnoreCase))
             {
                 return await DeveloperListPage.CreateAsync(steamService);
             }
 
-            if (absoluteUri.StartsWith(BundlePagePrefix, StringComparison.OrdinalIgnoreCase))
+            if (absoluteUri.StartsWith(PageUrlPrefixes.Bundle, StringComparison.OrdinalIgnoreCase))
             {
                 var html = await steamService.DownloadPageHtmlAsync(uri);
                 var doc = new HtmlDocument();
@@ -38,7 +34,7 @@ namespace SteamScrapper.Factories
                 return new BundlePage(uri, doc);
             }
 
-            if (absoluteUri.StartsWith(SubPagePrefix, StringComparison.OrdinalIgnoreCase))
+            if (absoluteUri.StartsWith(PageUrlPrefixes.Sub, StringComparison.OrdinalIgnoreCase))
             {
                 var html = await steamService.DownloadPageHtmlAsync(uri);
                 var doc = new HtmlDocument();
@@ -47,7 +43,7 @@ namespace SteamScrapper.Factories
                 return new SubPage(uri, doc);
             }
 
-            if (absoluteUri.StartsWith(AppPagePrefix, StringComparison.OrdinalIgnoreCase))
+            if (absoluteUri.StartsWith(PageUrlPrefixes.App, StringComparison.OrdinalIgnoreCase))
             {
                 var html = await steamService.DownloadPageHtmlAsync(uri);
                 var doc = new HtmlDocument();
