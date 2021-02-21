@@ -5,8 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using StackExchange.Redis;
-using SteamScrapper.PageModels;
-using SteamScrapper.Services;
+using SteamScrapper.Factories;
 using SteamScrapper.Utilities;
 
 namespace SteamScrapper
@@ -41,13 +40,13 @@ namespace SteamScrapper
         };
 
         private readonly IDatabase redisDatabase;
-        private readonly SteamService steamService;
+        private readonly ISteamPageFactory steamPageFactory;
         private readonly bool enableLoggingIgnoredLinks;
 
-        public Crawler(IDatabase redisDatabase, SteamService steamService, bool enableLoggingIgnoredLinks)
+        public Crawler(IDatabase redisDatabase, ISteamPageFactory steamPageFactory, bool enableLoggingIgnoredLinks)
         {
             this.redisDatabase = redisDatabase ?? throw new ArgumentNullException(nameof(redisDatabase));
-            this.steamService = steamService ?? throw new ArgumentNullException(nameof(steamService));
+            this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
             this.enableLoggingIgnoredLinks = enableLoggingIgnoredLinks;
         }
 
@@ -87,17 +86,7 @@ namespace SteamScrapper
                     continue;
                 }
 
-                SteamPage steamPage;
-
-                // TODO: Improve this
-                if (addressToProcessUri.AbsoluteUri == "https://store.steampowered.com/developer/")
-                {
-                    steamPage = await DeveloperListPage.CreateAsync(steamService);
-                }
-                else
-                {
-                    steamPage = await steamService.CreateSteamPageAsync(addressToProcessUri);
-                }
+                var steamPage = await steamPageFactory.CreateSteamPageAsync(addressToProcessUri);
 
                 var helperSetId = $"Crawler:{redisKeyDateStamp}:HelperSets:{Guid.NewGuid():n}";
                 var toBeExploredLinks = steamPage.NormalizedLinks.Where(uri => IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();

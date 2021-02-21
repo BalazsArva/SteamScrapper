@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using HtmlAgilityPack;
 using Newtonsoft.Json;
-using SteamScrapper.PageModels;
 
 namespace SteamScrapper.Services
 {
@@ -83,15 +81,6 @@ namespace SteamScrapper.Services
             throw new AggregateException(
                 $"One or more errors occurred during the execution of GET JSON request to '{uri.AbsoluteUri}'.",
                 capturedExceptions);
-        }
-
-        public async Task<SteamPage> CreateSteamPageAsync(Uri uri)
-        {
-            var pageHtml = await DownloadPageHtmlAsync(uri);
-            var htmlDocument = new HtmlDocument();
-            htmlDocument.LoadHtml(pageHtml);
-
-            return new SteamPage(uri, htmlDocument);
         }
     }
 }
