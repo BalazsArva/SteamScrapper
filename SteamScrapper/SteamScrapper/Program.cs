@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data.SqlClient;
 using System.Threading.Tasks;
 using StackExchange.Redis;
 using SteamScrapper.Services;
@@ -13,12 +14,15 @@ namespace SteamScrapper
 
         private static async Task Main()
         {
+            var sqlConnection = new SqlConnection("Data Source=(localdb)\\MSSQLLocalDb;Initial Catalog=SteamScrapper;Integrated Security=true");
+            var steamContentRegistrationService = new SteamContentRegistrationService(sqlConnection);
+
             steamPageFactory = new SteamPageFactory(new SteamService());
 
             var connectionMultiplexer = await ConnectionMultiplexer.ConnectAsync("host.docker.internal:6379");
             redisDatabase = connectionMultiplexer.GetDatabase(2);
 
-            var crawler = new Crawler(redisDatabase, steamPageFactory, false);
+            var crawler = new Crawler(redisDatabase, steamContentRegistrationService, steamPageFactory, false);
             var startingUris = new[]
             {
                 new Uri("https://store.steampowered.com/", UriKind.Absolute),
