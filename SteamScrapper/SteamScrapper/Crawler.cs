@@ -92,7 +92,7 @@ namespace SteamScrapper
                 var steamPage = await steamPageFactory.CreateSteamPageAsync(addressToProcessUri);
 
                 var helperSetId = $"Crawler:{redisKeyDateStamp}:HelperSets:{Guid.NewGuid():n}";
-                var toBeExploredLinks = steamPage.NormalizedLinks.Where(uri => IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
+                var toBeExploredLinks = steamPage.NormalizedLinks.Concat(steamPage.GetLinksForSubs()).Where(uri => IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
                 var ignoredLinks = steamPage.NormalizedLinks.Where(uri => !IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
 
                 var updateExplorationStatusTransaction = redisDatabase.CreateTransaction();
@@ -119,6 +119,7 @@ namespace SteamScrapper
                 var registerFoundItemsTransaction = redisDatabase.CreateTransaction();
 
                 Console.WriteLine(addressToProcessUri);
+
                 Console.WriteLine("  Found app links:");
                 foreach (var appLink in steamPage.AppLinks)
                 {
@@ -137,6 +138,7 @@ namespace SteamScrapper
                         }
                     }
                 }
+
                 Console.WriteLine("  Found bundle links:");
                 foreach (var bundleLink in steamPage.BundleLinks)
                 {
@@ -152,6 +154,25 @@ namespace SteamScrapper
                         if (bundleLinkIsNotYetExplored)
                         {
                             var addBundleIdTask = registerFoundItemsTransaction.SetAddAsync("Bundles", bundleId);
+                        }
+                    }
+                }
+
+                Console.WriteLine("  Found sub links:");
+                foreach (var subLink in steamPage.GetLinksForSubs())
+                {
+                    var subId = subLink.Segments.ElementAtOrDefault(2)?.TrimEnd('/');
+                    var subLinkIsNotYetExplored = notYetExploredLinks.Contains(subLink.AbsoluteUri);
+
+                    if (!string.IsNullOrWhiteSpace(subId))
+                    {
+                        Console.ForegroundColor = subLinkIsNotYetExplored ? ConsoleColor.Green : consoleOriginalForeground;
+                        Console.WriteLine($"    Sub={subId}: {subLink}");
+                        Console.ForegroundColor = consoleOriginalForeground;
+
+                        if (subLinkIsNotYetExplored)
+                        {
+                            var addSubIdTask = registerFoundItemsTransaction.SetAddAsync("Subs", subId);
                         }
                     }
                 }
