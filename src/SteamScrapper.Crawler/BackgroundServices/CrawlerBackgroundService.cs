@@ -46,13 +46,20 @@ namespace SteamScrapper.Crawler.BackgroundServices
             PageUrlPrefixes.Tags,
         };
 
+        private readonly ICrawlerAddressRegistrationService crawlerAddressRegistrationService;
         private readonly IDatabase redisDatabase;
         private readonly ISteamContentRegistrationService steamContentRegistrationService;
         private readonly ISteamPageFactory steamPageFactory;
         private readonly bool enableLoggingIgnoredLinks;
 
-        public CrawlerBackgroundService(IDatabase redisDatabase, ISteamContentRegistrationService steamContentRegistrationService, ISteamPageFactory steamPageFactory, bool enableLoggingIgnoredLinks)
+        public CrawlerBackgroundService(
+            ICrawlerAddressRegistrationService crawlerAddressRegistrationService,
+            IDatabase redisDatabase,
+            ISteamContentRegistrationService steamContentRegistrationService,
+            ISteamPageFactory steamPageFactory,
+            bool enableLoggingIgnoredLinks)
         {
+            this.crawlerAddressRegistrationService = crawlerAddressRegistrationService ?? throw new ArgumentNullException(nameof(crawlerAddressRegistrationService));
             this.redisDatabase = redisDatabase ?? throw new ArgumentNullException(nameof(redisDatabase));
             this.steamContentRegistrationService = steamContentRegistrationService ?? throw new ArgumentNullException(nameof(steamContentRegistrationService));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
@@ -84,19 +91,15 @@ namespace SteamScrapper.Crawler.BackgroundServices
             // TODO: Move the guts to a handler that executes a single iteration. This makes testing easier.
             while (!stoppingToken.IsCancellationRequested)
             {
-                redisKeyDateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
+                var utcNow = DateTime.UtcNow;
+                redisKeyDateStamp = utcNow.ToString("yyyyMMdd");
 
-                var addressToProcessUri = await GetNextUriToProcessAsync(redisKeyDateStamp);
+                var addressToProcessUri = await crawlerAddressRegistrationService.GetNextAddressAsync(utcNow);
                 if (addressToProcessUri is null)
                 {
+                    // No links remain to explore.
+                    // TODO: Restart the next day.
                     break;
-                }
-
-                var canExploreLink = await TryRegisterLinkAsExploredAsync(redisKeyDateStamp, addressToProcessUri);
-                if (!canExploreLink)
-                {
-                    // Link already explored, move on
-                    continue;
                 }
 
                 var steamPage = await steamPageFactory.CreateSteamPageAsync(addressToProcessUri);
@@ -185,70 +188,6 @@ namespace SteamScrapper.Crawler.BackgroundServices
             return
                 LinksAllowedForExploration.Contains(absoluteUri) ||
                 LinkPrefixesAllowedForExploration.Any(x => absoluteUri.StartsWith(x));
-        }
-
-        private async Task<bool> TryRegisterLinkAsExploredAsync(string redisKeyDateStamp, Uri addressToProcessUri)
-        {
-            // TODO: These are not yet usable, because the set difference used in the DiscoverSteamLinksAsync method relies on a single 'Explored' set.
-            /*
-            const int bitmapSize = 1024;
-
-            var absoluteUri = addressToProcessUri.AbsoluteUri;
-
-            if (absoluteUri.StartsWith(PageUrlPrefixes.App, StringComparison.OrdinalIgnoreCase))
-            {
-                var appId = Utilities.LinkHelpers.SteamLinkHelper.ExtractAppId(addressToProcessUri);
-
-                var bitmapId = appId / bitmapSize;
-                var bitmapOffset = appId % bitmapSize;
-
-                return await redisDatabase.StringSetBitAsync($"Crawler:{redisKeyDateStamp}:Explored:AppBitmaps:{bitmapId}", bitmapOffset, true);
-            }
-
-            if (absoluteUri.StartsWith(PageUrlPrefixes.Sub, StringComparison.OrdinalIgnoreCase))
-            {
-                var subId = Utilities.LinkHelpers.SteamLinkHelper.ExtractSubId(addressToProcessUri);
-
-                var bitmapId = subId / bitmapSize;
-                var bitmapOffset = subId % bitmapSize;
-
-                return await redisDatabase.StringSetBitAsync($"Crawler:{redisKeyDateStamp}:Explored:SubBitmaps:{bitmapId}", bitmapOffset, true);
-            }
-
-            if (absoluteUri.StartsWith(PageUrlPrefixes.Bundle, StringComparison.OrdinalIgnoreCase))
-            {
-                var bundleId = Utilities.LinkHelpers.SteamLinkHelper.ExtractBundleId(addressToProcessUri);
-
-                var bitmapId = bundleId / bitmapSize;
-                var bitmapOffset = bundleId % bitmapSize;
-
-                return await redisDatabase.StringSetBitAsync($"Crawler:{redisKeyDateStamp}:Explored:BundleBitmaps:{bitmapId}", bitmapOffset, true);
-            }
-
-            if (absoluteUri.StartsWith(PageUrlPrefixes.Developer, StringComparison.OrdinalIgnoreCase))
-            {
-                return await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored:Developer", addressToProcessUri.AbsoluteUri);
-            }
-
-            if (absoluteUri.StartsWith(PageUrlPrefixes.Publisher, StringComparison.OrdinalIgnoreCase))
-            {
-                return await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored:Publisher", addressToProcessUri.AbsoluteUri);
-            }
-            */
-
-            return await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored:EverythingElse", addressToProcessUri.AbsoluteUri);
-        }
-
-        private async Task<Uri> GetNextUriToProcessAsync(string redisKeyDateStamp)
-        {
-            var addressToProcessAbsUris = await redisDatabase.SetPopAsync($"Crawler:{redisKeyDateStamp}:ToBeExplored", 1);
-            string addressToProcessAbsUri = addressToProcessAbsUris.ElementAtOrDefault(0);
-            if (string.IsNullOrWhiteSpace(addressToProcessAbsUri))
-            {
-                return null;
-            }
-
-            return new Uri(addressToProcessAbsUri.Trim(), UriKind.Absolute);
         }
     }
 }
