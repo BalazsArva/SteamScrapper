@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
-using SteamScrapper.PageModels;
+using SteamScrapper.Domain.PageModels;
 
-namespace SteamScrapper.Utilities.Factories
+namespace SteamScrapper.Domain.Factories
 {
     public interface ISteamPageFactory
     {

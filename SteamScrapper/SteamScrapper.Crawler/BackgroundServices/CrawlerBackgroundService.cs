@@ -2,17 +2,21 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
 using StackExchange.Redis;
 using SteamScrapper.Common.Constants;
 using SteamScrapper.Common.Utilities.Links;
-using SteamScrapper.Services;
-using SteamScrapper.Utilities.Factories;
+using SteamScrapper.Domain.Factories;
+using SteamScrapper.Domain.PageModels;
+using SteamScrapper.Domain.Services.Abstractions;
 
-namespace SteamScrapper
+namespace SteamScrapper.Crawler.BackgroundServices
 {
-    public class Crawler
+    public class CrawlerBackgroundService : BackgroundService
     {
+        // TODO: Eventually remove nuget references to redis and other infra stuff.
         private static readonly IEnumerable<string> LinksAllowedForExploration = new HashSet<string>
         {
             PageUrls.SteamStore,
@@ -47,7 +51,7 @@ namespace SteamScrapper
         private readonly ISteamPageFactory steamPageFactory;
         private readonly bool enableLoggingIgnoredLinks;
 
-        public Crawler(IDatabase redisDatabase, ISteamContentRegistrationService steamContentRegistrationService, ISteamPageFactory steamPageFactory, bool enableLoggingIgnoredLinks)
+        public CrawlerBackgroundService(IDatabase redisDatabase, ISteamContentRegistrationService steamContentRegistrationService, ISteamPageFactory steamPageFactory, bool enableLoggingIgnoredLinks)
         {
             this.redisDatabase = redisDatabase ?? throw new ArgumentNullException(nameof(redisDatabase));
             this.steamContentRegistrationService = steamContentRegistrationService ?? throw new ArgumentNullException(nameof(steamContentRegistrationService));
@@ -55,12 +59,15 @@ namespace SteamScrapper
             this.enableLoggingIgnoredLinks = enableLoggingIgnoredLinks;
         }
 
-        public async Task DiscoverSteamLinksAsync(IEnumerable<Uri> startingUris)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            if (startingUris is null)
+            // TODO: Move to config
+            IEnumerable<Uri> startingUris = new[]
             {
-                throw new ArgumentNullException(nameof(startingUris));
-            }
+                new Uri("https://store.steampowered.com/", UriKind.Absolute),
+                new Uri("https://store.steampowered.com/developer/", UriKind.Absolute),
+                new Uri("https://store.steampowered.com/publisher/", UriKind.Absolute),
+            };
 
             var consoleOriginalForeground = Console.ForegroundColor;
             var redisKeyDateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
@@ -74,7 +81,8 @@ namespace SteamScrapper
 
             await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:ToBeExplored", normalizedStartingUris);
 
-            while (true)
+            // TODO: Move the guts to a handler that executes a single iteration. This makes testing easier.
+            while (!stoppingToken.IsCancellationRequested)
             {
                 redisKeyDateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
 
@@ -125,7 +133,7 @@ namespace SteamScrapper
             }
         }
 
-        private async Task RegisterFoundBundlesAsync(ConsoleColor consoleOriginalForeground, PageModels.SteamPage steamPage, HashSet<string> notYetExploredLinks)
+        private async Task RegisterFoundBundlesAsync(ConsoleColor consoleOriginalForeground, SteamPage steamPage, HashSet<string> notYetExploredLinks)
         {
             await steamContentRegistrationService.RegisterUnknownBundlesAsync(steamPage.BundleLinks.Select(x => x.BundleId));
 
@@ -140,7 +148,7 @@ namespace SteamScrapper
             }
         }
 
-        private async Task RegisterFoundSubsAsync(ConsoleColor consoleOriginalForeground, PageModels.SteamPage steamPage, HashSet<string> notYetExploredLinks)
+        private async Task RegisterFoundSubsAsync(ConsoleColor consoleOriginalForeground, SteamPage steamPage, HashSet<string> notYetExploredLinks)
         {
             await steamContentRegistrationService.RegisterUnknownSubsAsync(steamPage.SubLinks.Select(x => x.SubId));
 
@@ -155,7 +163,7 @@ namespace SteamScrapper
             }
         }
 
-        private async Task RegisterFoundAppsAsync(ConsoleColor consoleOriginalForeground, PageModels.SteamPage steamPage, HashSet<string> notYetExploredLinks)
+        private async Task RegisterFoundAppsAsync(ConsoleColor consoleOriginalForeground, SteamPage steamPage, HashSet<string> notYetExploredLinks)
         {
             await steamContentRegistrationService.RegisterUnknownAppsAsync(steamPage.AppLinks.Select(x => x.AppId));
 

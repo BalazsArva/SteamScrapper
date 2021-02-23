@@ -2,10 +2,10 @@
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 using SteamScrapper.Common.Constants;
-using SteamScrapper.PageModels;
-using SteamScrapper.Services;
+using SteamScrapper.Domain.PageModels;
+using SteamScrapper.Domain.Services.Abstractions;
 
-namespace SteamScrapper.Utilities.Factories
+namespace SteamScrapper.Domain.Factories
 {
     public class SteamPageFactory : ISteamPageFactory
     {
