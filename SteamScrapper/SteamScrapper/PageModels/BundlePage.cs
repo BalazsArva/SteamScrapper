@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Linq;
 using HtmlAgilityPack;
-using SteamScrapper.Constants;
-using SteamScrapper.Utilities.LinkHelpers;
+using SteamScrapper.Common.Constants;
+using SteamScrapper.Common.Utilities.Links;
 
 namespace SteamScrapper.PageModels
 {

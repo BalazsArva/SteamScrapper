@@ -1,5 +1,5 @@
 ﻿using System;
-using SteamScrapper.Utilities.LinkHelpers;
+using SteamScrapper.Common.Utilities.Links;
 
 namespace SteamScrapper.PageModels.SpecialLinks
 {

@@ -4,9 +4,9 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using StackExchange.Redis;
-using SteamScrapper.Constants;
+using SteamScrapper.Common.Constants;
+using SteamScrapper.Common.Utilities.Links;
 using SteamScrapper.Services;
-using SteamScrapper.Utilities;
 using SteamScrapper.Utilities.Factories;
 
 namespace SteamScrapper

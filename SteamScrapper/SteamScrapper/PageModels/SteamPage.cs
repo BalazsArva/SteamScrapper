@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using HtmlAgilityPack;
-using SteamScrapper.Constants;
+using SteamScrapper.Common.Constants;
+using SteamScrapper.Common.Utilities.EqualityComparers;
+using SteamScrapper.Common.Utilities.Links;
 using SteamScrapper.PageModels.SpecialLinks;
-using SteamScrapper.Utilities;
-using SteamScrapper.Utilities.EqualityComparers;
 
 namespace SteamScrapper.PageModels
 {

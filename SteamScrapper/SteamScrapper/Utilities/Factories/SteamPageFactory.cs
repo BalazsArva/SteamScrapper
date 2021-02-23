@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
-using SteamScrapper.Constants;
+using SteamScrapper.Common.Constants;
 using SteamScrapper.PageModels;
 using SteamScrapper.Services;
 
