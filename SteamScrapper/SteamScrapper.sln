@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamScrapper.Crawler", "St
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamScrapper.Common", "SteamScrapper.Common\SteamScrapper.Common.csproj", "{A630B7FF-8669-42DD-A4D6-6B952D4B6CB2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamScrapper.Domain", "SteamScrapper.Domain\SteamScrapper.Domain.csproj", "{29BF101C-1894-4B9C-B221-749374DB0C7F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{A630B7FF-8669-42DD-A4D6-6B952D4B6CB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A630B7FF-8669-42DD-A4D6-6B952D4B6CB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A630B7FF-8669-42DD-A4D6-6B952D4B6CB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29BF101C-1894-4B9C-B221-749374DB0C7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29BF101C-1894-4B9C-B221-749374DB0C7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29BF101C-1894-4B9C-B221-749374DB0C7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29BF101C-1894-4B9C-B221-749374DB0C7F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
