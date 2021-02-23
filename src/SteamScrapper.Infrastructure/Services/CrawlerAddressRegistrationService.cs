@@ -165,9 +165,11 @@ namespace SteamScrapper.Infrastructure.Services
             {
                 return await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored:Publisher", addressToProcessUri.AbsoluteUri);
             }
-            */
 
             return await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored:EverythingElse", addressToProcessUri.AbsoluteUri);
+            */
+
+            return await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored", addressToProcessUri.AbsoluteUri);
         }
 
         private static bool IsLinkAllowedForExploration(Uri uri)
