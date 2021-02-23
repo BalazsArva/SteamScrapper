@@ -5,8 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
-using StackExchange.Redis;
-using SteamScrapper.Common.Constants;
 using SteamScrapper.Common.Utilities.Links;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
@@ -14,56 +12,21 @@ using SteamScrapper.Domain.Services.Abstractions;
 
 namespace SteamScrapper.Crawler.BackgroundServices
 {
+    // TODO: Eventually remove nuget references to redis and other infra stuff.
     public class CrawlerBackgroundService : BackgroundService
     {
-        // TODO: Eventually remove nuget references to redis and other infra stuff.
-        private static readonly IEnumerable<string> LinksAllowedForExploration = new HashSet<string>
-        {
-            PageUrls.SteamStore,
-
-            // Note: these two usually don't have a trailing '/' in the HTML.
-            "https://store.steampowered.com/linux",
-            "https://store.steampowered.com/macos",
-        };
-
-        private static readonly IEnumerable<string> LinkPrefixesAllowedForExploration = new[]
-        {
-            PageUrlPrefixes.App,
-            PageUrlPrefixes.Bundle,
-            PageUrlPrefixes.Controller,
-            PageUrlPrefixes.Demos,
-            PageUrlPrefixes.Developer,
-            PageUrlPrefixes.Dlc,
-            PageUrlPrefixes.Explore,
-            PageUrlPrefixes.Franchise,
-            PageUrlPrefixes.Games,
-            PageUrlPrefixes.Genre,
-            PageUrlPrefixes.Publisher,
-            PageUrlPrefixes.Recommended,
-            PageUrlPrefixes.Sale,
-            PageUrlPrefixes.Specials,
-            PageUrlPrefixes.Sub,
-            PageUrlPrefixes.Tags,
-        };
-
         private readonly ICrawlerAddressRegistrationService crawlerAddressRegistrationService;
-        private readonly IDatabase redisDatabase;
         private readonly ISteamContentRegistrationService steamContentRegistrationService;
         private readonly ISteamPageFactory steamPageFactory;
-        private readonly bool enableLoggingIgnoredLinks;
 
         public CrawlerBackgroundService(
             ICrawlerAddressRegistrationService crawlerAddressRegistrationService,
-            IDatabase redisDatabase,
             ISteamContentRegistrationService steamContentRegistrationService,
-            ISteamPageFactory steamPageFactory,
-            bool enableLoggingIgnoredLinks)
+            ISteamPageFactory steamPageFactory)
         {
             this.crawlerAddressRegistrationService = crawlerAddressRegistrationService ?? throw new ArgumentNullException(nameof(crawlerAddressRegistrationService));
-            this.redisDatabase = redisDatabase ?? throw new ArgumentNullException(nameof(redisDatabase));
             this.steamContentRegistrationService = steamContentRegistrationService ?? throw new ArgumentNullException(nameof(steamContentRegistrationService));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
-            this.enableLoggingIgnoredLinks = enableLoggingIgnoredLinks;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -77,21 +40,19 @@ namespace SteamScrapper.Crawler.BackgroundServices
             };
 
             var consoleOriginalForeground = Console.ForegroundColor;
-            var redisKeyDateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
+            var utcNow = DateTime.UtcNow;
+            var redisKeyDateStamp = utcNow.ToString("yyyyMMdd");
 
             var normalizedStartingUris = startingUris
                 .Select(startingUri => LinkSanitizer.GetSanitizedLinkWithoutQueryAndFragment(startingUri))
-                .Select(startingUri => startingUri.AbsoluteUri)
-                .Distinct()
-                .Select(startingUri => new RedisValue(startingUri))
-                .ToArray();
+                .ToList();
 
-            await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:ToBeExplored", normalizedStartingUris);
+            await crawlerAddressRegistrationService.RegisterNonExploredLinksForExplorationAsync(utcNow, normalizedStartingUris);
 
             // TODO: Move the guts to a handler that executes a single iteration. This makes testing easier.
             while (!stoppingToken.IsCancellationRequested)
             {
-                var utcNow = DateTime.UtcNow;
+                utcNow = DateTime.UtcNow;
                 redisKeyDateStamp = utcNow.ToString("yyyyMMdd");
 
                 var addressToProcessUri = await crawlerAddressRegistrationService.GetNextAddressAsync(utcNow);
@@ -104,29 +65,7 @@ namespace SteamScrapper.Crawler.BackgroundServices
 
                 var steamPage = await steamPageFactory.CreateSteamPageAsync(addressToProcessUri);
 
-                var updateExplorationStatusTransaction = redisDatabase.CreateTransaction();
-                var toBeExploredLinks = steamPage.NormalizedLinks.Where(uri => IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
-                var helperSetId = $"Crawler:{redisKeyDateStamp}:HelperSets:{Guid.NewGuid():n}";
-
-                var addToBeExploredToHelperSetTask = updateExplorationStatusTransaction.SetAddAsync(helperSetId, toBeExploredLinks);
-                if (enableLoggingIgnoredLinks)
-                {
-                    var ignoredLinks = steamPage.NormalizedLinks.Where(uri => !IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
-                    var addIgnoredLinksTask = updateExplorationStatusTransaction.SetAddAsync($"Crawler:{redisKeyDateStamp}:Ignored", ignoredLinks);
-                }
-
-                var notYetExploredRedisValsTask = updateExplorationStatusTransaction.SetCombineAsync(SetOperation.Difference, helperSetId, $"Crawler:{redisKeyDateStamp}:Explored");
-                var deleteHelperSetTask = updateExplorationStatusTransaction.KeyDeleteAsync(helperSetId);
-
-                await updateExplorationStatusTransaction.ExecuteAsync();
-
-                var notYetExploredLinks = notYetExploredRedisValsTask.Result.Select(val => (string)val).ToHashSet();
-                if (notYetExploredLinks.Count == 0)
-                {
-                    continue;
-                }
-
-                await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:ToBeExplored", notYetExploredRedisValsTask.Result);
+                var notYetExploredLinks = await crawlerAddressRegistrationService.RegisterNonExploredLinksForExplorationAsync(utcNow, steamPage.NormalizedLinks);
 
                 Console.WriteLine(addressToProcessUri);
 
@@ -136,7 +75,7 @@ namespace SteamScrapper.Crawler.BackgroundServices
             }
         }
 
-        private async Task RegisterFoundBundlesAsync(ConsoleColor consoleOriginalForeground, SteamPage steamPage, HashSet<string> notYetExploredLinks)
+        private async Task RegisterFoundBundlesAsync(ConsoleColor consoleOriginalForeground, SteamPage steamPage, ISet<string> notYetExploredLinks)
         {
             var unknownBundleIds = new List<int>(notYetExploredLinks.Count);
 
@@ -158,7 +97,7 @@ namespace SteamScrapper.Crawler.BackgroundServices
             await steamContentRegistrationService.RegisterUnknownBundlesAsync(unknownBundleIds);
         }
 
-        private async Task RegisterFoundSubsAsync(ConsoleColor consoleOriginalForeground, SteamPage steamPage, HashSet<string> notYetExploredLinks)
+        private async Task RegisterFoundSubsAsync(ConsoleColor consoleOriginalForeground, SteamPage steamPage, ISet<string> notYetExploredLinks)
         {
             var unknownSubIds = new List<int>(notYetExploredLinks.Count);
 
@@ -180,7 +119,7 @@ namespace SteamScrapper.Crawler.BackgroundServices
             await steamContentRegistrationService.RegisterUnknownSubsAsync(unknownSubIds);
         }
 
-        private async Task RegisterFoundAppsAsync(ConsoleColor consoleOriginalForeground, SteamPage steamPage, HashSet<string> notYetExploredLinks)
+        private async Task RegisterFoundAppsAsync(ConsoleColor consoleOriginalForeground, SteamPage steamPage, ISet<string> notYetExploredLinks)
         {
             var unknownAppIds = new List<int>(notYetExploredLinks.Count);
 
@@ -200,15 +139,6 @@ namespace SteamScrapper.Crawler.BackgroundServices
             }
 
             await steamContentRegistrationService.RegisterUnknownAppsAsync(unknownAppIds);
-        }
-
-        private static bool IsLinkAllowedForExploration(Uri uri)
-        {
-            var absoluteUri = uri.AbsoluteUri;
-
-            return
-                LinksAllowedForExploration.Contains(absoluteUri) ||
-                LinkPrefixesAllowedForExploration.Any(x => absoluteUri.StartsWith(x));
         }
     }
 }
