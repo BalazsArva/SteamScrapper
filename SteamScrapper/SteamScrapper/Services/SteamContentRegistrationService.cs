@@ -28,7 +28,7 @@ namespace SteamScrapper.Services
                 await sqlConnection.OpenAsync();
             }
 
-            var sqlCommand = sqlConnection.CreateCommand();
+            using var sqlCommand = sqlConnection.CreateCommand();
 
             var commandTexts = appIds
                 .Distinct()
@@ -59,7 +59,7 @@ namespace SteamScrapper.Services
                 await sqlConnection.OpenAsync();
             }
 
-            var sqlCommand = sqlConnection.CreateCommand();
+            using var sqlCommand = sqlConnection.CreateCommand();
 
             var commandTexts = subIds
                 .Distinct()
@@ -90,7 +90,7 @@ namespace SteamScrapper.Services
                 await sqlConnection.OpenAsync();
             }
 
-            var sqlCommand = sqlConnection.CreateCommand();
+            using var sqlCommand = sqlConnection.CreateCommand();
 
             var commandTexts = bundleIds
                 .Distinct()
