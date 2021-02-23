@@ -55,11 +55,11 @@ namespace SteamScrapper.Crawler.BackgroundServices
                 utcNow = DateTime.UtcNow;
                 redisKeyDateStamp = utcNow.ToString("yyyyMMdd");
 
-                var addressToProcessUri = await crawlerAddressRegistrationService.GetNextAddressAsync(utcNow);
+                var addressToProcessUri = await crawlerAddressRegistrationService.GetNextAddressAsync(utcNow, stoppingToken);
                 if (addressToProcessUri is null)
                 {
                     // No links remain to explore.
-                    // TODO: Restart the next day.
+                    // TODO: Restart the next day. But check cancellation token as well.
                     break;
                 }
 

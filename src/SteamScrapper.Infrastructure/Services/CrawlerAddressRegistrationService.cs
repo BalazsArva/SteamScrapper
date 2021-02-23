@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using StackExchange.Redis;
 using SteamScrapper.Common.Constants;
@@ -55,11 +56,11 @@ namespace SteamScrapper.Infrastructure.Services
             redisDatabase = connectionMultiplexer.GetDatabase();
         }
 
-        public async Task<Uri> GetNextAddressAsync(DateTime executionDate)
+        public async Task<Uri> GetNextAddressAsync(DateTime executionDate, CancellationToken cancellationToken)
         {
             var redisKeyDateStamp = executionDate.ToString("yyyyMMdd");
 
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 var addressToProcessAbsUris = await redisDatabase.SetPopAsync($"Crawler:{redisKeyDateStamp}:ToBeExplored", 1);
 
@@ -77,6 +78,8 @@ namespace SteamScrapper.Infrastructure.Services
                     return result;
                 }
             }
+
+            return null;
         }
 
         public async Task<ISet<string>> RegisterNonExploredLinksForExplorationAsync(DateTime executionDate, IEnumerable<Uri> foundLinks)
