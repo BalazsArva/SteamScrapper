@@ -12,7 +12,6 @@ using SteamScrapper.Domain.Services.Abstractions;
 
 namespace SteamScrapper.Crawler.BackgroundServices
 {
-    // TODO: Eventually remove nuget references to redis and other infra stuff.
     public class CrawlerBackgroundService : BackgroundService
     {
         private readonly ICrawlerAddressRegistrationService crawlerAddressRegistrationService;
