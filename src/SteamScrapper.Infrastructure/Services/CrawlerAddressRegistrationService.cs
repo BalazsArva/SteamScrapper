@@ -102,10 +102,10 @@ namespace SteamScrapper.Infrastructure.Services
             }
 
             var redisKeyDateStamp = executionDate.ToString("yyyyMMdd");
-
-            var updateExplorationStatusTransaction = redisDatabase.CreateTransaction();
             var toBeExploredLinks = foundLinks.Where(uri => IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
             var helperSetId = $"Crawler:{redisKeyDateStamp}:HelperSets:{Guid.NewGuid():n}";
+
+            var updateExplorationStatusTransaction = redisDatabase.CreateTransaction();
 
             var addToBeExploredToHelperSetTask = updateExplorationStatusTransaction.SetAddAsync(helperSetId, toBeExploredLinks);
             if (EnableLoggingIgnoredLinks)
