@@ -45,9 +45,8 @@ namespace SteamScrapper.Common.DataStructures
             }
             else
             {
-                var mask1 = ((ulong)1) << bucketOffset;
-                var mask2 = ulong.MaxValue;
-                var mask = mask1 ^ mask2;
+                // ~: bitwise complement
+                var mask = ~(((ulong)1) << bucketOffset);
 
                 buckets[bucketIndex] &= mask;
             }
