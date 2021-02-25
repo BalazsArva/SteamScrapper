@@ -6,12 +6,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using StackExchange.Redis;
 using SteamScrapper.Common.Constants;
+using SteamScrapper.Common.DataStructures;
+using SteamScrapper.Common.Utilities.Links;
 using SteamScrapper.Domain.Services.Abstractions;
 
 namespace SteamScrapper.Infrastructure.Services
 {
     public class CrawlerAddressRegistrationService : ICrawlerAddressRegistrationService
     {
+        // It's sure there are Ids > 2 million, so 3 * 1000 * 1000 should be okay.
+        private const int DefaultBitmapSize = 3 * 1000 * 1000;
+
         private static readonly IEnumerable<string> LinksAllowedForExploration = new HashSet<string>
         {
             PageUrls.SteamStore,
@@ -44,6 +49,7 @@ namespace SteamScrapper.Infrastructure.Services
         // TODO: Config
         private readonly bool EnableLoggingIgnoredLinks = false;
 
+        private readonly Bitmap exploredAppIds;
         private readonly IDatabase redisDatabase;
 
         public CrawlerAddressRegistrationService(IConnectionMultiplexer connectionMultiplexer)
@@ -54,6 +60,7 @@ namespace SteamScrapper.Infrastructure.Services
             }
 
             redisDatabase = connectionMultiplexer.GetDatabase();
+            exploredAppIds = new Bitmap(DefaultBitmapSize);
         }
 
         public async Task<Uri> GetNextAddressAsync(DateTime executionDate, CancellationToken cancellationToken)
@@ -123,6 +130,30 @@ namespace SteamScrapper.Infrastructure.Services
 
         private async Task<bool> TryRegisterLinkAsExploredAsync(string redisKeyDateStamp, Uri addressToProcessUri)
         {
+            var absoluteUri = addressToProcessUri.AbsoluteUri;
+
+            if (absoluteUri.StartsWith(PageUrlPrefixes.App, StringComparison.OrdinalIgnoreCase))
+            {
+                var appId = SteamLinkHelper.ExtractAppId(addressToProcessUri);
+
+                if (exploredAppIds.Get(appId))
+                {
+                    // We know from local data that it's already explored. Don't even check Redis.
+                    return false;
+                }
+
+                // If local data says that it's not yet explored, then remote data may disagree, other instances may have explored it.
+                // So go out to Redis to check it.
+                var couldRegisterForExploration = await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored", addressToProcessUri.AbsoluteUri);
+
+                // Always true. If we could register it against remote data, then we have just reserved it successfully,
+                // and if we could not reserve it, then another instance has already reserved it, so by setting it to true,
+                // we sync the local data.
+                exploredAppIds.Set(appId, true);
+
+                return couldRegisterForExploration;
+            }
+
             // TODO: These are not yet usable, because the set difference used in the DiscoverSteamLinksAsync method relies on a single 'Explored' set.
             /*
             const int bitmapSize = 1024;
