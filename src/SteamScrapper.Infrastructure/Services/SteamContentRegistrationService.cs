@@ -65,7 +65,7 @@ namespace SteamScrapper.Infrastructure.Services
 
             var commandTexts = subIds
                 .Distinct()
-                .Select(subId => IncludeInsertUnknownBundle(sqlCommand, subId))
+                .Select(subId => IncludeInsertUnknownSub(sqlCommand, subId))
                 .ToList();
 
             if (commandTexts.Count == 0)
@@ -96,7 +96,7 @@ namespace SteamScrapper.Infrastructure.Services
 
             var commandTexts = bundleIds
                 .Distinct()
-                .Select(bundleId => IncludeInsertUnknownSub(sqlCommand, bundleId))
+                .Select(bundleId => IncludeInsertUnknownBundle(sqlCommand, bundleId))
                 .ToList();
 
             if (commandTexts.Count == 0)
