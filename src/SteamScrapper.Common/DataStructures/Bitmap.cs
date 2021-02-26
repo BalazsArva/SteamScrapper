@@ -56,12 +56,12 @@ namespace SteamScrapper.Common.DataStructures
         {
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException($"The '{nameof(index)}' parameter must be at least 0.", nameof(index));
+                throw new ArgumentOutOfRangeException(nameof(index), $"The '{nameof(index)}' parameter must be at least 0.");
             }
 
             if (index >= size)
             {
-                throw new ArgumentOutOfRangeException($"The '{nameof(index)}' parameter must not exceed the bitmap's capacity.", nameof(index));
+                throw new ArgumentOutOfRangeException(nameof(index), $"The '{nameof(index)}' parameter must not exceed the bitmap's capacity.");
             }
 
             var bucketIndex = index / bucketSize;
