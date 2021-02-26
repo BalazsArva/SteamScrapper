@@ -5,10 +5,10 @@ namespace SteamScrapper.Domain.Services.Abstractions
 {
     public interface ISteamContentRegistrationService
     {
-        Task RegisterUnknownAppsAsync(IEnumerable<int> appIds);
+        Task<int> RegisterUnknownAppsAsync(IEnumerable<int> appIds);
 
-        Task RegisterUnknownBundlesAsync(IEnumerable<int> bundleIds);
+        Task<int> RegisterUnknownBundlesAsync(IEnumerable<int> bundleIds);
 
-        Task RegisterUnknownSubsAsync(IEnumerable<int> subIds);
+        Task<int> RegisterUnknownSubsAsync(IEnumerable<int> subIds);
     }
 }

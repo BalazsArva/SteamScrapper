@@ -18,7 +18,7 @@ namespace SteamScrapper.Infrastructure.Services
             this.sqlConnection = sqlConnection ?? throw new ArgumentNullException(nameof(sqlConnection));
         }
 
-        public async Task RegisterUnknownAppsAsync(IEnumerable<int> appIds)
+        public async Task<int> RegisterUnknownAppsAsync(IEnumerable<int> appIds)
         {
             if (appIds is null)
             {
@@ -39,17 +39,17 @@ namespace SteamScrapper.Infrastructure.Services
 
             if (commandTexts.Count == 0)
             {
-                return;
+                return 0;
             }
 
             var completeCommandText = string.Join('\n', commandTexts);
 
             sqlCommand.CommandText = completeCommandText;
 
-            await sqlCommand.ExecuteNonQueryAsync();
+            return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
         }
 
-        public async Task RegisterUnknownSubsAsync(IEnumerable<int> subIds)
+        public async Task<int> RegisterUnknownSubsAsync(IEnumerable<int> subIds)
         {
             if (subIds is null)
             {
@@ -70,17 +70,17 @@ namespace SteamScrapper.Infrastructure.Services
 
             if (commandTexts.Count == 0)
             {
-                return;
+                return 0;
             }
 
             var completeCommandText = string.Join('\n', commandTexts);
 
             sqlCommand.CommandText = completeCommandText;
 
-            await sqlCommand.ExecuteNonQueryAsync();
+            return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
         }
 
-        public async Task RegisterUnknownBundlesAsync(IEnumerable<int> bundleIds)
+        public async Task<int> RegisterUnknownBundlesAsync(IEnumerable<int> bundleIds)
         {
             if (bundleIds is null)
             {
@@ -101,14 +101,14 @@ namespace SteamScrapper.Infrastructure.Services
 
             if (commandTexts.Count == 0)
             {
-                return;
+                return 0;
             }
 
             var completeCommandText = string.Join('\n', commandTexts);
 
             sqlCommand.CommandText = completeCommandText;
 
-            await sqlCommand.ExecuteNonQueryAsync();
+            return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
         }
 
         private static string IncludeInsertUnknownApp(SqlCommand command, int appId)
