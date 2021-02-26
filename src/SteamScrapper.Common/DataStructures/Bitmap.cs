@@ -4,7 +4,7 @@ namespace SteamScrapper.Common.DataStructures
 {
     public class Bitmap
     {
-        private const int bucketSize = sizeof(ulong);
+        private const int bucketSize = 64;
 
         private readonly ulong[] buckets;
         private readonly int size;
@@ -16,7 +16,7 @@ namespace SteamScrapper.Common.DataStructures
                 throw new ArgumentException($"The '{nameof(capacity)}' parameter must be at least 1.", nameof(capacity));
             }
 
-            var bucketCount = capacity / bucketSize;
+            var bucketCount = (int)(Math.Ceiling(1M * capacity / bucketSize));
 
             size = capacity;
             buckets = new ulong[bucketCount];
