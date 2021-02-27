@@ -85,8 +85,8 @@ namespace SteamScrapper.Domain.PageModels
                     var formMethod = form.GetAttributeValue(HtmlAttributes.Method, string.Empty).Trim().TrimEnd('/').ToLower();
 
                     return
-                        formAction == "https://store.steampowered.com/cart" &&
-                        formMethod == HtmlFormMethods.Post;
+                        string.Equals(formAction, "https://store.steampowered.com/cart", StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(formMethod, HtmlFormMethods.Post, StringComparison.OrdinalIgnoreCase);
                 })
                 .ToList();
 
