@@ -12,8 +12,6 @@ namespace SteamScrapper.Domain.PageModels
 {
     public class SteamPage
     {
-        public const string LinkHtmlTagName = "a";
-
         public SteamPage(Uri address, HtmlDocument pageHtml)
         {
             if (address is null)
@@ -25,11 +23,11 @@ namespace SteamScrapper.Domain.PageModels
             NormalizedAddress = LinkSanitizer.GetSanitizedLinkWithoutQueryAndFragment(address);
             FriendlyName = ExtractFriendlyName();
 
-            var htmlLinks = PageHtml.FastEnumerateDescendants().Where(x => x.Name == LinkHtmlTagName);
+            var htmlLinks = PageHtml.FastEnumerateDescendants().Where(x => x.Name == HtmlElements.Anchor);
             var subLinks = GetLinksForSubs(PageHtml).ToList();
 
             NormalizedLinks = htmlLinks
-                .Select(x => x.GetAttributeValue("href", null))
+                .Select(x => x.GetAttributeValue(HtmlAttributes.Href, null))
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Where(x => x.StartsWith(PageUrlPrefixes.Steam, StringComparison.OrdinalIgnoreCase))
                 .Select(x => LinkSanitizer.GetSanitizedLinkWithoutQueryAndFragment(new Uri(x, UriKind.Absolute)))
@@ -77,16 +75,16 @@ namespace SteamScrapper.Domain.PageModels
         private static IEnumerable<SubLink> GetLinksForSubs(HtmlDocument pageHtml)
         {
             var addToCartForms = pageHtml
-                .DocumentNode
-                .Descendants("form")
+                .FastEnumerateDescendants()
+                .Where(x => x.Name == HtmlElements.Form)
                 .Where(form =>
                 {
-                    var formAction = form.GetAttributeValue("action", string.Empty).Trim().TrimEnd('/').ToLower();
-                    var formMethod = form.GetAttributeValue("method", string.Empty).Trim().TrimEnd('/').ToLower();
+                    var formAction = form.GetAttributeValue(HtmlAttributes.Action, string.Empty).Trim().TrimEnd('/').ToLower();
+                    var formMethod = form.GetAttributeValue(HtmlAttributes.Method, string.Empty).Trim().TrimEnd('/').ToLower();
 
                     return
                         formAction == "https://store.steampowered.com/cart" &&
-                        formMethod == "post";
+                        formMethod == HtmlFormMethods.Post;
                 })
                 .ToList();
 
@@ -95,15 +93,15 @@ namespace SteamScrapper.Domain.PageModels
             {
                 var form = addToCartForms[i];
                 var subId = form
-                    .Descendants("input")
+                    .Descendants(HtmlElements.Input)
                     .Where(input =>
                     {
-                        var inputType = input.GetAttributeValue("type", string.Empty).Trim().ToLower();
-                        var inputName = input.GetAttributeValue("name", string.Empty).Trim().ToLower();
+                        var inputType = input.GetAttributeValue(HtmlAttributes.Type, string.Empty).Trim().ToLower();
+                        var inputName = input.GetAttributeValue(HtmlAttributes.Name, string.Empty).Trim().ToLower();
 
-                        return inputType == "hidden" && inputName == "subid";
+                        return inputType == HtmlInputTypes.Hidden && inputName == "subid";
                     })
-                    .Select(input => input.GetAttributeValue("value", string.Empty).Trim().ToLower())
+                    .Select(input => input.GetAttributeValue(HtmlAttributes.Value, string.Empty).Trim().ToLower())
                     .Where(subId => !string.IsNullOrWhiteSpace(subId))
                     .FirstOrDefault();
 
