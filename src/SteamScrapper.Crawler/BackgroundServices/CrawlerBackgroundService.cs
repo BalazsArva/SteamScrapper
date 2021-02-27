@@ -35,22 +35,20 @@ namespace SteamScrapper.Crawler.BackgroundServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            // TODO: Move to config
-            IEnumerable<Uri> startingUris = new[]
-            {
-                new Uri("https://store.steampowered.com/", UriKind.Absolute),
-                new Uri("https://store.steampowered.com/developer/", UriKind.Absolute),
-                new Uri("https://store.steampowered.com/publisher/", UriKind.Absolute),
-            };
-
             var utcNow = DateTime.UtcNow;
             var redisKeyDateStamp = utcNow.ToString("yyyyMMdd");
 
-            var normalizedStartingUris = startingUris
-                .Select(startingUri => LinkSanitizer.GetSanitizedLinkWithoutQueryAndFragment(startingUri))
-                .ToList();
+            await RegisterStartingAddressesAsync(utcNow);
 
-            await crawlerAddressRegistrationService.RegisterNonExploredLinksForExplorationAsync(utcNow, normalizedStartingUris);
+            var nextAddress = await crawlerAddressRegistrationService.GetNextAddressAsync(utcNow, stoppingToken);
+            if (nextAddress is null)
+            {
+                // No links remain to explore.
+                // TODO: Restart the next day. But check cancellation token as well.
+                return;
+            }
+
+            var prefetchSteamPageTask = Task.Run(async () => await steamPageFactory.CreateSteamPageAsync(nextAddress));
 
             // TODO: Move the guts to a handler that executes a single iteration. This makes testing easier.
             while (!stoppingToken.IsCancellationRequested)
@@ -60,15 +58,14 @@ namespace SteamScrapper.Crawler.BackgroundServices
                 utcNow = DateTime.UtcNow;
                 redisKeyDateStamp = utcNow.ToString("yyyyMMdd");
 
-                var addressToProcessUri = await crawlerAddressRegistrationService.GetNextAddressAsync(utcNow, stoppingToken);
-                if (addressToProcessUri is null)
+                Task<SteamPage> nextPrefetchSteamPageTask = null;
+                var prefetchAddress = await crawlerAddressRegistrationService.GetNextAddressAsync(utcNow, stoppingToken);
+                if (prefetchAddress is not null)
                 {
-                    // No links remain to explore.
-                    // TODO: Restart the next day. But check cancellation token as well.
-                    break;
+                    nextPrefetchSteamPageTask = Task.Run(async () => await steamPageFactory.CreateSteamPageAsync(prefetchAddress));
                 }
 
-                var steamPage = await steamPageFactory.CreateSteamPageAsync(addressToProcessUri);
+                var steamPage = await prefetchSteamPageTask;
 
                 var notYetExploredLinks = await crawlerAddressRegistrationService.RegisterNonExploredLinksForExplorationAsync(utcNow, steamPage.NormalizedLinks);
 
@@ -82,7 +79,7 @@ namespace SteamScrapper.Crawler.BackgroundServices
                     "Processed URL '{@Url}'. Elapsed millis: {@ElapsedMillis}, Found {@NotExploredAppCount} not explored apps, {@NotKnownAppCount} not known apps, " +
                     "{@NotExploredSubCount} not explored subs, {@NotKnownSubCount} not known subs and " +
                     "{@NotExploredBundleCount} not explored bundles, {@NotKnownBundleCount} not known bundles.",
-                    addressToProcessUri.AbsoluteUri,
+                    steamPage.NormalizedAddress.AbsoluteUri,
                     stopwatch.ElapsedMilliseconds,
                     unknownApps.NotYetExploredCount,
                     unknownApps.NotYetKnownCount,
@@ -90,7 +87,18 @@ namespace SteamScrapper.Crawler.BackgroundServices
                     unknownSubs.NotYetKnownCount,
                     unknownBundles.NotYetExploredCount,
                     unknownBundles.NotYetKnownCount);
+
+                if (nextPrefetchSteamPageTask is null)
+                {
+                    // No links remain to explore.
+                    // TODO: Restart the next day. But check cancellation token as well.
+                    break;
+                }
+
+                prefetchSteamPageTask = nextPrefetchSteamPageTask;
             }
+
+            logger.LogInformation("Finished crawling.");
         }
 
         private async Task<(int NotYetExploredCount, int NotYetKnownCount)> RegisterFoundBundlesAsync(SteamPage steamPage, ISet<string> notYetExploredLinks)
@@ -145,6 +153,23 @@ namespace SteamScrapper.Crawler.BackgroundServices
             var notYetKnownCount = await steamContentRegistrationService.RegisterUnknownAppsAsync(unknownAppIds);
 
             return (unknownAppIds.Count, notYetKnownCount);
+        }
+
+        private async Task RegisterStartingAddressesAsync(DateTime utcNow)
+        {
+            // TODO: Move to config
+            IEnumerable<Uri> startingUris = new[]
+            {
+                new Uri("https://store.steampowered.com/", UriKind.Absolute),
+                new Uri("https://store.steampowered.com/developer/", UriKind.Absolute),
+                new Uri("https://store.steampowered.com/publisher/", UriKind.Absolute),
+            };
+
+            var normalizedStartingUris = startingUris
+                .Select(startingUri => LinkSanitizer.GetSanitizedLinkWithoutQueryAndFragment(startingUri))
+                .ToList();
+
+            await crawlerAddressRegistrationService.RegisterNonExploredLinksForExplorationAsync(utcNow, normalizedStartingUris);
         }
     }
 }
