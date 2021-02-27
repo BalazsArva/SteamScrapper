@@ -269,6 +269,14 @@ namespace SteamScrapper.Infrastructure.Services
         {
             var absoluteUri = uri.AbsoluteUri;
 
+            if (absoluteUri.StartsWith(PageUrlPrefixes.Publisher) || absoluteUri.StartsWith(PageUrlPrefixes.Developer))
+            {
+                if (uri.Segments.DefaultIfEmpty(string.Empty).Last() == "/about")
+                {
+                    return false;
+                }
+            }
+
             return
                 LinksAllowedForExploration.Contains(absoluteUri) ||
                 LinkPrefixesAllowedForExploration.Any(x => absoluteUri.StartsWith(x));
