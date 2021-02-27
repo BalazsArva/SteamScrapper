@@ -21,9 +21,9 @@ namespace SteamScrapper.Domain.PageModels
 
             PageHtml = pageHtml ?? throw new ArgumentNullException(nameof(pageHtml));
             NormalizedAddress = LinkSanitizer.GetSanitizedLinkWithoutQueryAndFragment(address);
-            FriendlyName = ExtractFriendlyName();
 
             PrefetchedHtmlNodes = PageHtml.GetDescendantsByNames(prefetchHtmlElementNames.Union(new[] { HtmlElements.Anchor, HtmlElements.Form }).ToArray());
+            FriendlyName = ExtractFriendlyName();
 
             var htmlLinks = PrefetchedHtmlNodes[HtmlElements.Anchor];
             var subLinks = GetLinksForSubs(PrefetchedHtmlNodes[HtmlElements.Form]);
