@@ -30,7 +30,7 @@ namespace SteamScrapper.Domain.PageModels
 
         protected override string ExtractFriendlyName()
         {
-            var appNameDiv = PageHtml.DocumentNode.Descendants("h2").FirstOrDefault(x => x.Attributes.Any(a => a.Name == "class" && a.Value == "pageheader"));
+            var appNameDiv = PageHtml.DocumentNode.Descendants(HtmlElements.HeaderLevel2).FirstOrDefault(x => x.Attributes.Any(a => a.Name == HtmlAttributes.Class && a.Value == "pageheader"));
 
             return appNameDiv is null ? UnknownSubName : appNameDiv.InnerText;
         }
@@ -39,8 +39,8 @@ namespace SteamScrapper.Domain.PageModels
         {
             var addToCartForm = PageHtml
                 .DocumentNode
-                .Descendants("form")
-                .Where(form => form.GetAttributeValue("name", null) == $"add_to_cart_{SubId}")
+                .Descendants(HtmlElements.Form)
+                .Where(form => form.GetAttributeValue(HtmlAttributes.Name, null) == $"add_to_cart_{SubId}")
                 .FirstOrDefault();
 
             if (addToCartForm is not null)
@@ -48,7 +48,7 @@ namespace SteamScrapper.Domain.PageModels
                 // Note: this currently assumes €, unaware of currencies.
                 var finalPriceCents = addToCartForm
                     .ParentNode
-                    .Descendants("div")
+                    .Descendants(HtmlElements.Div)
                     .Select(div => div.GetAttributeValue("data-price-final", -1))
                     .Where(finalPriceValue => finalPriceValue != -1)
                     .DefaultIfEmpty(-1)
