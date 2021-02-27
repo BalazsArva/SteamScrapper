@@ -12,7 +12,7 @@ namespace SteamScrapper.Domain.PageModels
 {
     public class SteamPage
     {
-        public SteamPage(Uri address, HtmlDocument pageHtml)
+        public SteamPage(Uri address, HtmlDocument pageHtml, params string[] prefetchHtmlElementNames)
         {
             if (address is null)
             {
@@ -23,10 +23,10 @@ namespace SteamScrapper.Domain.PageModels
             NormalizedAddress = LinkSanitizer.GetSanitizedLinkWithoutQueryAndFragment(address);
             FriendlyName = ExtractFriendlyName();
 
-            var requiredHtmlElements = PageHtml.GetDescendantsByNames(HtmlElements.Anchor, HtmlElements.Form);
+            PrefetchedHtmlNodes = PageHtml.GetDescendantsByNames(prefetchHtmlElementNames.Union(new[] { HtmlElements.Anchor, HtmlElements.Form }).ToArray());
 
-            var htmlLinks = requiredHtmlElements[HtmlElements.Anchor];
-            var subLinks = GetLinksForSubs(requiredHtmlElements[HtmlElements.Form]);
+            var htmlLinks = PrefetchedHtmlNodes[HtmlElements.Anchor];
+            var subLinks = GetLinksForSubs(PrefetchedHtmlNodes[HtmlElements.Form]);
 
             NormalizedLinks = htmlLinks
                 .Select(x => x.GetAttributeValue(HtmlAttributes.Href, null))
@@ -74,6 +74,8 @@ namespace SteamScrapper.Domain.PageModels
 
         public IEnumerable<SubLink> SubLinks { get; }
 
+        public IReadOnlyDictionary<string, IEnumerable<HtmlNode>> PrefetchedHtmlNodes { get; }
+
         private static List<SubLink> GetLinksForSubs(IEnumerable<HtmlNode> formNodes)
         {
             var addToCartForms = formNodes
@@ -117,5 +119,10 @@ namespace SteamScrapper.Domain.PageModels
         }
 
         protected virtual string ExtractFriendlyName() => "Unknown";
+
+        protected virtual IEnumerable<string> PrefetchHtmlElementNames()
+        {
+            return new[] { HtmlElements.Anchor, HtmlElements.Form };
+        }
     }
 }
