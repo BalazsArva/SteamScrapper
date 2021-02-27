@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
 using SteamScrapper.Common.Constants;
 
@@ -82,6 +83,11 @@ namespace SteamScrapper.Common.Utilities.Links
             }
 
             return appId;
+        }
+
+        public static Uri CreateAppUri(int appId)
+        {
+            return new Uri(PageUrlPrefixes.App + appId.ToString(CultureInfo.InvariantCulture), UriKind.Absolute);
         }
     }
 }

@@ -19,7 +19,7 @@ namespace SteamScrapper.Crawler
             await hostBuilder.Build().RunAsync();
         }
 
-        public static async Task<IHostBuilder> CreateHostBuilderAsync(string[] args)
+        private static async Task<IHostBuilder> CreateHostBuilderAsync(string[] args)
         {
             // TODO: Improve these dependencies
             var connectionMultiplexer = await ConnectionMultiplexer.ConnectAsync("host.docker.internal:6379");

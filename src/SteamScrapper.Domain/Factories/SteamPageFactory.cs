@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 using SteamScrapper.Common.Constants;
+using SteamScrapper.Common.Utilities.Links;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
 
@@ -45,6 +46,17 @@ namespace SteamScrapper.Domain.Factories
             }
 
             return new SteamPage(uri, doc);
+        }
+
+        public async Task<AppPage> CreateAppPageAsync(int appId)
+        {
+            var uri = SteamLinkHelper.CreateAppUri(appId);
+            var html = await steamService.GetPageHtmlAsync(uri);
+            var doc = new HtmlDocument();
+
+            doc.LoadHtml(html);
+
+            return new AppPage(uri, doc);
         }
     }
 }
