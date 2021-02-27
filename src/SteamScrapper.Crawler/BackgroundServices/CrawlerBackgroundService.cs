@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,6 +55,8 @@ namespace SteamScrapper.Crawler.BackgroundServices
             // TODO: Move the guts to a handler that executes a single iteration. This makes testing easier.
             while (!stoppingToken.IsCancellationRequested)
             {
+                var stopwatch = Stopwatch.StartNew();
+
                 utcNow = DateTime.UtcNow;
                 redisKeyDateStamp = utcNow.ToString("yyyyMMdd");
 
@@ -73,11 +76,14 @@ namespace SteamScrapper.Crawler.BackgroundServices
                 var unknownBundles = await RegisterFoundBundlesAsync(steamPage, notYetExploredLinks);
                 var unknownSubs = await RegisterFoundSubsAsync(steamPage, notYetExploredLinks);
 
+                stopwatch.Stop();
+
                 logger.LogInformation(
-                    "Processed URL '{@Url}'. Found {@NotExploredAppCount} not explored apps, {@NotKnownAppCount} not known apps, " +
+                    "Processed URL '{@Url}'. Elapsed millis: {@ElapsedMillis}, Found {@NotExploredAppCount} not explored apps, {@NotKnownAppCount} not known apps, " +
                     "{@NotExploredSubCount} not explored subs, {@NotKnownSubCount} not known subs and " +
                     "{@NotExploredBundleCount} not explored bundles, {@NotKnownBundleCount} not known bundles.",
                     addressToProcessUri.AbsoluteUri,
+                    stopwatch.ElapsedMilliseconds,
                     unknownApps.NotYetExploredCount,
                     unknownApps.NotYetKnownCount,
                     unknownSubs.NotYetExploredCount,
