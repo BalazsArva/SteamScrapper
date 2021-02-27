@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using HtmlAgilityPack;
 using SteamScrapper.Common.Constants;
+using SteamScrapper.Common.Extensions;
 using SteamScrapper.Common.Utilities.EqualityComparers;
 using SteamScrapper.Common.Utilities.Links;
 using SteamScrapper.Domain.PageModels.SpecialLinks;
@@ -24,7 +25,7 @@ namespace SteamScrapper.Domain.PageModels
             NormalizedAddress = LinkSanitizer.GetSanitizedLinkWithoutQueryAndFragment(address);
             FriendlyName = ExtractFriendlyName();
 
-            var htmlLinks = PageHtml.DocumentNode.Descendants(LinkHtmlTagName).ToList();
+            var htmlLinks = PageHtml.FastEnumerateDescendants().Where(x => x.Name == LinkHtmlTagName);
             var subLinks = GetLinksForSubs(PageHtml).ToList();
 
             NormalizedLinks = htmlLinks
