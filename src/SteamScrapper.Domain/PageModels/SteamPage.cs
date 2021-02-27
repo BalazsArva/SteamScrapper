@@ -23,8 +23,10 @@ namespace SteamScrapper.Domain.PageModels
             NormalizedAddress = LinkSanitizer.GetSanitizedLinkWithoutQueryAndFragment(address);
             FriendlyName = ExtractFriendlyName();
 
-            var htmlLinks = PageHtml.FastEnumerateDescendants().Where(x => x.Name == HtmlElements.Anchor);
-            var subLinks = GetLinksForSubs(PageHtml).ToList();
+            var requiredHtmlElements = PageHtml.GetDescendantsByNames(HtmlElements.Anchor, HtmlElements.Form);
+
+            var htmlLinks = requiredHtmlElements[HtmlElements.Anchor];
+            var subLinks = GetLinksForSubs(requiredHtmlElements[HtmlElements.Form]);
 
             NormalizedLinks = htmlLinks
                 .Select(x => x.GetAttributeValue(HtmlAttributes.Href, null))
@@ -72,11 +74,9 @@ namespace SteamScrapper.Domain.PageModels
 
         public IEnumerable<SubLink> SubLinks { get; }
 
-        private static IEnumerable<SubLink> GetLinksForSubs(HtmlDocument pageHtml)
+        private static List<SubLink> GetLinksForSubs(IEnumerable<HtmlNode> formNodes)
         {
-            var addToCartForms = pageHtml
-                .FastEnumerateDescendants()
-                .Where(x => x.Name == HtmlElements.Form)
+            var addToCartForms = formNodes
                 .Where(form =>
                 {
                     var formAction = form.GetAttributeValue(HtmlAttributes.Action, string.Empty).Trim().TrimEnd('/').ToLower();
@@ -93,7 +93,7 @@ namespace SteamScrapper.Domain.PageModels
             {
                 var form = addToCartForms[i];
                 var subId = form
-                    .Descendants(HtmlElements.Input)
+                    .GetDescendantsByNames(HtmlElements.Input)[HtmlElements.Input]
                     .Where(input =>
                     {
                         var inputType = input.GetAttributeValue(HtmlAttributes.Type, string.Empty).Trim().ToLower();
