@@ -1,3 +1,5 @@
+USE [SteamScrapper]
+GO
 SELECT
 	SUM([All].[AppCount]) AS [AppCount],
 	SUM([All].[SubCount]) AS [SubCount],
