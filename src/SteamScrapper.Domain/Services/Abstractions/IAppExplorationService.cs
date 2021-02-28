@@ -9,8 +9,6 @@ namespace SteamScrapper.Domain.Services.Abstractions
     {
         Task<IEnumerable<int>> GetNextAppIdsAsync(DateTime executionDate);
 
-        Task UpdateAppsAsync(Dictionary<int, string> idsWithTitles);
-
         Task UpdateAppsAsync(IEnumerable<AppData> appData);
     }
 }

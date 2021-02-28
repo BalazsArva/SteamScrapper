@@ -111,7 +111,7 @@ namespace SteamScrapper.Infrastructure.Services
 
             foreach (var app in appData)
             {
-                commandTexts.Add(IncludeUpdateAppTitle(sqlCommand, app));
+                commandTexts.Add(IncludeUpdateAppDetails(sqlCommand, app));
             }
 
             var completeCommandText = string.Join('\n', commandTexts);
@@ -121,35 +121,7 @@ namespace SteamScrapper.Infrastructure.Services
             await sqlCommand.ExecuteNonQueryAsync();
         }
 
-        public async Task UpdateAppsAsync(Dictionary<int, string> idsWithTitles)
-        {
-            if (idsWithTitles is null)
-            {
-                throw new ArgumentNullException(nameof(idsWithTitles));
-            }
-
-            if (idsWithTitles.Count == 0)
-            {
-                return;
-            }
-
-            using var sqlCommand = await CreateSqlCommandAsync();
-
-            var commandTexts = new List<string>(idsWithTitles.Count);
-
-            foreach (var (appId, appTitle) in idsWithTitles)
-            {
-                commandTexts.Add(IncludeUpdateAppTitle(sqlCommand, appId, appTitle));
-            }
-
-            var completeCommandText = string.Join('\n', commandTexts);
-
-            sqlCommand.CommandText = completeCommandText;
-
-            await sqlCommand.ExecuteNonQueryAsync();
-        }
-
-        private static string IncludeUpdateAppTitle(SqlCommand command, AppData appData)
+        private static string IncludeUpdateAppDetails(SqlCommand command, AppData appData)
         {
             var appId = appData.AppId;
 
@@ -165,17 +137,6 @@ namespace SteamScrapper.Infrastructure.Services
                 $"UPDATE [dbo].[Apps] " +
                 $"SET [Title] = @{titleParameterName}, [BannerUrl] = @{bannerUrlParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() " +
                 $"WHERE [Id] = @{idParameterName}";
-        }
-
-        private static string IncludeUpdateAppTitle(SqlCommand command, int appId, string title)
-        {
-            var idParameterName = $"appId_{appId}";
-            var titleParameterName = $"appTitle_{appId}";
-
-            command.Parameters.AddWithValue(idParameterName, appId);
-            command.Parameters.AddWithValue(titleParameterName, title);
-
-            return $"UPDATE [dbo].[Apps] SET [Title] = @{titleParameterName} WHERE [Id] = @{idParameterName}";
         }
 
         private async Task<SqlCommand> CreateSqlCommandAsync()
