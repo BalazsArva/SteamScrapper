@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -10,6 +11,7 @@ using SteamScrapper.Common.Extensions;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
+using SteamScrapper.Domain.Services.Contracts;
 
 namespace SteamScrapper.AppExplorer.BackgroundServices
 {
@@ -79,9 +81,9 @@ namespace SteamScrapper.AppExplorer.BackgroundServices
 
             var appPages = await Task.WhenAll(fetchAppTasks);
 
-            var idsWithTitles = appPages.ToDictionary(x => x.AppId, x => x.FriendlyName);
+            var appData = appPages.Select(x => new AppData(x.AppId, x.FriendlyName, null)).ToList();
 
-            await appExplorationService.UpdateAppsAsync(idsWithTitles);
+            await appExplorationService.UpdateAppsAsync(appData);
         }
     }
 }

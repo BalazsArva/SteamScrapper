@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using SteamScrapper.Domain.Services.Contracts;
 
 namespace SteamScrapper.Domain.Services.Abstractions
 {
@@ -9,5 +10,7 @@ namespace SteamScrapper.Domain.Services.Abstractions
         Task<IEnumerable<int>> GetNextAppIdsAsync(DateTime executionDate);
 
         Task UpdateAppsAsync(Dictionary<int, string> idsWithTitles);
+
+        Task UpdateAppsAsync(IEnumerable<AppData> appData);
     }
 }
