@@ -38,14 +38,13 @@ namespace SteamScrapper.Infrastructure.Services
             {
                 using var sqlCommand = await CreateSqlCommandAsync();
 
-                // TODO: Consider starting with the latest items (i.e. iterate backwards). Old items are less likely to change (e.g. price), and it's also important to fetch the facts about newly discovered stuff as soon as possible.
                 // TODO: Add indexes for date filtering
                 sqlCommand.Parameters.AddWithValue("offset", attempt * batchSize);
                 sqlCommand.Parameters.AddWithValue("batch_size", batchSize);
                 sqlCommand.CommandText =
                     "SELECT [Id] FROM [SteamScrapper].[dbo].[Apps] " +
                     "WHERE [UtcDateTimeLastModified] < CONVERT(date, SYSUTCDATETIME()) " +
-                    "ORDER BY [ID] ASC " +
+                    "ORDER BY [ID] DESC " +
                     "OFFSET @offset ROWS " +
                     "FETCH NEXT @batch_size ROWS ONLY";
 
