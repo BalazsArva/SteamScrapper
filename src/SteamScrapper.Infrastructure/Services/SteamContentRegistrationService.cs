@@ -117,7 +117,10 @@ namespace SteamScrapper.Infrastructure.Services
 
             command.Parameters.AddWithValue(parameterName, appId);
 
-            return $"IF NOT EXISTS (SELECT 1 FROM [dbo].[Apps] AS [A] WHERE [A].[Id] = @{parameterName}) INSERT INTO [dbo].[Apps] ([Id], [Title], [UtcDateTimeRecorded]) VALUES (@{parameterName}, N'Unknown App', SYSUTCDATETIME())";
+            return
+                $"IF NOT EXISTS (SELECT 1 FROM [dbo].[Apps] AS [A] WHERE [A].[Id] = @{parameterName}) " +
+                $"INSERT INTO [dbo].[Apps] ([Id], [Title], [BannerUrl], [UtcDateTimeRecorded], [UtcDateTimeLastModified]) " +
+                $"VALUES (@{parameterName}, N'Unknown App', NULL, SYSUTCDATETIME(), '2000-01-01T00:00:00')";
         }
 
         private static string IncludeInsertUnknownSub(SqlCommand command, int subId)
@@ -126,7 +129,10 @@ namespace SteamScrapper.Infrastructure.Services
 
             command.Parameters.AddWithValue(parameterName, subId);
 
-            return $"IF NOT EXISTS (SELECT 1 FROM [dbo].[Subs] AS [S] WHERE [S].[Id] = @{parameterName}) INSERT INTO [dbo].[Subs] ([Id], [Title], [UtcDateTimeRecorded]) VALUES (@{parameterName}, N'Unknown sub', SYSUTCDATETIME())";
+            return
+                $"IF NOT EXISTS (SELECT 1 FROM [dbo].[Subs] AS [S] WHERE [S].[Id] = @{parameterName}) " +
+                $"INSERT INTO [dbo].[Subs] ([Id], [Title], [UtcDateTimeRecorded], [UtcDateTimeLastModified]) " +
+                $"VALUES (@{parameterName}, N'Unknown sub', SYSUTCDATETIME(), '2000-01-01T00:00:00')";
         }
 
         private static string IncludeInsertUnknownBundle(SqlCommand command, int bundleId)
@@ -135,7 +141,10 @@ namespace SteamScrapper.Infrastructure.Services
 
             command.Parameters.AddWithValue(parameterName, bundleId);
 
-            return $"IF NOT EXISTS (SELECT 1 FROM [dbo].[Bundles] AS [B] WHERE [B].[Id] = @{parameterName}) INSERT INTO [dbo].[Bundles] ([Id], [Title], [UtcDateTimeRecorded]) VALUES (@{parameterName}, N'Unknown bundle', SYSUTCDATETIME())";
+            return
+                $"IF NOT EXISTS (SELECT 1 FROM [dbo].[Bundles] AS [B] WHERE [B].[Id] = @{parameterName}) " +
+                $"INSERT INTO [dbo].[Bundles] ([Id], [Title], [BannerUrl], [UtcDateTimeRecorded], [UtcDateTimeLastModified]) " +
+                $"VALUES (@{parameterName}, N'Unknown bundle', NULL, SYSUTCDATETIME(), '2000-01-01T00:00:00')";
         }
     }
 }
