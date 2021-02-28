@@ -33,6 +33,7 @@ namespace SteamScrapper.Crawler
                     services.AddSingleton<ISteamContentRegistrationService, SteamContentRegistrationService>();
                     services.AddSingleton<ISteamService, SteamService>();
                     services.AddSingleton<ICrawlerAddressRegistrationService, CrawlerAddressRegistrationService>();
+                    services.AddSingleton<ICrawlerPrefetchService, CrawlerPrefetchService>();
 
                     services.AddSingleton<IConnectionMultiplexer>(connectionMultiplexer);
                     services.AddSingleton(sqlConnection);

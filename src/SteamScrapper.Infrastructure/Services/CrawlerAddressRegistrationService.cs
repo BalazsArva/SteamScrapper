@@ -271,7 +271,7 @@ namespace SteamScrapper.Infrastructure.Services
 
             if (absoluteUri.StartsWith(PageUrlPrefixes.Publisher) || absoluteUri.StartsWith(PageUrlPrefixes.Developer))
             {
-                if (uri.Segments.DefaultIfEmpty(string.Empty).Last() == "/about")
+                if (uri.Segments.DefaultIfEmpty(string.Empty).Last().Trim('/') == "about")
                 {
                     return false;
                 }

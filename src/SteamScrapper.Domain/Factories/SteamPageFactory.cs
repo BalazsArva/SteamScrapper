@@ -17,13 +17,22 @@ namespace SteamScrapper.Domain.Factories
             this.steamService = steamService ?? throw new ArgumentNullException(nameof(steamService));
         }
 
-        public async Task<SteamPage> CreateSteamPageAsync(Uri uri)
+        public async Task<SteamPage> CreateSteamPageAsync(Uri uri, string pageHtml)
         {
+            if (uri is null)
+            {
+                throw new ArgumentNullException(nameof(uri));
+            }
+
+            if (string.IsNullOrWhiteSpace(pageHtml))
+            {
+                throw new ArgumentException($"The parameter '{nameof(pageHtml)}' cannot be null, empty or whitespace-only.", nameof(pageHtml));
+            }
+
             var absoluteUri = uri.AbsoluteUri;
-            var html = await steamService.GetPageHtmlAsync(uri);
             var doc = new HtmlDocument();
 
-            doc.LoadHtml(html);
+            doc.LoadHtml(pageHtml);
 
             if (string.Equals(PageUrls.DeveloperList, absoluteUri, StringComparison.OrdinalIgnoreCase))
             {
@@ -46,6 +55,18 @@ namespace SteamScrapper.Domain.Factories
             }
 
             return new SteamPage(uri, doc);
+        }
+
+        public async Task<SteamPage> CreateSteamPageAsync(Uri uri)
+        {
+            if (uri is null)
+            {
+                throw new ArgumentNullException(nameof(uri));
+            }
+
+            var pageHtml = await steamService.GetPageHtmlAsync(uri);
+
+            return await CreateSteamPageAsync(uri, pageHtml);
         }
 
         public async Task<AppPage> CreateAppPageAsync(int appId)

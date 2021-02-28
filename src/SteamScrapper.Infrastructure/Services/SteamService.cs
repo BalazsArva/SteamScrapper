@@ -11,8 +11,9 @@ namespace SteamScrapper.Infrastructure.Services
     public class SteamService : ISteamService
     {
         public const string baseAddress = "https://store.steampowered.com/";
-        public const int WebRequestRetryLimit = 10;
-        public const int WebRequestRetryDelayMillis = 1000;
+        public const int WebRequestRetryLimit = 15;
+        public const int WebRequestRetryDelayInitialMillis = 1000;
+        public const int WebRequestRetryDelayIncrementMillis = 250;
 
         private readonly HttpClient client;
 
@@ -35,6 +36,7 @@ namespace SteamScrapper.Infrastructure.Services
             }
 
             var capturedExceptions = new List<Exception>(WebRequestRetryLimit);
+            var delay = WebRequestRetryDelayInitialMillis;
 
             for (var i = 0; i < WebRequestRetryLimit; ++i)
             {
@@ -48,7 +50,9 @@ namespace SteamScrapper.Infrastructure.Services
 
                     if (i < WebRequestRetryLimit - 1)
                     {
-                        await Task.Delay(WebRequestRetryDelayMillis);
+                        await Task.Delay(delay);
+
+                        delay += WebRequestRetryDelayIncrementMillis;
                     }
                 }
             }
@@ -81,7 +85,7 @@ namespace SteamScrapper.Infrastructure.Services
 
                     if (i < WebRequestRetryLimit - 1)
                     {
-                        await Task.Delay(WebRequestRetryDelayMillis);
+                        await Task.Delay(WebRequestRetryDelayInitialMillis);
                     }
                 }
             }
