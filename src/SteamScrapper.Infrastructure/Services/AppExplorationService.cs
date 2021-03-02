@@ -38,7 +38,6 @@ namespace SteamScrapper.Infrastructure.Services
             {
                 using var sqlCommand = await CreateSqlCommandAsync();
 
-                // TODO: Add indexes for date filtering
                 sqlCommand.Parameters.AddWithValue("offset", attempt * batchSize);
                 sqlCommand.Parameters.AddWithValue("batch_size", batchSize);
                 sqlCommand.CommandText =
