@@ -44,7 +44,7 @@ namespace SteamScrapper.AppExplorer.BackgroundServices
 
                 utcNow = DateTime.UtcNow;
 
-                var appIdsToExplore = await appExplorationService.GetNextAppIdsAsync(utcNow);
+                var appIdsToExplore = await appExplorationService.GetNextAppIdsForExplorationAsync(utcNow);
                 if (!appIdsToExplore.Any())
                 {
                     // TODO: Restart the next day.

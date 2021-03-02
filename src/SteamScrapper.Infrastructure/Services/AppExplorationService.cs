@@ -28,14 +28,21 @@ namespace SteamScrapper.Infrastructure.Services
             this.sqlConnection = sqlConnection ?? throw new ArgumentNullException(nameof(sqlConnection));
         }
 
-        public async Task<IEnumerable<int>> GetNextAppIdsAsync(DateTime executionDate)
+        public async Task<IEnumerable<int>> GetNextAppIdsForExplorationAsync(DateTime executionDate)
         {
             const int batchSize = 50;
 
             var attempt = 0;
+            var appIds = new List<int>(batchSize);
+            var results = new List<int>(batchSize);
 
+            // Read appIds form the DB that are not explored today and try to acquire reservation against concurrent processing.
+            // If nothing is retrieved from the DB, then we are done for today.
             while (true)
             {
+                appIds.Clear();
+                results.Clear();
+
                 using var sqlCommand = await CreateSqlCommandAsync();
 
                 sqlCommand.Parameters.AddWithValue("offset", attempt * batchSize);
@@ -48,8 +55,6 @@ namespace SteamScrapper.Infrastructure.Services
                     "FETCH NEXT @batch_size ROWS ONLY";
 
                 using var sqlDataReader = await sqlCommand.ExecuteReaderAsync();
-
-                var appIds = new List<int>(batchSize);
                 while (await sqlDataReader.ReadAsync())
                 {
                     appIds.Add(sqlDataReader.GetInt32(0));
@@ -57,28 +62,28 @@ namespace SteamScrapper.Infrastructure.Services
 
                 if (appIds.Count == 0)
                 {
+                    // Could not find anything in the database waiting for exploration today.
                     return Array.Empty<int>();
                 }
 
-                var redisTransaction = redisDatabase.CreateTransaction();
-                var reservationTasks = new Dictionary<int, Task<bool>>(appIds.Count);
+                var reservationTransaction = redisDatabase.CreateTransaction();
+                var reservationTasks = new Dictionary<int, Task<bool>>(batchSize);
 
                 for (var i = 0; i < appIds.Count; ++i)
                 {
                     var appId = appIds[i];
                     var redisKey = $"AppExplorer:{executionDate:yyyyMMdd}:{appId}";
 
-                    reservationTasks[appId] = redisTransaction.StringSetAsync(redisKey, "-", TimeSpan.FromMinutes(1), When.NotExists);
+                    reservationTasks[appId] = reservationTransaction.StringSetAsync(redisKey, string.Empty, TimeSpan.FromMinutes(1), When.NotExists);
                 }
 
-                await redisTransaction.ExecuteAsync();
+                await reservationTransaction.ExecuteAsync();
 
-                var results = new List<int>(appIds.Count);
-
-                foreach (var (appId, couldReserveTask) in reservationTasks)
+                foreach (var (appId, reserveAppIdTask) in reservationTasks)
                 {
-                    if (await couldReserveTask)
+                    if (await reserveAppIdTask)
                     {
+                        // Could reserve appId for processing - i.e. no other instance is trying to process this item concurrently.
                         results.Add(appId);
                     }
                 }
@@ -110,7 +115,7 @@ namespace SteamScrapper.Infrastructure.Services
 
             foreach (var app in appData)
             {
-                commandTexts.Add(IncludeUpdateAppDetails(sqlCommand, app));
+                commandTexts.Add(AddAppDetailsToUpdateCommand(sqlCommand, app));
             }
 
             var completeCommandText = string.Join('\n', commandTexts);
@@ -120,7 +125,7 @@ namespace SteamScrapper.Infrastructure.Services
             await sqlCommand.ExecuteNonQueryAsync();
         }
 
-        private static string IncludeUpdateAppDetails(SqlCommand command, AppData appData)
+        private static string AddAppDetailsToUpdateCommand(SqlCommand command, AppData appData)
         {
             var appId = appData.AppId;
 
@@ -132,10 +137,10 @@ namespace SteamScrapper.Infrastructure.Services
             command.Parameters.AddWithValue(titleParameterName, appData.Title);
             command.Parameters.AddWithValue(bannerUrlParameterName, appData.BannerUrl ?? (object)DBNull.Value);
 
-            return
-                $"UPDATE [dbo].[Apps] " +
-                $"SET [Title] = @{titleParameterName}, [BannerUrl] = @{bannerUrlParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() " +
-                $"WHERE [Id] = @{idParameterName}";
+            return string.Concat(
+                $"UPDATE [dbo].[Apps] ",
+                $"SET [Title] = @{titleParameterName}, [BannerUrl] = @{bannerUrlParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() ",
+                $"WHERE [Id] = @{idParameterName}");
         }
 
         private async Task<SqlCommand> CreateSqlCommandAsync()
