@@ -31,6 +31,8 @@ namespace SteamScrapper.Infrastructure.Services
         public async Task<IEnumerable<int>> GetNextAppIdsForExplorationAsync(DateTime executionDate)
         {
             const int batchSize = 50;
+            const string offsetSqlParamName = "offset";
+            const string batchSizeSqlParamName = "batchSize";
 
             var attempt = 0;
             var appIds = new List<int>(batchSize);
@@ -45,14 +47,14 @@ namespace SteamScrapper.Infrastructure.Services
 
                 using var sqlCommand = await CreateSqlCommandAsync();
 
-                sqlCommand.Parameters.AddWithValue("offset", attempt * batchSize);
-                sqlCommand.Parameters.AddWithValue("batch_size", batchSize);
+                sqlCommand.Parameters.AddWithValue(offsetSqlParamName, attempt * batchSize);
+                sqlCommand.Parameters.AddWithValue(batchSizeSqlParamName, batchSize);
                 sqlCommand.CommandText =
-                    "SELECT [Id] FROM [SteamScrapper].[dbo].[Apps] " +
-                    "WHERE [UtcDateTimeLastModified] < CONVERT(date, SYSUTCDATETIME()) " +
-                    "ORDER BY [ID] DESC " +
-                    "OFFSET @offset ROWS " +
-                    "FETCH NEXT @batch_size ROWS ONLY";
+                    $"SELECT [Id] FROM [SteamScrapper].[dbo].[Apps] " +
+                    $"WHERE [UtcDateTimeLastModified] < CONVERT(date, SYSUTCDATETIME()) " +
+                    $"ORDER BY [ID] DESC " +
+                    $"OFFSET @{offsetSqlParamName} ROWS " +
+                    $"FETCH NEXT @{batchSizeSqlParamName} ROWS ONLY";
 
                 using var sqlDataReader = await sqlCommand.ExecuteReaderAsync();
                 while (await sqlDataReader.ReadAsync())
