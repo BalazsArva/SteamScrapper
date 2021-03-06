@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text.RegularExpressions;
-using SteamScrapper.Common.Constants;
+using SteamScrapper.Common.Urls;
 
 namespace SteamScrapper.Common.Utilities.Links
 {

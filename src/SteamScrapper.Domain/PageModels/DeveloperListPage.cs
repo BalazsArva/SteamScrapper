@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
-using SteamScrapper.Common.Constants;
 using SteamScrapper.Common.Extensions;
+using SteamScrapper.Common.Urls;
 using SteamScrapper.Domain.Services.Abstractions;
 
 namespace SteamScrapper.Domain.PageModels

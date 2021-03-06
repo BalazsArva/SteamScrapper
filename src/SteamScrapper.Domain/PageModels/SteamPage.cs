@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using HtmlAgilityPack;
-using SteamScrapper.Common.Constants;
 using SteamScrapper.Common.Extensions;
+using SteamScrapper.Common.Html;
+using SteamScrapper.Common.Urls;
 using SteamScrapper.Common.Utilities.EqualityComparers;
 using SteamScrapper.Common.Utilities.Links;
 using SteamScrapper.Domain.PageModels.SpecialLinks;

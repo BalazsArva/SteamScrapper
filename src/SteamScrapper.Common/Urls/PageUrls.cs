@@ -1,4 +1,4 @@
-﻿namespace SteamScrapper.Common.Constants
+﻿namespace SteamScrapper.Common.Urls
 {
     public static class PageUrls
     {

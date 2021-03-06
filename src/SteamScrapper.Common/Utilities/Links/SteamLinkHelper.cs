@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
-using SteamScrapper.Common.Constants;
+using SteamScrapper.Common.Urls;
 
 namespace SteamScrapper.Common.Utilities.Links
 {
