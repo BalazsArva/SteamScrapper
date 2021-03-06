@@ -22,7 +22,15 @@ namespace SteamScrapper.AppExplorer
         private static async Task<IHostBuilder> CreateHostBuilderAsync(string[] args)
         {
             // TODO: Improve these dependencies
-            var connectionMultiplexer = await ConnectionMultiplexer.ConnectAsync("host.docker.internal:6379");
+            var redisConfigurationOptions = ConfigurationOptions.Parse("host.docker.internal:6379");
+            redisConfigurationOptions.ClientName = "SteamScrapper.AppExplorer";
+            redisConfigurationOptions.ConnectTimeout = 60 * 1000;
+            redisConfigurationOptions.AsyncTimeout = 10 * 1000;
+            redisConfigurationOptions.SyncTimeout = 10 * 1000;
+            redisConfigurationOptions.AbortOnConnectFail = false;
+            redisConfigurationOptions.ConnectRetry = 5;
+
+            var connectionMultiplexer = await ConnectionMultiplexer.ConnectAsync(redisConfigurationOptions);
             var sqlConnection = new SqlConnection("Data Source=(localdb)\\MSSQLLocalDb;Initial Catalog=SteamScrapper;Integrated Security=true");
 
             return Host.CreateDefaultBuilder(args)
