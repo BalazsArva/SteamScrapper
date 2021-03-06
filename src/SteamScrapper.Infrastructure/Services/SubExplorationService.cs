@@ -133,15 +133,13 @@ namespace SteamScrapper.Infrastructure.Services
 
             var idParameterName = $"subId_{subId}";
             var titleParameterName = $"subTitle_{subId}";
-            var bannerUrlParameterName = $"subBanner_{subId}";
 
             command.Parameters.AddWithValue(idParameterName, subId);
             command.Parameters.AddWithValue(titleParameterName, subData.Title);
-            command.Parameters.AddWithValue(bannerUrlParameterName, subData.BannerUrl ?? (object)DBNull.Value);
 
             return string.Concat(
                 $"UPDATE [dbo].[Subs] ",
-                $"SET [Title] = @{titleParameterName}, [BannerUrl] = @{bannerUrlParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() ",
+                $"SET [Title] = @{titleParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() ",
                 $"WHERE [Id] = @{idParameterName}");
         }
 

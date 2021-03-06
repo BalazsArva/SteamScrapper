@@ -10,7 +10,7 @@ using SteamScrapper.Infrastructure.Services;
 
 namespace SteamScrapper.AppExplorer
 {
-    public class Program
+    public static class Program
     {
         public static async Task Main(string[] args)
         {

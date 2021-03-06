@@ -89,5 +89,10 @@ namespace SteamScrapper.Common.Utilities.Links
         {
             return new Uri(PageUrlPrefixes.App + appId.ToString(CultureInfo.InvariantCulture), UriKind.Absolute);
         }
+
+        public static Uri CreateSubUri(int subId)
+        {
+            return new Uri(PageUrlPrefixes.Sub + subId.ToString(CultureInfo.InvariantCulture), UriKind.Absolute);
+        }
     }
 }

@@ -79,5 +79,16 @@ namespace SteamScrapper.Domain.Factories
 
             return new AppPage(uri, doc);
         }
+
+        public async Task<SubPage> CreateSubPageAsync(int subId)
+        {
+            var uri = SteamLinkHelper.CreateSubUri(subId);
+            var html = await steamService.GetPageHtmlAsync(uri);
+            var doc = new HtmlDocument();
+
+            doc.LoadHtml(html);
+
+            return new SubPage(uri, doc);
+        }
     }
 }
