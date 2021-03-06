@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using SteamScrapper.Domain.Services.Abstractions;
 
@@ -16,9 +17,12 @@ namespace SteamScrapper.Infrastructure.Services
         public const int WebRequestRetryDelayIncrementMillis = 250;
 
         private readonly HttpClient client;
+        private readonly ILogger<SteamService> logger;
 
-        public SteamService()
+        public SteamService(ILogger<SteamService> logger)
         {
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
             var cookieContainer = new CookieContainer();
 
             cookieContainer.Add(new Uri(baseAddress), new Cookie("lastagecheckage", "1-0-1980"));
@@ -50,6 +54,8 @@ namespace SteamScrapper.Infrastructure.Services
 
                     if (i < WebRequestRetryLimit - 1)
                     {
+                        logger.LogWarning(e, "An error occurred while trying to download HTML content from address '{@Uri}'.", uri.AbsoluteUri);
+
                         await Task.Delay(delay);
 
                         delay += WebRequestRetryDelayIncrementMillis;
@@ -85,6 +91,8 @@ namespace SteamScrapper.Infrastructure.Services
 
                     if (i < WebRequestRetryLimit - 1)
                     {
+                        logger.LogWarning(e, "An error occurred while trying to download JSON content from address '{@Uri}'.", uri.AbsoluteUri);
+
                         await Task.Delay(WebRequestRetryDelayInitialMillis);
                     }
                 }
