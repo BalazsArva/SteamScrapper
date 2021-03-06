@@ -7,6 +7,7 @@ using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.Services;
 using SteamScrapper.SubExplorer.BackgroundServices;
+using SteamScrapper.SubExplorer.Commands.ProcessSubBatch;
 
 namespace SteamScrapper.SubExplorer
 {
@@ -40,6 +41,8 @@ namespace SteamScrapper.SubExplorer
                     services.AddSingleton<ISteamService, SteamService>();
 
                     services.AddSingleton<ISubExplorationService, SubExplorationService>();
+
+                    services.AddSingleton<IProcessSubBatchCommandHandler, ProcessSubBatchCommandHandler>();
 
                     services.AddSingleton<IConnectionMultiplexer>(connectionMultiplexer);
                     services.AddSingleton(sqlConnection);

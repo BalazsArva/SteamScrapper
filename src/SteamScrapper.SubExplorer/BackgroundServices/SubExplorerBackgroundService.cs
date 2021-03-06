@@ -1,104 +1,65 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SteamScrapper.Common.Extensions;
-using SteamScrapper.Domain.Factories;
-using SteamScrapper.Domain.PageModels;
-using SteamScrapper.Domain.Services.Abstractions;
-using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.SubExplorer.Commands.ProcessSubBatch;
 
 namespace SteamScrapper.SubExplorer.BackgroundServices
 {
     public class SubExplorerBackgroundService : BackgroundService
     {
-        // TODO: Make this configurable.
-        private const int DegreeOfParallelism = 8;
+        private const int DelayMillis = 5000;
 
-        private readonly ISubExplorationService subExplorationService;
-        private readonly ISteamPageFactory steamPageFactory;
-        private readonly ILogger<SubExplorerBackgroundService> logger;
+        private readonly IProcessSubBatchCommandHandler processSubBatchCommandHandler;
+        private readonly ILogger logger;
 
         public SubExplorerBackgroundService(
-            ISubExplorationService subExplorationService,
-            ISteamPageFactory steamPageFactory,
+            IProcessSubBatchCommandHandler processSubBatchCommandHandler,
             ILogger<SubExplorerBackgroundService> logger)
         {
-            this.subExplorationService = subExplorationService ?? throw new ArgumentNullException(nameof(subExplorationService));
-            this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
+            this.processSubBatchCommandHandler = processSubBatchCommandHandler ?? throw new ArgumentNullException(nameof(processSubBatchCommandHandler));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var utcNow = DateTime.UtcNow;
-
-            // TODO: Move the guts to a handler that executes a single iteration. This makes testing easier.
             while (!stoppingToken.IsCancellationRequested)
             {
-                var stopwatch = Stopwatch.StartNew();
+                var shouldDelay = true;
 
-                utcNow = DateTime.UtcNow;
-
-                var subIdsToExplore = await subExplorationService.GetNextSubIdsForExplorationAsync(utcNow);
-                if (!subIdsToExplore.Any())
+                try
                 {
-                    // TODO: Restart the next day.
-                    logger.LogInformation("Could not find more subs to explore.");
-                    break;
+                    var result = await processSubBatchCommandHandler.ProcessSubBatchAsync(stoppingToken);
+
+                    if (result == ProcessSubBatchCommandResult.NoMoreItems)
+                    {
+                        logger.LogInformation("Finished exploring subs.");
+                    }
+                    else if (result == ProcessSubBatchCommandResult.Success)
+                    {
+                        shouldDelay = false;
+                    }
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e, "An unhandled error occurred while processing a batch of subs.");
                 }
 
-                var subIdsSegments = subIdsToExplore.Segmentate(DegreeOfParallelism);
-                foreach (var subIdsSegment in subIdsSegments)
+                if (shouldDelay)
                 {
-                    await ProcessSubIdsAsync(subIdsSegment);
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(DelayMillis), stoppingToken);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        break;
+                    }
                 }
-
-                stopwatch.Stop();
-
-                logger.LogInformation(
-                    "Processed {@SubIdsCount} subs in {@ElapsedMillis} millis.",
-                    subIdsToExplore.Count(),
-                    stopwatch.ElapsedMilliseconds);
             }
 
-            logger.LogInformation("Finished exploring subs.");
-        }
-
-        private async Task ProcessSubIdsAsync(IEnumerable<int> subIds)
-        {
-            var fetchSubTasks = new List<Task<SubPage>>(DegreeOfParallelism);
-
-            foreach (var subId in subIds)
-            {
-                fetchSubTasks.Add(Task.Run(async () => await steamPageFactory.CreateSubPageAsync(subId)));
-            }
-
-            var subPages = await Task.WhenAll(fetchSubTasks);
-            var subData = new List<SubData>(subPages.Length);
-
-            for (var i = 0; i < subPages.Length; ++i)
-            {
-                var subPage = subPages[i];
-                var subId = subPage.SubId;
-                var friendlyName = subPage.FriendlyName;
-
-                if (friendlyName == SubPage.UnknownSubName || friendlyName == SteamPage.UnknownPageTitle)
-                {
-                    logger.LogWarning(
-                        "Could not extract friendly name for sub {@SubId} located at address {@Uri}.",
-                        subId,
-                        subPage.NormalizedAddress.AbsoluteUri);
-                }
-
-                subData.Add(new SubData(subId, friendlyName));
-            }
-
-            await subExplorationService.UpdateSubsAsync(subData);
+            logger.LogInformation("Application shutdown requested. The sub exploration service has been successfully stopped.");
         }
     }
 }
