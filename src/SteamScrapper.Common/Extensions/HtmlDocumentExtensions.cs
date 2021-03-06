@@ -7,6 +7,41 @@ namespace SteamScrapper.Common.Extensions
 {
     public static class HtmlDocumentExtensions
     {
+        private const int ProcessingQueueDefaultCapacity = 1024;
+        private const int ResultListDefaultCapacity = 4096;
+
+        public static IEnumerable<HtmlNode> FilterDescendants(this HtmlDocument htmlDocument, Predicate<HtmlNode> filter)
+        {
+            if (htmlDocument is null)
+            {
+                throw new ArgumentNullException(nameof(htmlDocument));
+            }
+
+            if (filter is null)
+            {
+                throw new ArgumentNullException(nameof(filter));
+            }
+
+            var processingQueue = new Queue<HtmlNode>(ProcessingQueueDefaultCapacity);
+            var result = new List<HtmlNode>(ResultListDefaultCapacity);
+
+            processingQueue.Enqueue(htmlDocument.DocumentNode);
+
+            while (processingQueue.Count != 0)
+            {
+                var itemToProcess = processingQueue.Dequeue();
+
+                if (filter(itemToProcess))
+                {
+                    result.Add(itemToProcess);
+                }
+
+                processingQueue.EnqueueRange(itemToProcess.ChildNodes);
+            }
+
+            return result;
+        }
+
         public static HtmlNode GetDescendantById(this HtmlDocument htmlDocument, string id)
         {
             if (htmlDocument is null)
@@ -19,9 +54,7 @@ namespace SteamScrapper.Common.Extensions
                 throw new ArgumentException($"'{nameof(id)}' cannot be null or whitespace", nameof(id));
             }
 
-            return htmlDocument
-                .FastEnumerateDescendants()
-                .FirstOrDefault(node => string.Equals(node.Id, id, StringComparison.Ordinal));
+            return FilterDescendants(htmlDocument, node => string.Equals(node.Id, id, StringComparison.Ordinal)).FirstOrDefault();
         }
 
         public static IEnumerable<HtmlNode> FastEnumerateDescendants(this HtmlDocument doc)
@@ -31,8 +64,8 @@ namespace SteamScrapper.Common.Extensions
                 throw new ArgumentNullException(nameof(doc));
             }
 
-            var processingQueue = new Queue<HtmlNode>(1024);
-            var result = new List<HtmlNode>(4096);
+            var processingQueue = new Queue<HtmlNode>(ProcessingQueueDefaultCapacity);
+            var result = new List<HtmlNode>(ResultListDefaultCapacity);
 
             processingQueue.Enqueue(doc.DocumentNode);
 
@@ -55,8 +88,8 @@ namespace SteamScrapper.Common.Extensions
                 throw new ArgumentNullException(nameof(doc));
             }
 
-            var processingQueue = new Queue<HtmlNode>(1024);
-            var result = new List<HtmlNode>(4096);
+            var processingQueue = new Queue<HtmlNode>(ProcessingQueueDefaultCapacity);
+            var result = new List<HtmlNode>(ResultListDefaultCapacity);
 
             processingQueue.Enqueue(doc.DocumentNode);
 
