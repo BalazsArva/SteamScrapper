@@ -32,11 +32,7 @@ namespace SteamScrapper.SubExplorer.BackgroundServices
                 {
                     var result = await processSubBatchCommandHandler.ProcessSubBatchAsync(stoppingToken);
 
-                    if (result == ProcessSubBatchCommandResult.NoMoreItems)
-                    {
-                        logger.LogInformation("Finished exploring subs.");
-                    }
-                    else if (result == ProcessSubBatchCommandResult.Success)
+                    if (result == ProcessSubBatchCommandResult.Success)
                     {
                         shouldDelay = false;
                     }
