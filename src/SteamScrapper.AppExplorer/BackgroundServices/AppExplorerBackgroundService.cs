@@ -86,6 +86,7 @@ namespace SteamScrapper.AppExplorer.BackgroundServices
                 var appPage = appPages[i];
                 var appId = appPage.AppId;
                 var friendlyName = appPage.FriendlyName;
+                var bannerUrl = appPage.BannerUrl?.AbsoluteUri;
 
                 if (friendlyName == AppPage.UnknownAppName || friendlyName == SteamPage.UnknownPageTitle)
                 {
@@ -95,7 +96,15 @@ namespace SteamScrapper.AppExplorer.BackgroundServices
                         appPage.NormalizedAddress.AbsoluteUri);
                 }
 
-                appData.Add(new AppData(appId, friendlyName, null));
+                if (string.IsNullOrWhiteSpace(bannerUrl))
+                {
+                    logger.LogWarning(
+                        "Could not extract banner URL for app {@AppId} located at address {@Uri}.",
+                        appId,
+                        bannerUrl);
+                }
+
+                appData.Add(new AppData(appId, friendlyName, bannerUrl));
             }
 
             await appExplorationService.UpdateAppsAsync(appData);

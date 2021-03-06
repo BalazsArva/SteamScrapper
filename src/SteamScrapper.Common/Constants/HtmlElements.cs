@@ -8,5 +8,6 @@
         public const string HeaderLevel1 = "h1";
         public const string HeaderLevel2 = "h2";
         public const string Input = "input";
+        public const string Link = "link";
     }
 }

@@ -13,12 +13,15 @@ namespace SteamScrapper.Domain.PageModels
 
         // TODO: Implement other stuff (price, title extraction, etc.)
         public AppPage(Uri address, HtmlDocument pageHtml)
-            : base(address, pageHtml)
+            : base(address, pageHtml, HtmlElements.Link)
         {
             AppId = SteamLinkHelper.ExtractAppId(address);
+            BannerUrl = ExtractBannerUrl();
         }
 
         public int AppId { get; }
+
+        public Uri BannerUrl { get; }
 
         protected override string ExtractFriendlyName()
         {
@@ -28,6 +31,26 @@ namespace SteamScrapper.Domain.PageModels
                 .FirstOrDefault(x => x.HasAttribute(HtmlAttributes.Class, "apphub_AppName"));
 
             return titleContainer?.InnerText ?? UnknownAppName;
+        }
+
+        private Uri ExtractBannerUrl()
+        {
+            var bannerImageHolderNode = PrefetchedHtmlNodes[HtmlElements.Link]
+                .FirstOrDefault(x =>
+                    x.HasAttribute(HtmlAttributes.Relation, HtmlAttributeValues.ImageSrc) &&
+                    !string.IsNullOrWhiteSpace(x.GetAttributeValue(HtmlAttributes.Href, null)));
+
+            if (bannerImageHolderNode is not null)
+            {
+                var bannerUrl = bannerImageHolderNode.GetAttributeValue(HtmlAttributes.Href, null);
+
+                if (Uri.TryCreate(bannerUrl, UriKind.Absolute, out var result))
+                {
+                    return result;
+                }
+            }
+
+            return null;
         }
     }
 }

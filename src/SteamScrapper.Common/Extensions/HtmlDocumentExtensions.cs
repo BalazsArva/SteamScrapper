@@ -20,9 +20,8 @@ namespace SteamScrapper.Common.Extensions
             }
 
             return htmlDocument
-                .DocumentNode
-                .Descendants()
-                .FirstOrDefault(node => string.Equals(node.Id, id, StringComparison.Ordinal)); ;
+                .FastEnumerateDescendants()
+                .FirstOrDefault(node => string.Equals(node.Id, id, StringComparison.Ordinal));
         }
 
         public static IEnumerable<HtmlNode> FastEnumerateDescendants(this HtmlDocument doc)
@@ -42,6 +41,33 @@ namespace SteamScrapper.Common.Extensions
                 var itemToProcess = processingQueue.Dequeue();
 
                 result.Add(itemToProcess);
+
+                processingQueue.EnqueueRange(itemToProcess.ChildNodes);
+            }
+
+            return result;
+        }
+
+        public static IEnumerable<HtmlNode> FastEnumerateDescendantsByName(this HtmlDocument doc, string nodeName)
+        {
+            if (doc is null)
+            {
+                throw new ArgumentNullException(nameof(doc));
+            }
+
+            var processingQueue = new Queue<HtmlNode>(1024);
+            var result = new List<HtmlNode>(4096);
+
+            processingQueue.Enqueue(doc.DocumentNode);
+
+            while (processingQueue.Count != 0)
+            {
+                var itemToProcess = processingQueue.Dequeue();
+
+                if (itemToProcess.Name == nodeName)
+                {
+                    result.Add(itemToProcess);
+                }
 
                 processingQueue.EnqueueRange(itemToProcess.ChildNodes);
             }
