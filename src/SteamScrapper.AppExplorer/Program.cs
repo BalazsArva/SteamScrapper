@@ -4,6 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using StackExchange.Redis;
 using SteamScrapper.AppExplorer.BackgroundServices;
+using SteamScrapper.AppExplorer.Commands.ProcessAppBatch;
+using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.Services;
@@ -36,10 +38,13 @@ namespace SteamScrapper.AppExplorer
             return Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
                     services.AddSingleton<ISteamService, SteamService>();
 
                     services.AddSingleton<IAppExplorationService, AppExplorationService>();
+
+                    services.AddSingleton<IProcessAppBatchCommandHandler, ProcessAppBatchCommandHandler>();
 
                     services.AddSingleton<IConnectionMultiplexer>(connectionMultiplexer);
                     services.AddSingleton(sqlConnection);

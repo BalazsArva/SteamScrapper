@@ -1,113 +1,61 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SteamScrapper.Common.Extensions;
-using SteamScrapper.Domain.Factories;
-using SteamScrapper.Domain.PageModels;
-using SteamScrapper.Domain.Services.Abstractions;
-using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.AppExplorer.Commands.ProcessAppBatch;
 
 namespace SteamScrapper.AppExplorer.BackgroundServices
 {
     public class ProcessAppsBackgroundService : BackgroundService
     {
-        // TODO: Make this configurable.
-        private const int DegreeOfParallelism = 8;
+        private const int DelayMillis = 5000;
 
-        private readonly IAppExplorationService appExplorationService;
-        private readonly ISteamPageFactory steamPageFactory;
+        private readonly IProcessAppBatchCommandHandler processAppBatchCommandHandler;
         private readonly ILogger<ProcessAppsBackgroundService> logger;
 
         public ProcessAppsBackgroundService(
-            IAppExplorationService appExplorationService,
-            ISteamPageFactory steamPageFactory,
+            IProcessAppBatchCommandHandler processAppBatchCommandHandler,
             ILogger<ProcessAppsBackgroundService> logger)
         {
-            this.appExplorationService = appExplorationService ?? throw new ArgumentNullException(nameof(appExplorationService));
-            this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
+            this.processAppBatchCommandHandler = processAppBatchCommandHandler ?? throw new ArgumentNullException(nameof(processAppBatchCommandHandler));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var utcNow = DateTime.UtcNow;
-
-            // TODO: Move the guts to a handler that executes a single iteration. This makes testing easier.
             while (!stoppingToken.IsCancellationRequested)
             {
-                var stopwatch = Stopwatch.StartNew();
+                var shouldDelay = true;
 
-                utcNow = DateTime.UtcNow;
-
-                var appIdsToExplore = await appExplorationService.GetNextAppIdsForExplorationAsync(utcNow);
-                if (!appIdsToExplore.Any())
+                try
                 {
-                    // TODO: Restart the next day.
-                    logger.LogInformation("Could not find more apps to explore.");
-                    break;
+                    var result = await processAppBatchCommandHandler.ProcessAppBatchAsync(stoppingToken);
+
+                    if (result == ProcessAppBatchCommandResult.Success)
+                    {
+                        shouldDelay = false;
+                    }
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e, "An unhandled error occurred while processing a batch of subs.");
                 }
 
-                var appIdsSegments = appIdsToExplore.Segmentate(DegreeOfParallelism);
-                foreach (var appIdsSegment in appIdsSegments)
+                if (shouldDelay)
                 {
-                    await ProcessAppIdsAsync(appIdsSegment);
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(DelayMillis), stoppingToken);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        break;
+                    }
                 }
-
-                stopwatch.Stop();
-
-                logger.LogInformation(
-                    "Processed {@AppIdsCount} apps in {@ElapsedMillis} millis.",
-                    appIdsToExplore.Count(),
-                    stopwatch.ElapsedMilliseconds);
             }
 
-            logger.LogInformation("Finished exploring apps.");
-        }
-
-        private async Task ProcessAppIdsAsync(IEnumerable<int> appIds)
-        {
-            var fetchAppTasks = new List<Task<AppPage>>(DegreeOfParallelism);
-
-            foreach (var appId in appIds)
-            {
-                fetchAppTasks.Add(Task.Run(async () => await steamPageFactory.CreateAppPageAsync(appId)));
-            }
-
-            var appPages = await Task.WhenAll(fetchAppTasks);
-            var appData = new List<AppData>(appPages.Length);
-
-            for (var i = 0; i < appPages.Length; ++i)
-            {
-                var appPage = appPages[i];
-                var appId = appPage.AppId;
-                var friendlyName = appPage.FriendlyName;
-                var bannerUrl = appPage.BannerUrl?.AbsoluteUri;
-
-                if (friendlyName == AppPage.UnknownAppName || friendlyName == SteamPage.UnknownPageTitle)
-                {
-                    logger.LogWarning(
-                        "Could not extract friendly name for app {@AppId} located at address {@Uri}.",
-                        appId,
-                        appPage.NormalizedAddress.AbsoluteUri);
-                }
-
-                if (string.IsNullOrWhiteSpace(bannerUrl))
-                {
-                    logger.LogWarning(
-                        "Could not extract banner URL for app {@AppId} located at address {@Uri}.",
-                        appId,
-                        bannerUrl);
-                }
-
-                appData.Add(new AppData(appId, friendlyName, bannerUrl));
-            }
-
-            await appExplorationService.UpdateAppsAsync(appData);
+            logger.LogInformation("Application shutdown requested. The sub exploration service has been successfully stopped.");
         }
     }
 }
