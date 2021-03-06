@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using HtmlAgilityPack;
+using SteamScrapper.Common.Html;
 
 namespace SteamScrapper.Common.Extensions
 {
@@ -10,6 +11,29 @@ namespace SteamScrapper.Common.Extensions
         public static bool HasAttribute(this HtmlNode htmlNode, string attributeName, string attributeValue)
         {
             return htmlNode.Attributes.Any(x => x.Name == attributeName && x.Value == attributeValue);
+        }
+
+        public static bool HasAttribute(this HtmlNode htmlNode, string attributeName, HtmlAttributeValueTypes attributeValueType = HtmlAttributeValueTypes.None)
+        {
+            return htmlNode.Attributes.Any(x =>
+            {
+                if (x.Name != attributeName)
+                {
+                    return false;
+                }
+
+                if ((attributeValueType & HtmlAttributeValueTypes.NotEmpty) != 0 && string.IsNullOrWhiteSpace(x.Value))
+                {
+                    return false;
+                }
+
+                if ((attributeValueType & HtmlAttributeValueTypes.AbsoluteUri) != 0 && !Uri.TryCreate(x.Value, UriKind.Absolute, out var _))
+                {
+                    return false;
+                }
+
+                return true;
+            });
         }
 
         public static Dictionary<string, IEnumerable<HtmlNode>> GetDescendantsByNames(this HtmlNode htmlNode, params string[] elementNames)
