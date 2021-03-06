@@ -15,10 +15,10 @@ namespace SteamScrapper.AppExplorer.BackgroundServices
         private readonly ILogger<ProcessAppsBackgroundService> logger;
 
         public ProcessAppsBackgroundService(
-            IProcessAppBatchCommandHandler processAppBatchCommandHandler,
+            IProcessAppBatchCommandHandler handler,
             ILogger<ProcessAppsBackgroundService> logger)
         {
-            this.processAppBatchCommandHandler = processAppBatchCommandHandler ?? throw new ArgumentNullException(nameof(processAppBatchCommandHandler));
+            this.processAppBatchCommandHandler = handler ?? throw new ArgumentNullException(nameof(handler));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 

@@ -15,10 +15,10 @@ namespace SteamScrapper.SubExplorer.BackgroundServices
         private readonly ILogger logger;
 
         public ProcessSubsBackgroundService(
-            IProcessSubBatchCommandHandler processSubBatchCommandHandler,
+            IProcessSubBatchCommandHandler handler,
             ILogger<ProcessSubsBackgroundService> logger)
         {
-            this.processSubBatchCommandHandler = processSubBatchCommandHandler ?? throw new ArgumentNullException(nameof(processSubBatchCommandHandler));
+            this.processSubBatchCommandHandler = handler ?? throw new ArgumentNullException(nameof(handler));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
