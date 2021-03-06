@@ -39,7 +39,7 @@ namespace SteamScrapper.AppExplorer.BackgroundServices
                 }
                 catch (Exception e)
                 {
-                    logger.LogError(e, "An unhandled error occurred while processing a batch of subs.");
+                    logger.LogError(e, "An unhandled error occurred while processing a batch of apps.");
                 }
 
                 if (shouldDelay)
@@ -55,7 +55,7 @@ namespace SteamScrapper.AppExplorer.BackgroundServices
                 }
             }
 
-            logger.LogInformation("Application shutdown requested. The sub exploration service has been successfully stopped.");
+            logger.LogInformation("Application shutdown requested. The app exploration service has been successfully stopped.");
         }
     }
 }
