@@ -79,8 +79,24 @@ namespace SteamScrapper.SubExplorer.BackgroundServices
             }
 
             var subPages = await Task.WhenAll(fetchSubTasks);
+            var subData = new List<SubData>(subPages.Length);
 
-            var subData = subPages.Select(x => new SubData(x.SubId, x.FriendlyName)).ToList();
+            for (var i = 0; i < subPages.Length; ++i)
+            {
+                var subPage = subPages[i];
+                var subId = subPage.SubId;
+                var friendlyName = subPage.FriendlyName;
+
+                if (friendlyName == SubPage.UnknownSubName || friendlyName == SteamPage.UnknownPageTitle)
+                {
+                    logger.LogWarning(
+                        "Could not extract friendly name for sub {@SubId} located at address {@Uri}.",
+                        subId,
+                        subPage.NormalizedAddress.AbsoluteUri);
+                }
+
+                subData.Add(new SubData(subId, friendlyName));
+            }
 
             await subExplorationService.UpdateSubsAsync(subData);
         }
