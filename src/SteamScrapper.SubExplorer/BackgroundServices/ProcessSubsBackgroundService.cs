@@ -7,16 +7,16 @@ using SteamScrapper.SubExplorer.Commands.ProcessSubBatch;
 
 namespace SteamScrapper.SubExplorer.BackgroundServices
 {
-    public class SubExplorerBackgroundService : BackgroundService
+    public class ProcessSubsBackgroundService : BackgroundService
     {
         private const int DelayMillis = 5000;
 
         private readonly IProcessSubBatchCommandHandler processSubBatchCommandHandler;
         private readonly ILogger logger;
 
-        public SubExplorerBackgroundService(
+        public ProcessSubsBackgroundService(
             IProcessSubBatchCommandHandler processSubBatchCommandHandler,
-            ILogger<SubExplorerBackgroundService> logger)
+            ILogger<ProcessSubsBackgroundService> logger)
         {
             this.processSubBatchCommandHandler = processSubBatchCommandHandler ?? throw new ArgumentNullException(nameof(processSubBatchCommandHandler));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));

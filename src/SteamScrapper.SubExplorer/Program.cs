@@ -49,7 +49,7 @@ namespace SteamScrapper.SubExplorer
                     services.AddSingleton<IConnectionMultiplexer>(connectionMultiplexer);
                     services.AddSingleton(sqlConnection);
 
-                    services.AddHostedService<SubExplorerBackgroundService>();
+                    services.AddHostedService<ProcessSubsBackgroundService>();
                 });
         }
     }
