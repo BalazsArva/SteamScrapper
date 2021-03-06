@@ -14,19 +14,19 @@ using SteamScrapper.Domain.Services.Contracts;
 
 namespace SteamScrapper.AppExplorer.BackgroundServices
 {
-    public class AppExplorerBackgroundService : BackgroundService
+    public class ProcessAppsBackgroundService : BackgroundService
     {
         // TODO: Make this configurable.
         private const int DegreeOfParallelism = 8;
 
         private readonly IAppExplorationService appExplorationService;
         private readonly ISteamPageFactory steamPageFactory;
-        private readonly ILogger<AppExplorerBackgroundService> logger;
+        private readonly ILogger<ProcessAppsBackgroundService> logger;
 
-        public AppExplorerBackgroundService(
+        public ProcessAppsBackgroundService(
             IAppExplorationService appExplorationService,
             ISteamPageFactory steamPageFactory,
-            ILogger<AppExplorerBackgroundService> logger)
+            ILogger<ProcessAppsBackgroundService> logger)
         {
             this.appExplorationService = appExplorationService ?? throw new ArgumentNullException(nameof(appExplorationService));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));

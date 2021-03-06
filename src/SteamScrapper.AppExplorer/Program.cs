@@ -44,7 +44,7 @@ namespace SteamScrapper.AppExplorer
                     services.AddSingleton<IConnectionMultiplexer>(connectionMultiplexer);
                     services.AddSingleton(sqlConnection);
 
-                    services.AddHostedService<AppExplorerBackgroundService>();
+                    services.AddHostedService<ProcessAppsBackgroundService>();
                 });
         }
     }
