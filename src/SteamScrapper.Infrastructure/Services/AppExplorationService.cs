@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using StackExchange.Redis;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.Infrastructure.Redis;
 
 namespace SteamScrapper.Infrastructure.Services
 {
@@ -15,14 +16,14 @@ namespace SteamScrapper.Infrastructure.Services
         private readonly SqlConnection sqlConnection;
         private readonly IDatabase redisDatabase;
 
-        public AppExplorationService(IConnectionMultiplexer connectionMultiplexer, SqlConnection sqlConnection)
+        public AppExplorationService(IRedisConnectionWrapper redisConnectionWrapper, SqlConnection sqlConnection)
         {
-            if (connectionMultiplexer is null)
+            if (redisConnectionWrapper is null)
             {
-                throw new ArgumentNullException(nameof(connectionMultiplexer));
+                throw new ArgumentNullException(nameof(redisConnectionWrapper));
             }
 
-            redisDatabase = connectionMultiplexer.GetDatabase();
+            redisDatabase = redisConnectionWrapper.ConnectionMultiplexer.GetDatabase();
 
             // TODO: Swap to a data access abstraction
             this.sqlConnection = sqlConnection ?? throw new ArgumentNullException(nameof(sqlConnection));

@@ -9,6 +9,7 @@ using SteamScrapper.Common.Constants;
 using SteamScrapper.Common.DataStructures;
 using SteamScrapper.Common.Utilities.Links;
 using SteamScrapper.Domain.Services.Abstractions;
+using SteamScrapper.Infrastructure.Redis;
 
 namespace SteamScrapper.Infrastructure.Services
 {
@@ -54,14 +55,14 @@ namespace SteamScrapper.Infrastructure.Services
         private readonly Bitmap exploredBundleIds;
         private readonly IDatabase redisDatabase;
 
-        public CrawlerAddressRegistrationService(IConnectionMultiplexer connectionMultiplexer)
+        public CrawlerAddressRegistrationService(IRedisConnectionWrapper redisConnectionWrapper)
         {
-            if (connectionMultiplexer is null)
+            if (redisConnectionWrapper is null)
             {
-                throw new ArgumentNullException(nameof(connectionMultiplexer));
+                throw new ArgumentNullException(nameof(redisConnectionWrapper));
             }
 
-            redisDatabase = connectionMultiplexer.GetDatabase();
+            redisDatabase = redisConnectionWrapper.ConnectionMultiplexer.GetDatabase();
 
             // TODO: Sub and bundle ids may not need as large bitmap as apps do.
             exploredAppIds = new Bitmap(DefaultBitmapSize);
