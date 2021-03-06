@@ -12,6 +12,8 @@ namespace SteamScrapper.Domain.PageModels
 {
     public class SteamPage
     {
+        public const string UnknownPageTitle = "Unknown page";
+
         public SteamPage(Uri address, HtmlDocument pageHtml, params string[] prefetchHtmlElementNames)
         {
             if (address is null)
@@ -118,7 +120,7 @@ namespace SteamScrapper.Domain.PageModels
             return results;
         }
 
-        protected virtual string ExtractFriendlyName() => "Unknown";
+        protected virtual string ExtractFriendlyName() => UnknownPageTitle;
 
         protected virtual IEnumerable<string> PrefetchHtmlElementNames()
         {

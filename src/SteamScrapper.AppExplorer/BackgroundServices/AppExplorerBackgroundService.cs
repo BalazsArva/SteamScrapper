@@ -79,8 +79,24 @@ namespace SteamScrapper.AppExplorer.BackgroundServices
             }
 
             var appPages = await Task.WhenAll(fetchAppTasks);
+            var appData = new List<AppData>(appPages.Length);
 
-            var appData = appPages.Select(x => new AppData(x.AppId, x.FriendlyName, null)).ToList();
+            for (var i = 0; i < appPages.Length; ++i)
+            {
+                var appPage = appPages[i];
+                var appId = appPage.AppId;
+                var friendlyName = appPage.FriendlyName;
+
+                if (friendlyName == AppPage.UnknownAppName || friendlyName == SteamPage.UnknownPageTitle)
+                {
+                    logger.LogWarning(
+                        "Could not extract friendly name for app {@AppId} located at address {@Uri}.",
+                        appId,
+                        appPage.NormalizedAddress.AbsoluteUri);
+                }
+
+                appData.Add(new AppData(appId, friendlyName, null));
+            }
 
             await appExplorationService.UpdateAppsAsync(appData);
         }
