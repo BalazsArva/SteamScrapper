@@ -15,7 +15,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{29A0E02B
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SteamScrapper.Common.Tests", "SteamScrapper.Common.Tests\SteamScrapper.Common.Tests.csproj", "{267A6D25-6A65-4B82-8EBC-550DA5AF66CC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamScrapper.AppExplorer", "SteamScrapper.AppExplorer\SteamScrapper.AppExplorer.csproj", "{68BF687D-3B50-45C0-B1EB-C62CD66A85CD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SteamScrapper.AppExplorer", "SteamScrapper.AppExplorer\SteamScrapper.AppExplorer.csproj", "{68BF687D-3B50-45C0-B1EB-C62CD66A85CD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamScrapper.SubExplorer", "SteamScrapper.SubExplorer\SteamScrapper.SubExplorer.csproj", "{F8130412-6C5E-4687-B136-0EF0194589FE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +49,10 @@ Global
 		{68BF687D-3B50-45C0-B1EB-C62CD66A85CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{68BF687D-3B50-45C0-B1EB-C62CD66A85CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68BF687D-3B50-45C0-B1EB-C62CD66A85CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8130412-6C5E-4687-B136-0EF0194589FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8130412-6C5E-4687-B136-0EF0194589FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8130412-6C5E-4687-B136-0EF0194589FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8130412-6C5E-4687-B136-0EF0194589FE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
