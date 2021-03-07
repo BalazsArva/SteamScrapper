@@ -29,6 +29,7 @@ namespace SteamScrapper.Crawler
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<RedisOptions>(hostContext.Configuration.GetSection(RedisOptions.SectionName));
+                    services.Configure<CrawlerAddressRegistrationOptions>(hostContext.Configuration.GetSection(CrawlerAddressRegistrationOptions.SectionName));
 
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
 

@@ -4,11 +4,14 @@ using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using SteamScrapper.Common.DataStructures;
 using SteamScrapper.Common.Urls;
 using SteamScrapper.Common.Utilities.Links;
 using SteamScrapper.Domain.Services.Abstractions;
+using SteamScrapper.Infrastructure.Options;
 using SteamScrapper.Infrastructure.Redis;
 
 namespace SteamScrapper.Infrastructure.Services
@@ -47,27 +50,49 @@ namespace SteamScrapper.Infrastructure.Services
             PageUrlPrefixes.Tags,
         };
 
-        // TODO: Config
-        private readonly bool EnableLoggingIgnoredLinks = false;
-
         private readonly Bitmap exploredAppIds;
         private readonly Bitmap exploredSubIds;
         private readonly Bitmap exploredBundleIds;
         private readonly IDatabase redisDatabase;
+        private readonly bool EnableRecordingIgnoredLinks;
 
-        public CrawlerAddressRegistrationService(IRedisConnectionWrapper redisConnectionWrapper)
+        public CrawlerAddressRegistrationService(
+            ILogger<CrawlerAddressRegistrationService> logger,
+            IRedisConnectionWrapper redisConnectionWrapper,
+            IOptions<CrawlerAddressRegistrationOptions> options)
         {
+            if (logger is null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+
             if (redisConnectionWrapper is null)
             {
                 throw new ArgumentNullException(nameof(redisConnectionWrapper));
             }
 
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (options.Value is null)
+            {
+                throw new ArgumentException(
+                    "The provided configuration object does not contain valid settings for crawler address registration.",
+                    nameof(options));
+            }
+
+            exploredBundleIds = new Bitmap(DefaultBitmapSize);
+            EnableRecordingIgnoredLinks = options.Value.EnableRecordingIgnoredLinks;
             redisDatabase = redisConnectionWrapper.ConnectionMultiplexer.GetDatabase();
 
             // TODO: Sub and bundle ids may not need as large bitmap as apps do.
             exploredAppIds = new Bitmap(DefaultBitmapSize);
             exploredSubIds = new Bitmap(DefaultBitmapSize);
-            exploredBundleIds = new Bitmap(DefaultBitmapSize);
+
+            var enableRecordingIgnoredLinksInfoText = EnableRecordingIgnoredLinks ? "enabled" : "disabled";
+            logger.LogInformation($"Recording ignored links is {enableRecordingIgnoredLinksInfoText}.");
         }
 
         public async Task<Uri> GetNextAddressAsync(DateTime executionDate, CancellationToken cancellationToken)
@@ -115,7 +140,7 @@ namespace SteamScrapper.Infrastructure.Services
             var updateExplorationStatusTransaction = redisDatabase.CreateTransaction();
 
             var addToBeExploredToHelperSetTask = updateExplorationStatusTransaction.SetAddAsync(helperSetId, toBeExploredLinks);
-            if (EnableLoggingIgnoredLinks)
+            if (EnableRecordingIgnoredLinks)
             {
                 var ignoredLinks = foundLinks.Where(uri => !IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
                 var addIgnoredLinksTask = updateExplorationStatusTransaction.SetAddAsync($"Crawler:{redisKeyDateStamp}:Ignored", ignoredLinks);
