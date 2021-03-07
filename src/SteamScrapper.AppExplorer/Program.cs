@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SteamScrapper.AppExplorer.BackgroundServices;
 using SteamScrapper.AppExplorer.Commands.ProcessAppBatch;
+using SteamScrapper.AppExplorer.Options;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.Services.Abstractions;
@@ -31,6 +32,7 @@ namespace SteamScrapper.AppExplorer
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<RedisOptions>(hostContext.Configuration.GetSection(RedisOptions.SectionName));
+                    services.Configure<ProcessAppBatchOptions>(hostContext.Configuration.GetSection(ProcessAppBatchOptions.SectionName));
 
                     services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();

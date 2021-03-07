@@ -5,6 +5,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using SteamScrapper.AppExplorer.Options;
 using SteamScrapper.Common.Extensions;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
@@ -16,24 +18,40 @@ namespace SteamScrapper.AppExplorer.Commands.ProcessAppBatch
 {
     public class ProcessAppBatchCommandHandler : IProcessAppBatchCommandHandler
     {
-        // TODO: Make this configurable.
-        private const int DegreeOfParallelism = 8;
-
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly IAppExplorationService appExplorationService;
         private readonly ISteamPageFactory steamPageFactory;
         private readonly ILogger logger;
 
+        private readonly int degreeOfParallelism;
+
         public ProcessAppBatchCommandHandler(
             IDateTimeProvider dateTimeProvider,
             IAppExplorationService appExplorationService,
             ISteamPageFactory steamPageFactory,
+            IOptions<ProcessAppBatchOptions> options,
             ILogger<ProcessAppBatchCommandHandler> logger)
         {
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (options.Value is null)
+            {
+                throw new ArgumentException(
+                    "The provided configuration object does not contain valid settings for app batch processing.",
+                    nameof(options));
+            }
+
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.appExplorationService = appExplorationService ?? throw new ArgumentNullException(nameof(appExplorationService));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            degreeOfParallelism = options.Value.DegreeOfParallelism;
+
+            logger.LogInformation("Using degree of parallelism: {@DegreeOfParallelism}", degreeOfParallelism);
         }
 
         public async Task<ProcessAppBatchCommandResult> ProcessAppBatchAsync(CancellationToken cancellationToken)
@@ -48,7 +66,7 @@ namespace SteamScrapper.AppExplorer.Commands.ProcessAppBatch
                 return ProcessAppBatchCommandResult.NoMoreItems;
             }
 
-            var appIdsSegments = appIdsToExplore.Segmentate(DegreeOfParallelism);
+            var appIdsSegments = appIdsToExplore.Segmentate(degreeOfParallelism);
             foreach (var appIdsSegment in appIdsSegments)
             {
                 await ProcessAppIdsAsync(appIdsSegment);
@@ -66,7 +84,7 @@ namespace SteamScrapper.AppExplorer.Commands.ProcessAppBatch
 
         private async Task ProcessAppIdsAsync(IEnumerable<int> appIds)
         {
-            var fetchAppTasks = new List<Task<AppPage>>(DegreeOfParallelism);
+            var fetchAppTasks = new List<Task<AppPage>>(degreeOfParallelism);
 
             foreach (var appId in appIds)
             {
