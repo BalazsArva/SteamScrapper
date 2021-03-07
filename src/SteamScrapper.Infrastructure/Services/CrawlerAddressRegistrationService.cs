@@ -24,10 +24,8 @@ namespace SteamScrapper.Infrastructure.Services
         private static readonly IEnumerable<string> LinksAllowedForExploration = new HashSet<string>
         {
             PageUrls.SteamStore,
-
-            // Note: these two usually don't have a trailing '/' in the HTML.
-            "https://store.steampowered.com/linux",
-            "https://store.steampowered.com/macos",
+            PageUrls.Linux,
+            PageUrls.MacOS,
         };
 
         private static readonly IEnumerable<string> LinkPrefixesAllowedForExploration = new[]
@@ -146,7 +144,6 @@ namespace SteamScrapper.Infrastructure.Services
                 var addIgnoredLinksTask = updateExplorationStatusTransaction.SetAddAsync($"Crawler:{redisKeyDateStamp}:Ignored", ignoredLinks);
             }
 
-            // var notYetExploredRedisValsTask = updateExplorationStatusTransaction.SetCombineAsync(SetOperation.Difference, helperSetId, $"Crawler:{redisKeyDateStamp}:Explored");
             var t1 = updateExplorationStatusTransaction.SetCombineAndStoreAsync(SetOperation.Difference, helperSetId, helperSetId, $"Crawler:{redisKeyDateStamp}:Explored");
             var t2 = updateExplorationStatusTransaction.SetCombineAndStoreAsync(SetOperation.Difference, helperSetId, helperSetId, $"Crawler:{redisKeyDateStamp}:Explored:Apps");
             var t3 = updateExplorationStatusTransaction.SetCombineAndStoreAsync(SetOperation.Difference, helperSetId, helperSetId, $"Crawler:{redisKeyDateStamp}:Explored:Subs");
@@ -160,7 +157,7 @@ namespace SteamScrapper.Infrastructure.Services
 
             await updateExplorationStatusTransaction.ExecuteAsync();
 
-            var notYetExploredLinks = notYetExploredRedisValsTask.Result.Select(val => (string)val).ToHashSet();
+            var notYetExploredLinks = notYetExploredRedisValsTask.Result.Select(x => (string)x).ToHashSet();
             if (notYetExploredLinks.Count != 0)
             {
                 await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:ToBeExplored", notYetExploredRedisValsTask.Result);
@@ -195,8 +192,6 @@ namespace SteamScrapper.Infrastructure.Services
                 return couldRegisterForExploration;
             }
 
-            // TODO: Instead of checking starts with all the time, could always receive an URL holder (and non-app/sub/bundle/etc. types could have a generic link class).
-            // This could improve performance a tiny bit.
             if (absoluteUri.StartsWith(PageUrlPrefixes.Sub, StringComparison.OrdinalIgnoreCase))
             {
                 var subId = SteamLinkHelper.ExtractSubId(addressToProcessUri);
