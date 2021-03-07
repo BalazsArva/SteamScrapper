@@ -10,6 +10,7 @@ using SteamScrapper.Infrastructure.Redis;
 using SteamScrapper.Infrastructure.Services;
 using SteamScrapper.SubExplorer.BackgroundServices;
 using SteamScrapper.SubExplorer.Commands.ProcessSubBatch;
+using SteamScrapper.SubExplorer.Options;
 
 namespace SteamScrapper.SubExplorer
 {
@@ -31,6 +32,7 @@ namespace SteamScrapper.SubExplorer
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<RedisOptions>(hostContext.Configuration.GetSection(RedisOptions.SectionName));
+                    services.Configure<ProcessSubBatchOptions>(hostContext.Configuration.GetSection(ProcessSubBatchOptions.SectionName));
 
                     services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();

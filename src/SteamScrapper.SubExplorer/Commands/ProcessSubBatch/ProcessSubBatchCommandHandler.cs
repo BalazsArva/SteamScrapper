@@ -5,35 +5,53 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SteamScrapper.Common.Extensions;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.SubExplorer.Options;
 
 namespace SteamScrapper.SubExplorer.Commands.ProcessSubBatch
 {
     public class ProcessSubBatchCommandHandler : IProcessSubBatchCommandHandler
     {
-        // TODO: Make this configurable.
-        private const int DegreeOfParallelism = 8;
-
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly ISubExplorationService subExplorationService;
         private readonly ISteamPageFactory steamPageFactory;
         private readonly ILogger logger;
 
+        private readonly int degreeOfParallelism = 8;
+
         public ProcessSubBatchCommandHandler(
             IDateTimeProvider dateTimeProvider,
             ISubExplorationService subExplorationService,
+            IOptions<ProcessSubBatchOptions> options,
             ISteamPageFactory steamPageFactory,
             ILogger<ProcessSubBatchCommandHandler> logger)
         {
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (options.Value is null)
+            {
+                throw new ArgumentException(
+                    "The provided configuration object does not contain valid settings for sub batch processing.",
+                    nameof(options));
+            }
+
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.subExplorationService = subExplorationService ?? throw new ArgumentNullException(nameof(subExplorationService));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            degreeOfParallelism = options.Value.DegreeOfParallelism;
+
+            logger.LogInformation("Using degree of parallelism: {@DegreeOfParallelism}", degreeOfParallelism);
         }
 
         public async Task<ProcessSubBatchCommandResult> ProcessSubBatchAsync(CancellationToken cancellationToken)
@@ -48,7 +66,7 @@ namespace SteamScrapper.SubExplorer.Commands.ProcessSubBatch
                 return ProcessSubBatchCommandResult.NoMoreItems;
             }
 
-            var subIdsSegments = subIdsToExplore.Segmentate(DegreeOfParallelism);
+            var subIdsSegments = subIdsToExplore.Segmentate(degreeOfParallelism);
             foreach (var subIdsSegment in subIdsSegments)
             {
                 await ProcessSubIdsAsync(subIdsSegment);
@@ -66,7 +84,7 @@ namespace SteamScrapper.SubExplorer.Commands.ProcessSubBatch
 
         private async Task ProcessSubIdsAsync(IEnumerable<int> subIds)
         {
-            var fetchSubTasks = new List<Task<SubPage>>(DegreeOfParallelism);
+            var fetchSubTasks = new List<Task<SubPage>>(degreeOfParallelism);
 
             foreach (var subId in subIds)
             {
