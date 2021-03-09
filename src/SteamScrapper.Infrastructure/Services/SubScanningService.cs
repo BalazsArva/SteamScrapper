@@ -11,12 +11,12 @@ using SteamScrapper.Infrastructure.Redis;
 
 namespace SteamScrapper.Infrastructure.Services
 {
-    public class AppExplorationService : IAppScanningService
+    public class SubScanningService : ISubScanningService
     {
         private readonly SqlConnection sqlConnection;
         private readonly IDatabase redisDatabase;
 
-        public AppExplorationService(IRedisConnectionWrapper redisConnectionWrapper, SqlConnection sqlConnection)
+        public SubScanningService(IRedisConnectionWrapper redisConnectionWrapper, SqlConnection sqlConnection)
         {
             if (redisConnectionWrapper is null)
             {
@@ -29,21 +29,21 @@ namespace SteamScrapper.Infrastructure.Services
             this.sqlConnection = sqlConnection ?? throw new ArgumentNullException(nameof(sqlConnection));
         }
 
-        public async Task<IEnumerable<int>> GetNextAppIdsForScanningAsync(DateTime executionDate)
+        public async Task<IEnumerable<int>> GetNextSubIdsForScanningAsync(DateTime executionDate)
         {
             const int batchSize = 50;
             const string offsetSqlParamName = "offset";
             const string batchSizeSqlParamName = "batchSize";
 
             var attempt = 0;
-            var appIds = new List<int>(batchSize);
+            var subIds = new List<int>(batchSize);
             var results = new List<int>(batchSize);
 
-            // Read appIds form the DB that are not explored today and try to acquire reservation against concurrent processing.
+            // Read subIds form the DB that are not explored today and try to acquire reservation against concurrent processing.
             // If nothing is retrieved from the DB, then we are done for today.
             while (true)
             {
-                appIds.Clear();
+                subIds.Clear();
                 results.Clear();
 
                 using var sqlCommand = await CreateSqlCommandAsync();
@@ -51,7 +51,7 @@ namespace SteamScrapper.Infrastructure.Services
                 sqlCommand.Parameters.AddWithValue(offsetSqlParamName, attempt * batchSize);
                 sqlCommand.Parameters.AddWithValue(batchSizeSqlParamName, batchSize);
                 sqlCommand.CommandText =
-                    $"SELECT [Id] FROM [SteamScrapper].[dbo].[Apps] " +
+                    $"SELECT [Id] FROM [SteamScrapper].[dbo].[Subs] " +
                     $"WHERE [UtcDateTimeLastModified] < CONVERT(date, SYSUTCDATETIME()) " +
                     $"ORDER BY [ID] DESC " +
                     $"OFFSET @{offsetSqlParamName} ROWS " +
@@ -60,10 +60,10 @@ namespace SteamScrapper.Infrastructure.Services
                 using var sqlDataReader = await sqlCommand.ExecuteReaderAsync();
                 while (await sqlDataReader.ReadAsync())
                 {
-                    appIds.Add(sqlDataReader.GetInt32(0));
+                    subIds.Add(sqlDataReader.GetInt32(0));
                 }
 
-                if (appIds.Count == 0)
+                if (subIds.Count == 0)
                 {
                     // Could not find anything in the database waiting for exploration today.
                     return Array.Empty<int>();
@@ -72,22 +72,22 @@ namespace SteamScrapper.Infrastructure.Services
                 var reservationTransaction = redisDatabase.CreateTransaction();
                 var reservationTasks = new Dictionary<int, Task<bool>>(batchSize);
 
-                for (var i = 0; i < appIds.Count; ++i)
+                for (var i = 0; i < subIds.Count; ++i)
                 {
-                    var appId = appIds[i];
-                    var redisKey = $"AppExplorer:{executionDate:yyyyMMdd}:{appId}";
+                    var subId = subIds[i];
+                    var redisKey = $"SubExplorer:{executionDate:yyyyMMdd}:{subId}";
 
-                    reservationTasks[appId] = reservationTransaction.StringSetAsync(redisKey, string.Empty, TimeSpan.FromMinutes(1), When.NotExists);
+                    reservationTasks[subId] = reservationTransaction.StringSetAsync(redisKey, string.Empty, TimeSpan.FromMinutes(1), When.NotExists);
                 }
 
                 await reservationTransaction.ExecuteAsync();
 
-                foreach (var (appId, reserveAppIdTask) in reservationTasks)
+                foreach (var (subId, reserveSubIdTask) in reservationTasks)
                 {
-                    if (await reserveAppIdTask)
+                    if (await reserveSubIdTask)
                     {
-                        // Could reserve appId for processing - i.e. no other instance is trying to process this item concurrently.
-                        results.Add(appId);
+                        // Could reserve subId for processing - i.e. no other instance is trying to process this item concurrently.
+                        results.Add(subId);
                     }
                 }
 
@@ -100,14 +100,14 @@ namespace SteamScrapper.Infrastructure.Services
             }
         }
 
-        public async Task UpdateAppsAsync(IEnumerable<AppData> appData)
+        public async Task UpdateSubsAsync(IEnumerable<SubData> subData)
         {
-            if (appData is null)
+            if (subData is null)
             {
-                throw new ArgumentNullException(nameof(appData));
+                throw new ArgumentNullException(nameof(subData));
             }
 
-            if (!appData.Any())
+            if (!subData.Any())
             {
                 return;
             }
@@ -116,9 +116,9 @@ namespace SteamScrapper.Infrastructure.Services
 
             var commandTexts = new List<string>();
 
-            foreach (var app in appData)
+            foreach (var sub in subData)
             {
-                commandTexts.Add(AddAppDetailsToUpdateCommand(sqlCommand, app));
+                commandTexts.Add(AddSubDetailsToUpdateCommand(sqlCommand, sub));
             }
 
             var completeCommandText = string.Join('\n', commandTexts);
@@ -128,21 +128,19 @@ namespace SteamScrapper.Infrastructure.Services
             await sqlCommand.ExecuteNonQueryAsync();
         }
 
-        private static string AddAppDetailsToUpdateCommand(SqlCommand command, AppData appData)
+        private static string AddSubDetailsToUpdateCommand(SqlCommand command, SubData subData)
         {
-            var appId = appData.AppId;
+            var subId = subData.SubId;
 
-            var idParameterName = $"appId_{appId}";
-            var titleParameterName = $"appTitle_{appId}";
-            var bannerUrlParameterName = $"appBanner_{appId}";
+            var idParameterName = $"subId_{subId}";
+            var titleParameterName = $"subTitle_{subId}";
 
-            command.Parameters.AddWithValue(idParameterName, appId);
-            command.Parameters.AddWithValue(titleParameterName, appData.Title);
-            command.Parameters.AddWithValue(bannerUrlParameterName, appData.BannerUrl ?? (object)DBNull.Value);
+            command.Parameters.AddWithValue(idParameterName, subId);
+            command.Parameters.AddWithValue(titleParameterName, subData.Title);
 
             return string.Concat(
-                $"UPDATE [dbo].[Apps] ",
-                $"SET [Title] = @{titleParameterName}, [BannerUrl] = @{bannerUrlParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() ",
+                $"UPDATE [dbo].[Subs] ",
+                $"SET [Title] = @{titleParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() ",
                 $"WHERE [Id] = @{idParameterName}");
         }
 

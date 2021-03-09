@@ -38,7 +38,7 @@ namespace SteamScrapper.AppScanner
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
                     services.AddSingleton<ISteamService, SteamService>();
 
-                    services.AddSingleton<IAppScanningService, AppExplorationService>();
+                    services.AddSingleton<IAppScanningService, AppScanningService>();
 
                     services.AddSingleton<IScanAppBatchCommandHandler, ScanAppBatchCommandHandler>();
 

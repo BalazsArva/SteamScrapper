@@ -38,7 +38,7 @@ namespace SteamScrapper.SubScanner
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
                     services.AddSingleton<ISteamService, SteamService>();
 
-                    services.AddSingleton<ISubScanningService, SubExplorationService>();
+                    services.AddSingleton<ISubScanningService, SubScanningService>();
 
                     services.AddSingleton<IScanSubBatchCommandHandler, ScanSubBatchCommandHandler>();
 
