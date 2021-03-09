@@ -5,16 +5,16 @@ WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:5.0-buster-slim AS build
 WORKDIR /src
-COPY ["SteamScrapper.AppExplorer/SteamScrapper.AppExplorer.csproj", "SteamScrapper.AppExplorer/"]
-RUN dotnet restore "SteamScrapper.AppExplorer/SteamScrapper.AppExplorer.csproj"
+COPY ["SteamScrapper.AppScanner/SteamScrapper.AppScanner.csproj", "SteamScrapper.AppScanner/"]
+RUN dotnet restore "SteamScrapper.AppScanner/SteamScrapper.AppScanner.csproj"
 COPY . .
-WORKDIR "/src/SteamScrapper.AppExplorer"
-RUN dotnet build "SteamScrapper.AppExplorer.csproj" -c Release -o /app/build
+WORKDIR "/src/SteamScrapper.AppScanner"
+RUN dotnet build "SteamScrapper.AppScanner.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "SteamScrapper.AppExplorer.csproj" -c Release -o /app/publish
+RUN dotnet publish "SteamScrapper.AppScanner.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "SteamScrapper.AppExplorer.dll"]
+ENTRYPOINT ["dotnet", "SteamScrapper.AppScanner.dll"]
