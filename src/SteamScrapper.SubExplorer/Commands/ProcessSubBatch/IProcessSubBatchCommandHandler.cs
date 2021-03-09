@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace SteamScrapper.SubExplorer.Commands.ProcessSubBatch
+namespace SteamScrapper.SubScanner.Commands.ProcessSubBatch
 {
     public interface IProcessSubBatchCommandHandler
     {

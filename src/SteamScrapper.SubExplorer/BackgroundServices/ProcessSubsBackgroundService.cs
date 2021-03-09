@@ -3,9 +3,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SteamScrapper.SubExplorer.Commands.ProcessSubBatch;
+using SteamScrapper.SubScanner.Commands.ProcessSubBatch;
 
-namespace SteamScrapper.SubExplorer.BackgroundServices
+namespace SteamScrapper.SubScanner.BackgroundServices
 {
     public class ProcessSubsBackgroundService : BackgroundService
     {

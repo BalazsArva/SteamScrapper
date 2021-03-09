@@ -8,11 +8,11 @@ using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.Options;
 using SteamScrapper.Infrastructure.Redis;
 using SteamScrapper.Infrastructure.Services;
-using SteamScrapper.SubExplorer.BackgroundServices;
-using SteamScrapper.SubExplorer.Commands.ProcessSubBatch;
-using SteamScrapper.SubExplorer.Options;
+using SteamScrapper.SubScanner.BackgroundServices;
+using SteamScrapper.SubScanner.Commands.ProcessSubBatch;
+using SteamScrapper.SubScanner.Options;
 
-namespace SteamScrapper.SubExplorer
+namespace SteamScrapper.SubScanner
 {
     public static class Program
     {

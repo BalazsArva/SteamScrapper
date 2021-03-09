@@ -12,9 +12,9 @@ using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Contracts;
-using SteamScrapper.SubExplorer.Options;
+using SteamScrapper.SubScanner.Options;
 
-namespace SteamScrapper.SubExplorer.Commands.ProcessSubBatch
+namespace SteamScrapper.SubScanner.Commands.ProcessSubBatch
 {
     public class ProcessSubBatchCommandHandler : IProcessSubBatchCommandHandler
     {

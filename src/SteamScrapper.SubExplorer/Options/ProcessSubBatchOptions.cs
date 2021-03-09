@@ -1,4 +1,4 @@
-﻿namespace SteamScrapper.SubExplorer.Options
+﻿namespace SteamScrapper.SubScanner.Options
 {
     public class ProcessSubBatchOptions
     {

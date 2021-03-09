@@ -1,4 +1,4 @@
-﻿namespace SteamScrapper.SubExplorer.Commands.ProcessSubBatch
+﻿namespace SteamScrapper.SubScanner.Commands.ProcessSubBatch
 {
     public enum ProcessSubBatchCommandResult
     {
