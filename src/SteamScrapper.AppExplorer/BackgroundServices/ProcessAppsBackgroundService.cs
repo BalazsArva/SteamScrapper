@@ -3,9 +3,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SteamScrapper.AppExplorer.Commands.ProcessAppBatch;
+using SteamScrapper.AppScanner.Commands.ProcessAppBatch;
 
-namespace SteamScrapper.AppExplorer.BackgroundServices
+namespace SteamScrapper.AppScanner.BackgroundServices
 {
     public class ProcessAppsBackgroundService : BackgroundService
     {

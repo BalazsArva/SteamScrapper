@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using SteamScrapper.AppExplorer.Options;
+using SteamScrapper.AppScanner.Options;
 using SteamScrapper.Common.Extensions;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
@@ -14,7 +14,7 @@ using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Contracts;
 
-namespace SteamScrapper.AppExplorer.Commands.ProcessAppBatch
+namespace SteamScrapper.AppScanner.Commands.ProcessAppBatch
 {
     public class ProcessAppBatchCommandHandler : IProcessAppBatchCommandHandler
     {

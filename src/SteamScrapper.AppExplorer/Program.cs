@@ -2,9 +2,9 @@ using System.Data.SqlClient;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using SteamScrapper.AppExplorer.BackgroundServices;
-using SteamScrapper.AppExplorer.Commands.ProcessAppBatch;
-using SteamScrapper.AppExplorer.Options;
+using SteamScrapper.AppScanner.BackgroundServices;
+using SteamScrapper.AppScanner.Commands.ProcessAppBatch;
+using SteamScrapper.AppScanner.Options;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.Services.Abstractions;
@@ -12,7 +12,7 @@ using SteamScrapper.Infrastructure.Options;
 using SteamScrapper.Infrastructure.Redis;
 using SteamScrapper.Infrastructure.Services;
 
-namespace SteamScrapper.AppExplorer
+namespace SteamScrapper.AppScanner
 {
     public static class Program
     {

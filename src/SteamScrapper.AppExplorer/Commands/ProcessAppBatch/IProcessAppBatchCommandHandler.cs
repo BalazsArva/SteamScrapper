@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace SteamScrapper.AppExplorer.Commands.ProcessAppBatch
+namespace SteamScrapper.AppScanner.Commands.ProcessAppBatch
 {
     public interface IProcessAppBatchCommandHandler
     {

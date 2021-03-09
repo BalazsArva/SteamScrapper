@@ -1,4 +1,4 @@
-﻿namespace SteamScrapper.AppExplorer.Options
+﻿namespace SteamScrapper.AppScanner.Options
 {
     public class ProcessAppBatchOptions
     {

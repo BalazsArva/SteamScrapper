@@ -1,4 +1,4 @@
-﻿namespace SteamScrapper.AppExplorer.Commands.ProcessAppBatch
+﻿namespace SteamScrapper.AppScanner.Commands.ProcessAppBatch
 {
     public enum ProcessAppBatchCommandResult
     {
