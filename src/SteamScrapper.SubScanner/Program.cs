@@ -9,7 +9,7 @@ using SteamScrapper.Infrastructure.Options;
 using SteamScrapper.Infrastructure.Redis;
 using SteamScrapper.Infrastructure.Services;
 using SteamScrapper.SubScanner.BackgroundServices;
-using SteamScrapper.SubScanner.Commands.ProcessSubBatch;
+using SteamScrapper.SubScanner.Commands.ScanSubBatch;
 using SteamScrapper.SubScanner.Options;
 
 namespace SteamScrapper.SubScanner
@@ -32,20 +32,20 @@ namespace SteamScrapper.SubScanner
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<RedisOptions>(hostContext.Configuration.GetSection(RedisOptions.SectionName));
-                    services.Configure<ProcessSubBatchOptions>(hostContext.Configuration.GetSection(ProcessSubBatchOptions.SectionName));
+                    services.Configure<ScanSubBatchOptions>(hostContext.Configuration.GetSection(ScanSubBatchOptions.SectionName));
 
                     services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
                     services.AddSingleton<ISteamService, SteamService>();
 
-                    services.AddSingleton<ISubExplorationService, SubExplorationService>();
+                    services.AddSingleton<ISubScanningService, SubExplorationService>();
 
-                    services.AddSingleton<IProcessSubBatchCommandHandler, ProcessSubBatchCommandHandler>();
+                    services.AddSingleton<IScanSubBatchCommandHandler, ScanSubBatchCommandHandler>();
 
                     services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
                     services.AddSingleton(sqlConnection);
 
-                    services.AddHostedService<ProcessSubsBackgroundService>();
+                    services.AddHostedService<ScanSubsBackgroundService>();
                 });
         }
     }

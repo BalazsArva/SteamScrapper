@@ -14,23 +14,23 @@ using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.SubScanner.Options;
 
-namespace SteamScrapper.SubScanner.Commands.ProcessSubBatch
+namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
 {
-    public class ProcessSubBatchCommandHandler : IProcessSubBatchCommandHandler
+    public class ScanSubBatchCommandHandler : IScanSubBatchCommandHandler
     {
         private readonly IDateTimeProvider dateTimeProvider;
-        private readonly ISubExplorationService subExplorationService;
+        private readonly ISubScanningService subScanningService;
         private readonly ISteamPageFactory steamPageFactory;
         private readonly ILogger logger;
 
         private readonly int degreeOfParallelism = 8;
 
-        public ProcessSubBatchCommandHandler(
+        public ScanSubBatchCommandHandler(
             IDateTimeProvider dateTimeProvider,
-            ISubExplorationService subExplorationService,
-            IOptions<ProcessSubBatchOptions> options,
+            ISubScanningService subScanningService,
+            IOptions<ScanSubBatchOptions> options,
             ISteamPageFactory steamPageFactory,
-            ILogger<ProcessSubBatchCommandHandler> logger)
+            ILogger<ScanSubBatchCommandHandler> logger)
         {
             if (options is null)
             {
@@ -45,7 +45,7 @@ namespace SteamScrapper.SubScanner.Commands.ProcessSubBatch
             }
 
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
-            this.subExplorationService = subExplorationService ?? throw new ArgumentNullException(nameof(subExplorationService));
+            this.subScanningService = subScanningService ?? throw new ArgumentNullException(nameof(subScanningService));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -54,19 +54,19 @@ namespace SteamScrapper.SubScanner.Commands.ProcessSubBatch
             logger.LogInformation("Using degree of parallelism: {@DegreeOfParallelism}", degreeOfParallelism);
         }
 
-        public async Task<ProcessSubBatchCommandResult> ProcessSubBatchAsync(CancellationToken cancellationToken)
+        public async Task<ScanSubBatchCommandResult> ScanSubBatchAsync(CancellationToken cancellationToken)
         {
             var stopwatch = Stopwatch.StartNew();
             var utcNow = dateTimeProvider.UtcNow;
 
-            var subIdsToExplore = await subExplorationService.GetNextSubIdsForExplorationAsync(utcNow);
-            if (!subIdsToExplore.Any())
+            var subIdsToScan = await subScanningService.GetNextSubIdsForScanningAsync(utcNow);
+            if (!subIdsToScan.Any())
             {
-                logger.LogInformation("Could not find more subs to explore.");
-                return ProcessSubBatchCommandResult.NoMoreItems;
+                logger.LogInformation("Could not find more subs to scan.");
+                return ScanSubBatchCommandResult.NoMoreItems;
             }
 
-            var subIdsSegments = subIdsToExplore.Segmentate(degreeOfParallelism);
+            var subIdsSegments = subIdsToScan.Segmentate(degreeOfParallelism);
             foreach (var subIdsSegment in subIdsSegments)
             {
                 await ProcessSubIdsAsync(subIdsSegment);
@@ -75,11 +75,11 @@ namespace SteamScrapper.SubScanner.Commands.ProcessSubBatch
             stopwatch.Stop();
 
             logger.LogInformation(
-                "Processed {@SubIdsCount} subs in {@ElapsedMillis} millis.",
-                subIdsToExplore.Count(),
+                "Scanned {@SubIdsCount} subs in {@ElapsedMillis} millis.",
+                subIdsToScan.Count(),
                 stopwatch.ElapsedMilliseconds);
 
-            return ProcessSubBatchCommandResult.Success;
+            return ScanSubBatchCommandResult.Success;
         }
 
         private async Task ProcessSubIdsAsync(IEnumerable<int> subIds)
@@ -111,7 +111,7 @@ namespace SteamScrapper.SubScanner.Commands.ProcessSubBatch
                 subData.Add(new SubData(subId, friendlyName));
             }
 
-            await subExplorationService.UpdateSubsAsync(subData);
+            await subScanningService.UpdateSubsAsync(subData);
         }
     }
 }

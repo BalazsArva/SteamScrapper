@@ -11,7 +11,7 @@ using SteamScrapper.Infrastructure.Redis;
 
 namespace SteamScrapper.Infrastructure.Services
 {
-    public class SubExplorationService : ISubExplorationService
+    public class SubExplorationService : ISubScanningService
     {
         private readonly SqlConnection sqlConnection;
         private readonly IDatabase redisDatabase;
@@ -29,7 +29,7 @@ namespace SteamScrapper.Infrastructure.Services
             this.sqlConnection = sqlConnection ?? throw new ArgumentNullException(nameof(sqlConnection));
         }
 
-        public async Task<IEnumerable<int>> GetNextSubIdsForExplorationAsync(DateTime executionDate)
+        public async Task<IEnumerable<int>> GetNextSubIdsForScanningAsync(DateTime executionDate)
         {
             const int batchSize = 50;
             const string offsetSqlParamName = "offset";

@@ -3,22 +3,22 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SteamScrapper.SubScanner.Commands.ProcessSubBatch;
+using SteamScrapper.SubScanner.Commands.ScanSubBatch;
 
 namespace SteamScrapper.SubScanner.BackgroundServices
 {
-    public class ProcessSubsBackgroundService : BackgroundService
+    public class ScanSubsBackgroundService : BackgroundService
     {
         private const int DelayMillis = 5000;
 
-        private readonly IProcessSubBatchCommandHandler processSubBatchCommandHandler;
+        private readonly IScanSubBatchCommandHandler handler;
         private readonly ILogger logger;
 
-        public ProcessSubsBackgroundService(
-            IProcessSubBatchCommandHandler handler,
-            ILogger<ProcessSubsBackgroundService> logger)
+        public ScanSubsBackgroundService(
+            IScanSubBatchCommandHandler handler,
+            ILogger<ScanSubsBackgroundService> logger)
         {
-            this.processSubBatchCommandHandler = handler ?? throw new ArgumentNullException(nameof(handler));
+            this.handler = handler ?? throw new ArgumentNullException(nameof(handler));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -30,16 +30,16 @@ namespace SteamScrapper.SubScanner.BackgroundServices
 
                 try
                 {
-                    var result = await processSubBatchCommandHandler.ProcessSubBatchAsync(stoppingToken);
+                    var result = await handler.ScanSubBatchAsync(stoppingToken);
 
-                    if (result == ProcessSubBatchCommandResult.Success)
+                    if (result == ScanSubBatchCommandResult.Success)
                     {
                         shouldDelay = false;
                     }
                 }
                 catch (Exception e)
                 {
-                    logger.LogError(e, "An unhandled error occurred while processing a batch of subs.");
+                    logger.LogError(e, "An unhandled error occurred while scanning a batch of subs.");
                 }
 
                 if (shouldDelay)
@@ -55,7 +55,7 @@ namespace SteamScrapper.SubScanner.BackgroundServices
                 }
             }
 
-            logger.LogInformation("Application shutdown requested. The sub exploration service has been successfully stopped.");
+            logger.LogInformation("Application shutdown requested. The sub scanning service has been successfully stopped.");
         }
     }
 }

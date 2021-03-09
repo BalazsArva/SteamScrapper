@@ -5,9 +5,9 @@ using SteamScrapper.Domain.Services.Contracts;
 
 namespace SteamScrapper.Domain.Services.Abstractions
 {
-    public interface ISubExplorationService
+    public interface ISubScanningService
     {
-        Task<IEnumerable<int>> GetNextSubIdsForExplorationAsync(DateTime executionDate);
+        Task<IEnumerable<int>> GetNextSubIdsForScanningAsync(DateTime executionDate);
 
         Task UpdateSubsAsync(IEnumerable<SubData> subData);
     }
