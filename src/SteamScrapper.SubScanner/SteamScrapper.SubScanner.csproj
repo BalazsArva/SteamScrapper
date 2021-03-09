@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <UserSecretsId>dotnet-SteamScrapper.SubExplorer-BF8B7953-D67D-443F-9041-104D401C97D5</UserSecretsId>
+    <UserSecretsId>dotnet-SteamScrapper.SubScanner-BF8B7953-D67D-443F-9041-104D401C97D5</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
