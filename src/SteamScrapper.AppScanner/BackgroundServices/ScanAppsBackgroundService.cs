@@ -3,22 +3,22 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SteamScrapper.AppScanner.Commands.ProcessAppBatch;
+using SteamScrapper.AppScanner.Commands.ScanAppBatch;
 
 namespace SteamScrapper.AppScanner.BackgroundServices
 {
-    public class ProcessAppsBackgroundService : BackgroundService
+    public class ScanAppsBackgroundService : BackgroundService
     {
         private const int DelayMillis = 5000;
 
-        private readonly IProcessAppBatchCommandHandler processAppBatchCommandHandler;
-        private readonly ILogger<ProcessAppsBackgroundService> logger;
+        private readonly IScanAppBatchCommandHandler handler;
+        private readonly ILogger<ScanAppsBackgroundService> logger;
 
-        public ProcessAppsBackgroundService(
-            IProcessAppBatchCommandHandler handler,
-            ILogger<ProcessAppsBackgroundService> logger)
+        public ScanAppsBackgroundService(
+            IScanAppBatchCommandHandler handler,
+            ILogger<ScanAppsBackgroundService> logger)
         {
-            this.processAppBatchCommandHandler = handler ?? throw new ArgumentNullException(nameof(handler));
+            this.handler = handler ?? throw new ArgumentNullException(nameof(handler));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -30,16 +30,16 @@ namespace SteamScrapper.AppScanner.BackgroundServices
 
                 try
                 {
-                    var result = await processAppBatchCommandHandler.ProcessAppBatchAsync(stoppingToken);
+                    var result = await handler.ScanAppBatchAsync(stoppingToken);
 
-                    if (result == ProcessAppBatchCommandResult.Success)
+                    if (result == ScanAppBatchCommandResult.Success)
                     {
                         shouldDelay = false;
                     }
                 }
                 catch (Exception e)
                 {
-                    logger.LogError(e, "An unhandled error occurred while processing a batch of apps.");
+                    logger.LogError(e, "An unhandled error occurred while scanning a batch of apps.");
                 }
 
                 if (shouldDelay)
@@ -55,7 +55,7 @@ namespace SteamScrapper.AppScanner.BackgroundServices
                 }
             }
 
-            logger.LogInformation("Application shutdown requested. The app exploration service has been successfully stopped.");
+            logger.LogInformation("Application shutdown requested. The app scanning service has been successfully stopped.");
         }
     }
 }

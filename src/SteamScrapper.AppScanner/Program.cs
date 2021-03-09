@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SteamScrapper.AppScanner.BackgroundServices;
-using SteamScrapper.AppScanner.Commands.ProcessAppBatch;
+using SteamScrapper.AppScanner.Commands.ScanAppBatch;
 using SteamScrapper.AppScanner.Options;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
@@ -32,20 +32,20 @@ namespace SteamScrapper.AppScanner
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<RedisOptions>(hostContext.Configuration.GetSection(RedisOptions.SectionName));
-                    services.Configure<ProcessAppBatchOptions>(hostContext.Configuration.GetSection(ProcessAppBatchOptions.SectionName));
+                    services.Configure<ScanAppBatchOptions>(hostContext.Configuration.GetSection(ScanAppBatchOptions.SectionName));
 
                     services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
                     services.AddSingleton<ISteamService, SteamService>();
 
-                    services.AddSingleton<IAppExplorationService, AppExplorationService>();
+                    services.AddSingleton<IAppScanningService, AppExplorationService>();
 
-                    services.AddSingleton<IProcessAppBatchCommandHandler, ProcessAppBatchCommandHandler>();
+                    services.AddSingleton<IScanAppBatchCommandHandler, ScanAppBatchCommandHandler>();
 
                     services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
                     services.AddSingleton(sqlConnection);
 
-                    services.AddHostedService<ProcessAppsBackgroundService>();
+                    services.AddHostedService<ScanAppsBackgroundService>();
                 });
         }
     }

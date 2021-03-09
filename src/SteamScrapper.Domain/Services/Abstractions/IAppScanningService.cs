@@ -5,9 +5,9 @@ using SteamScrapper.Domain.Services.Contracts;
 
 namespace SteamScrapper.Domain.Services.Abstractions
 {
-    public interface IAppExplorationService
+    public interface IAppScanningService
     {
-        Task<IEnumerable<int>> GetNextAppIdsForExplorationAsync(DateTime executionDate);
+        Task<IEnumerable<int>> GetNextAppIdsForScanningAsync(DateTime executionDate);
 
         Task UpdateAppsAsync(IEnumerable<AppData> appData);
     }

@@ -14,23 +14,23 @@ using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Contracts;
 
-namespace SteamScrapper.AppScanner.Commands.ProcessAppBatch
+namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
 {
-    public class ProcessAppBatchCommandHandler : IProcessAppBatchCommandHandler
+    public class ScanAppBatchCommandHandler : IScanAppBatchCommandHandler
     {
         private readonly IDateTimeProvider dateTimeProvider;
-        private readonly IAppExplorationService appExplorationService;
+        private readonly IAppScanningService appScanningService;
         private readonly ISteamPageFactory steamPageFactory;
         private readonly ILogger logger;
 
         private readonly int degreeOfParallelism;
 
-        public ProcessAppBatchCommandHandler(
+        public ScanAppBatchCommandHandler(
             IDateTimeProvider dateTimeProvider,
-            IAppExplorationService appExplorationService,
+            IAppScanningService appScanningService,
             ISteamPageFactory steamPageFactory,
-            IOptions<ProcessAppBatchOptions> options,
-            ILogger<ProcessAppBatchCommandHandler> logger)
+            IOptions<ScanAppBatchOptions> options,
+            ILogger<ScanAppBatchCommandHandler> logger)
         {
             if (options is null)
             {
@@ -45,7 +45,7 @@ namespace SteamScrapper.AppScanner.Commands.ProcessAppBatch
             }
 
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
-            this.appExplorationService = appExplorationService ?? throw new ArgumentNullException(nameof(appExplorationService));
+            this.appScanningService = appScanningService ?? throw new ArgumentNullException(nameof(appScanningService));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -54,19 +54,19 @@ namespace SteamScrapper.AppScanner.Commands.ProcessAppBatch
             logger.LogInformation("Using degree of parallelism: {@DegreeOfParallelism}", degreeOfParallelism);
         }
 
-        public async Task<ProcessAppBatchCommandResult> ProcessAppBatchAsync(CancellationToken cancellationToken)
+        public async Task<ScanAppBatchCommandResult> ScanAppBatchAsync(CancellationToken cancellationToken)
         {
             var stopwatch = Stopwatch.StartNew();
             var utcNow = dateTimeProvider.UtcNow;
 
-            var appIdsToExplore = await appExplorationService.GetNextAppIdsForExplorationAsync(utcNow);
-            if (!appIdsToExplore.Any())
+            var appIdsToScan = await appScanningService.GetNextAppIdsForScanningAsync(utcNow);
+            if (!appIdsToScan.Any())
             {
-                logger.LogInformation("Could not find more apps to explore.");
-                return ProcessAppBatchCommandResult.NoMoreItems;
+                logger.LogInformation("Could not find more apps to scan.");
+                return ScanAppBatchCommandResult.NoMoreItems;
             }
 
-            var appIdsSegments = appIdsToExplore.Segmentate(degreeOfParallelism);
+            var appIdsSegments = appIdsToScan.Segmentate(degreeOfParallelism);
             foreach (var appIdsSegment in appIdsSegments)
             {
                 await ProcessAppIdsAsync(appIdsSegment);
@@ -75,11 +75,11 @@ namespace SteamScrapper.AppScanner.Commands.ProcessAppBatch
             stopwatch.Stop();
 
             logger.LogInformation(
-                "Processed {@AppIdsCount} apps in {@ElapsedMillis} millis.",
-                appIdsToExplore.Count(),
+                "Scanned {@AppIdsCount} apps in {@ElapsedMillis} millis.",
+                appIdsToScan.Count(),
                 stopwatch.ElapsedMilliseconds);
 
-            return ProcessAppBatchCommandResult.Success;
+            return ScanAppBatchCommandResult.Success;
         }
 
         private async Task ProcessAppIdsAsync(IEnumerable<int> appIds)
@@ -120,7 +120,7 @@ namespace SteamScrapper.AppScanner.Commands.ProcessAppBatch
                 appData.Add(new AppData(appId, friendlyName, bannerUrl));
             }
 
-            await appExplorationService.UpdateAppsAsync(appData);
+            await appScanningService.UpdateAppsAsync(appData);
         }
     }
 }
