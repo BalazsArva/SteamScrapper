@@ -134,13 +134,15 @@ namespace SteamScrapper.Infrastructure.Services
 
             var idParameterName = $"bundleId_{bundleId}";
             var titleParameterName = $"bundleTitle_{bundleId}";
+            var bannerUrlParameterName = $"bundleBanner_{bundleId}";
 
             command.Parameters.AddWithValue(idParameterName, bundleId);
             command.Parameters.AddWithValue(titleParameterName, bundleData.Title);
+            command.Parameters.AddWithValue(bannerUrlParameterName, bundleData.BannerUrl ?? (object)DBNull.Value);
 
             return string.Concat(
                 $"UPDATE [dbo].[Bundles] ",
-                $"SET [Title] = @{titleParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() ",
+                $"SET [Title] = @{titleParameterName}, [BannerUrl] = @{bannerUrlParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() ",
                 $"WHERE [Id] = @{idParameterName}");
         }
 
