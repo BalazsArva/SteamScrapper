@@ -38,9 +38,9 @@ namespace SteamScrapper.BundleScanner
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
                     services.AddSingleton<ISteamService, SteamService>();
 
-                    services.AddSingleton<ISubScanningService, SubScanningService>();
+                    services.AddSingleton<IBundleScanningService, BundleScanningService>();
 
-                    //services.AddSingleton<IScanBundleBatchCommandHandler, ScanBundleBatchCommandHandler>();
+                    services.AddSingleton<IScanBundleBatchCommandHandler, ScanBundleBatchCommandHandler>();
 
                     services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
                     services.AddSingleton(sqlConnection);
