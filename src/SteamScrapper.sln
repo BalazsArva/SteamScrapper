@@ -23,6 +23,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SteamScrapper.AppScanner", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SteamScrapper.SubScanner", "SteamScrapper.SubScanner\SteamScrapper.SubScanner.csproj", "{A4EBFDB2-C23C-4C10-A0D8-7390125445A9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamScrapper.BundleScanner", "SteamScrapper.BundleScanner\SteamScrapper.BundleScanner.csproj", "{3EC13090-8EF3-46FF-A988-4DBAE2354388}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,10 @@ Global
 		{A4EBFDB2-C23C-4C10-A0D8-7390125445A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A4EBFDB2-C23C-4C10-A0D8-7390125445A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A4EBFDB2-C23C-4C10-A0D8-7390125445A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3EC13090-8EF3-46FF-A988-4DBAE2354388}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3EC13090-8EF3-46FF-A988-4DBAE2354388}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3EC13090-8EF3-46FF-A988-4DBAE2354388}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3EC13090-8EF3-46FF-A988-4DBAE2354388}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -69,6 +75,7 @@ Global
 		{267A6D25-6A65-4B82-8EBC-550DA5AF66CC} = {29A0E02B-4A45-4C5F-8054-2AC7A16C2914}
 		{7C27C304-C3FA-4D55-BE13-FB3CB8C3BB33} = {02ECBF1B-E251-4FAD-8B82-16E372DDC771}
 		{A4EBFDB2-C23C-4C10-A0D8-7390125445A9} = {02ECBF1B-E251-4FAD-8B82-16E372DDC771}
+		{3EC13090-8EF3-46FF-A988-4DBAE2354388} = {02ECBF1B-E251-4FAD-8B82-16E372DDC771}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A6C8CCDB-DF88-4992-9D2E-90FA0C352BD3}
