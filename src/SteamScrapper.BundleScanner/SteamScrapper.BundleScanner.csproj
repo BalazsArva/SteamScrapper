@@ -8,6 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.13" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SteamScrapper.Common\SteamScrapper.Common.csproj" />
+    <ProjectReference Include="..\SteamScrapper.Domain\SteamScrapper.Domain.csproj" />
+    <ProjectReference Include="..\SteamScrapper.Infrastructure\SteamScrapper.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

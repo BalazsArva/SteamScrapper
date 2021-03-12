@@ -1,24 +1,52 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Data.SqlClient;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using SteamScrapper.BundleScanner.BackgroundServices;
+using SteamScrapper.BundleScanner.Commands.ScanBundleBatch;
+using SteamScrapper.BundleScanner.Options;
+using SteamScrapper.Common.Providers;
+using SteamScrapper.Domain.Factories;
+using SteamScrapper.Domain.Services.Abstractions;
+using SteamScrapper.Infrastructure.Options;
+using SteamScrapper.Infrastructure.Redis;
+using SteamScrapper.Infrastructure.Services;
 
 namespace SteamScrapper.BundleScanner
 {
-    public class Program
+    public static class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            var hostBuilder = CreateHostBuilder(args);
+
+            await hostBuilder.Build().RunAsync();
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
+        private static IHostBuilder CreateHostBuilder(string[] args)
+        {
+            // TODO: Improve these dependencies
+            var sqlConnection = new SqlConnection("Data Source=(localdb)\\MSSQLLocalDb;Initial Catalog=SteamScrapper;Integrated Security=true");
+
+            return Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddHostedService<Worker>();
+                    services.Configure<RedisOptions>(hostContext.Configuration.GetSection(RedisOptions.SectionName));
+                    services.Configure<ScanBundleBatchOptions>(hostContext.Configuration.GetSection(ScanBundleBatchOptions.SectionName));
+
+                    services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+                    services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
+                    services.AddSingleton<ISteamService, SteamService>();
+
+                    services.AddSingleton<ISubScanningService, SubScanningService>();
+
+                    //services.AddSingleton<IScanBundleBatchCommandHandler, ScanBundleBatchCommandHandler>();
+
+                    services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
+                    services.AddSingleton(sqlConnection);
+
+                    services.AddHostedService<ScanBundlesBackgroundService>();
                 });
+        }
     }
 }
