@@ -39,7 +39,7 @@ namespace SteamScrapper.Infrastructure.Services
             var bundleIds = new List<int>(batchSize);
             var results = new List<int>(batchSize);
 
-            // Read bundleIds form the DB that are not explored today and try to acquire reservation against concurrent processing.
+            // Read bundleIds form the DB that are not scanned today and try to acquire reservation against concurrent processing.
             // If nothing is retrieved from the DB, then we are done for today.
             while (true)
             {
@@ -65,7 +65,7 @@ namespace SteamScrapper.Infrastructure.Services
 
                 if (bundleIds.Count == 0)
                 {
-                    // Could not find anything in the database waiting for exploration today.
+                    // Could not find anything in the database waiting for scanning today.
                     return Array.Empty<int>();
                 }
 
@@ -75,7 +75,7 @@ namespace SteamScrapper.Infrastructure.Services
                 for (var i = 0; i < bundleIds.Count; ++i)
                 {
                     var bundleId = bundleIds[i];
-                    var redisKey = $"BundleExplorer:{executionDate:yyyyMMdd}:{bundleId}";
+                    var redisKey = $"BundleScanner:{executionDate:yyyyMMdd}:{bundleId}";
 
                     reservationTasks[bundleId] = reservationTransaction.StringSetAsync(redisKey, string.Empty, TimeSpan.FromMinutes(1), When.NotExists);
                 }
