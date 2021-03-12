@@ -94,5 +94,10 @@ namespace SteamScrapper.Common.Utilities.Links
         {
             return new Uri(PageUrlPrefixes.Sub + subId.ToString(CultureInfo.InvariantCulture), UriKind.Absolute);
         }
+
+        public static Uri CreateBundleUri(int bundleId)
+        {
+            return new Uri(PageUrlPrefixes.Bundle + bundleId.ToString(CultureInfo.InvariantCulture), UriKind.Absolute);
+        }
     }
 }

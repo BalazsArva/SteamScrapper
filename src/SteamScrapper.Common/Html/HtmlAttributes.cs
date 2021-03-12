@@ -5,9 +5,11 @@
         public const string Action = "action";
         public const string Class = "class";
         public const string Href = "href";
+        public const string Id = "id";
         public const string Method = "method";
         public const string Name = "name";
         public const string Relation = "rel";
+        public const string Source = "src";
         public const string Type = "type";
         public const string Value = "value";
     }
