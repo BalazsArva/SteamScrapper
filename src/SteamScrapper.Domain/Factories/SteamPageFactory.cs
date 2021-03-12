@@ -90,5 +90,16 @@ namespace SteamScrapper.Domain.Factories
 
             return new SubPage(uri, doc);
         }
+
+        public async Task<BundlePage> CreateBundlePageAsync(int bundleId)
+        {
+            var uri = SteamLinkHelper.CreateBundleUri(bundleId);
+            var html = await steamService.GetPageHtmlAsync(uri);
+            var doc = new HtmlDocument();
+
+            doc.LoadHtml(html);
+
+            return new BundlePage(uri, doc);
+        }
     }
 }

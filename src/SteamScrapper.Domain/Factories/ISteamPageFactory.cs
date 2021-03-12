@@ -13,5 +13,7 @@ namespace SteamScrapper.Domain.Factories
         Task<AppPage> CreateAppPageAsync(int appId);
 
         Task<SubPage> CreateSubPageAsync(int subId);
+
+        Task<BundlePage> CreateBundlePageAsync(int bundleId);
     }
 }
