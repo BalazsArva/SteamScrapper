@@ -56,6 +56,7 @@ namespace SteamScrapper.Crawler.BackgroundServices
                     break;
                 }
 
+                // Add 5 minutes to ensure that minor time imprecisions won't cause the process to continue on the same day.
                 var tomorrowMorning = dateTimeProvider.UtcNow.Date.AddDays(1).AddMinutes(5);
                 var waitTime = tomorrowMorning - dateTimeProvider.UtcNow;
 
