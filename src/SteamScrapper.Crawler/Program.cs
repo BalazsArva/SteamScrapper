@@ -2,7 +2,10 @@ using System.Data.SqlClient;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using SteamScrapper.Common.Providers;
 using SteamScrapper.Crawler.BackgroundServices;
+using SteamScrapper.Crawler.Commands.ExplorePage;
+using SteamScrapper.Crawler.Commands.RegisterStartingAddresses;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.Options;
@@ -32,11 +35,15 @@ namespace SteamScrapper.Crawler
                     services.Configure<CrawlerAddressRegistrationOptions>(hostContext.Configuration.GetSection(CrawlerAddressRegistrationOptions.SectionName));
 
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
+                    services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
                     services.AddSingleton<ISteamContentRegistrationService, SteamContentRegistrationService>();
                     services.AddSingleton<ISteamService, SteamService>();
                     services.AddSingleton<ICrawlerAddressRegistrationService, CrawlerAddressRegistrationService>();
                     services.AddSingleton<ICrawlerPrefetchService, CrawlerPrefetchService>();
+
+                    services.AddSingleton<IRegisterStartingAddressesCommandHandler, RegisterStartingAddressesCommandHandler>();
+                    services.AddSingleton<IExplorePageCommandHandler, ExplorePageCommandHandler>();
 
                     services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
                     services.AddSingleton(sqlConnection);
