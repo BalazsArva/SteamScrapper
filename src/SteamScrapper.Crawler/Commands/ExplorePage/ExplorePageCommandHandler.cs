@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
 
@@ -11,17 +12,20 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
 {
     public class ExplorePageCommandHandler : IExplorePageCommandHandler
     {
+        private readonly IDateTimeProvider dateTimeProvider;
         private readonly ILogger logger;
         private readonly ICrawlerAddressRegistrationService crawlerAddressRegistrationService;
         private readonly ICrawlerPrefetchService crawlerPrefetchService;
         private readonly ISteamContentRegistrationService steamContentRegistrationService;
 
         public ExplorePageCommandHandler(
+            IDateTimeProvider dateTimeProvider,
             ILogger<ExplorePageCommandHandler> logger,
             ICrawlerAddressRegistrationService crawlerAddressRegistrationService,
             ICrawlerPrefetchService crawlerPrefetchService,
             ISteamContentRegistrationService steamContentRegistrationService)
         {
+            this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.crawlerAddressRegistrationService = crawlerAddressRegistrationService ?? throw new ArgumentNullException(nameof(crawlerAddressRegistrationService));
             this.crawlerPrefetchService = crawlerPrefetchService ?? throw new ArgumentNullException(nameof(crawlerPrefetchService));
@@ -31,7 +35,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
         public async Task<ExplorePageCommandResult> ExplorePageAsync(CancellationToken cancellationToken)
         {
             var stopwatch = Stopwatch.StartNew();
-            var utcNow = DateTime.UtcNow;
+            var utcNow = dateTimeProvider.UtcNow;
 
             var steamPage = await crawlerPrefetchService.GetNextPageAsync(utcNow);
             if (steamPage is null)
