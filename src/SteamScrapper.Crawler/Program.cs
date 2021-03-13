@@ -6,6 +6,7 @@ using SteamScrapper.Common.Providers;
 using SteamScrapper.Crawler.BackgroundServices;
 using SteamScrapper.Crawler.Commands.ExplorePage;
 using SteamScrapper.Crawler.Commands.RegisterStartingAddresses;
+using SteamScrapper.Crawler.Options;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.Options;
@@ -32,6 +33,7 @@ namespace SteamScrapper.Crawler
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<RedisOptions>(hostContext.Configuration.GetSection(RedisOptions.SectionName));
+                    services.Configure<RegisterStartingAddressesOptions>(hostContext.Configuration.GetSection(RegisterStartingAddressesOptions.SectionName));
                     services.Configure<CrawlerAddressRegistrationOptions>(hostContext.Configuration.GetSection(CrawlerAddressRegistrationOptions.SectionName));
 
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
