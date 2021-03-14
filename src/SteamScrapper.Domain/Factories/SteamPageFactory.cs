@@ -57,18 +57,6 @@ namespace SteamScrapper.Domain.Factories
             return new SteamPage(uri, doc);
         }
 
-        public async Task<SteamPage> CreateSteamPageAsync(Uri uri)
-        {
-            if (uri is null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-
-            var pageHtml = await steamService.GetPageHtmlAsync(uri);
-
-            return await CreateSteamPageAsync(uri, pageHtml);
-        }
-
         public async Task<AppPage> CreateAppPageAsync(int appId)
         {
             var uri = SteamLinkHelper.CreateAppUri(appId);

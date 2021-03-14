@@ -8,8 +8,6 @@ namespace SteamScrapper.Domain.Factories
     {
         Task<SteamPage> CreateSteamPageAsync(Uri uri, string pageHtml);
 
-        Task<SteamPage> CreateSteamPageAsync(Uri uri);
-
         Task<AppPage> CreateAppPageAsync(int appId);
 
         Task<SubPage> CreateSubPageAsync(int subId);
