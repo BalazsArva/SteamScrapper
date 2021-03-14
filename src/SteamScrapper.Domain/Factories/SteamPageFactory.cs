@@ -83,7 +83,7 @@ namespace SteamScrapper.Domain.Factories
         public async Task<SubPage> CreateSubPageAsync(int subId)
         {
             var uri = SteamLinkHelper.CreateSubUri(subId);
-            var html = await steamService.GetPageHtmlAsync(uri);
+            var html = await steamService.GetPageHtmlWithoutRetryAsync(uri);
             var doc = new HtmlDocument();
 
             doc.LoadHtml(html);

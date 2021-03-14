@@ -12,6 +12,7 @@ using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.Domain.Services.Exceptions;
 using SteamScrapper.SubScanner.Options;
 
 namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
@@ -84,34 +85,47 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
 
         private async Task ProcessSubIdsAsync(IEnumerable<int> subIds)
         {
-            var fetchSubTasks = new List<Task<SubPage>>(degreeOfParallelism);
+            var fetchSubTasks = new List<Task<SubData>>(degreeOfParallelism);
 
             foreach (var subId in subIds)
             {
-                fetchSubTasks.Add(Task.Run(async () => await steamPageFactory.CreateSubPageAsync(subId)));
+                fetchSubTasks.Add(Task.Run(async () => await GetSubDataAsync(subId)));
             }
 
-            var subPages = await Task.WhenAll(fetchSubTasks);
-            var subData = new List<SubData>(subPages.Length);
+            var subData = await Task.WhenAll(fetchSubTasks);
 
-            for (var i = 0; i < subPages.Length; ++i)
+            await subScanningService.UpdateSubsAsync(subData);
+        }
+
+        private async Task<SubData> GetSubDataAsync(int subId)
+        {
+            try
             {
-                var subPage = subPages[i];
-                var subId = subPage.SubId;
-                var friendlyName = subPage.FriendlyName;
+                var page = await steamPageFactory.CreateSubPageAsync(subId);
+                var friendlyName = page.FriendlyName;
 
                 if (friendlyName == SubPage.UnknownSubName || friendlyName == SteamPage.UnknownPageTitle)
                 {
                     logger.LogWarning(
                         "Could not extract friendly name for sub {@SubId} located at address {@Uri}.",
                         subId,
-                        subPage.NormalizedAddress.AbsoluteUri);
+                        page.NormalizedAddress.AbsoluteUri);
                 }
 
-                subData.Add(new SubData(subId, friendlyName));
+                return new SubData(page.SubId, page.FriendlyName);
             }
+            catch (SteamPageRemovedException e)
+            {
+                logger.LogWarning(
+                    e,
+                    "The Steam page located at address {@Uri} for sub {@SubId} is not accessible. A status code of {@StatusCode} was received while downloading the page contents.",
+                    e.Uri.AbsoluteUri,
+                    subId,
+                    e.StatusCode);
 
-            await subScanningService.UpdateSubsAsync(subData);
+                // Return an "unknown" record, because if the database record is not marked as processed, then it'd be kept being retried (after the Redis reservation expires).
+                return new SubData(subId, SubPage.UnknownSubName);
+            }
         }
     }
 }
