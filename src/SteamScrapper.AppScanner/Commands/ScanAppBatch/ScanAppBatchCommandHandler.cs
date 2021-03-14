@@ -73,12 +73,15 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                 await ProcessAppIdsAsync(appIdsSegment);
             }
 
+            var remainingCount = await appScanningService.GetCountOfUnscannedAppsAsync();
+
             stopwatch.Stop();
 
             logger.LogInformation(
-                "Scanned {@AppIdsCount} apps in {@ElapsedMillis} millis.",
+                "Scanned {@AppIdsCount} apps in {@ElapsedMillis} millis. About {@RemainingCount} apps still need to be scanned.",
                 appIdsToScan.Count(),
-                stopwatch.ElapsedMilliseconds);
+                stopwatch.ElapsedMilliseconds,
+                remainingCount);
 
             return ScanAppBatchCommandResult.Success;
         }
