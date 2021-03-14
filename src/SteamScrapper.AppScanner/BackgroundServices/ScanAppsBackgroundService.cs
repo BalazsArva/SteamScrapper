@@ -4,12 +4,14 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SteamScrapper.AppScanner.Commands.ScanAppBatch;
+using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.AppScanner.BackgroundServices
 {
     public class ScanAppsBackgroundService : BackgroundService
     {
-        private const int DelaySecondsOnError = 60;
+        private const int DelaySecondsOnUnknownError = 60;
+        private const int DelaySecondsOnRateLimitExceededError = 300;
         private const int DelaySecondsOnNoMoreItems = 300;
 
         private readonly IScanAppBatchCommandHandler handler;
@@ -39,11 +41,15 @@ namespace SteamScrapper.AppScanner.BackgroundServices
                         delaySeconds = DelaySecondsOnNoMoreItems;
                     }
                 }
+                catch (SteamRateLimitExceededException e)
+                {
+                    logger.LogError(e, "The request rate limit has been exceeded while scanning a batch of apps. Retrying in {@Delay} seconds.", DelaySecondsOnRateLimitExceededError);
+                    delaySeconds = DelaySecondsOnRateLimitExceededError;
+                }
                 catch (Exception e)
                 {
-                    logger.LogError(e, "An unhandled error occurred while scanning a batch of apps. Retrying in {@Delay} seconds.", DelaySecondsOnError);
-
-                    delaySeconds = DelaySecondsOnError;
+                    logger.LogError(e, "An unhandled error occurred while scanning a batch of apps. Retrying in {@Delay} seconds.", DelaySecondsOnUnknownError);
+                    delaySeconds = DelaySecondsOnUnknownError;
                 }
 
                 if (delaySeconds > 0)
