@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
+using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.Infrastructure.Services
 {
@@ -13,7 +14,7 @@ namespace SteamScrapper.Infrastructure.Services
     // Add those back to the 'to be explored' set and remove them from the 'explored' set.
     public class CrawlerPrefetchService : ICrawlerPrefetchService
     {
-        private record FetchData(Uri Address, Task<string> HtmlDownloadTask);
+        private record FetchDescriptor(Uri Uri, Task<string> HtmlDownloadTask);
 
         private const int PrefetchCount = 5;
 
@@ -21,7 +22,7 @@ namespace SteamScrapper.Infrastructure.Services
         private readonly ICrawlerAddressRegistrationService crawlerAddressRegistrationService;
         private readonly ISteamPageFactory steamPageFactory;
 
-        private readonly List<FetchData> prefetchList = new List<FetchData>(PrefetchCount);
+        private readonly List<FetchDescriptor> prefetchList = new List<FetchDescriptor>(PrefetchCount);
 
         public CrawlerPrefetchService(
             ISteamService steamService,
@@ -35,6 +36,9 @@ namespace SteamScrapper.Infrastructure.Services
 
         public async Task<SteamPage> GetNextPageAsync(DateTime utcNow)
         {
+            // Clean up possibly failed tasks before determining how many new ones should be launched.
+            RemoveFailedPrefetchTasks();
+
             await PrefetchNewItemIfNeededAsync(utcNow);
 
             if (prefetchList.Count == 0)
@@ -42,6 +46,7 @@ namespace SteamScrapper.Infrastructure.Services
                 return null;
             }
 
+            // TODO: This will stall forever if every fetch task fails, e.g. due to network outage.
             // Wait until any download task is completed. It will continue immediately if there's an already fetched item.
             await Task.WhenAny(prefetchList.Select(x => x.HtmlDownloadTask));
 
@@ -54,10 +59,22 @@ namespace SteamScrapper.Infrastructure.Services
             // Add a new prefetch task to fill the place of the just removed completed fetch task.
             await PrefetchNewItemIfNeededAsync(utcNow);
 
-            return await steamPageFactory.CreateSteamPageAsync(completedTask.Address, completedTask.HtmlDownloadTask.Result);
+            return await steamPageFactory.CreateSteamPageAsync(completedTask.Uri, completedTask.HtmlDownloadTask.Result);
         }
 
-        // TODO: Identify and remove failed tasks.
+        private void RemoveFailedPrefetchTasks()
+        {
+            for (var i = prefetchList.Count - 1; i >= 0; --i)
+            {
+                var taskStatus = prefetchList[i].HtmlDownloadTask.Status;
+
+                if (taskStatus == TaskStatus.Canceled || taskStatus == TaskStatus.Faulted)
+                {
+                    prefetchList.RemoveAt(i);
+                }
+            }
+        }
+
         private async Task PrefetchNewItemIfNeededAsync(DateTime utcNow)
         {
             var requiredPrefetchCount = PrefetchCount - prefetchList.Count;
@@ -67,12 +84,25 @@ namespace SteamScrapper.Infrastructure.Services
                 var nextAddress = await crawlerAddressRegistrationService.GetNextAddressAsync(utcNow, default);
                 if (nextAddress is not null)
                 {
-                    prefetchList.Add(new(nextAddress, steamService.GetPageHtmlAsync(nextAddress)));
+                    prefetchList.Add(new(nextAddress, PrefetchAsync(nextAddress)));
                 }
                 else
                 {
                     break;
                 }
+            }
+        }
+
+        private async Task<string> PrefetchAsync(Uri address)
+        {
+            try
+            {
+                return await steamService.GetPageHtmlWithoutRetryAsync(address);
+            }
+            catch (SteamRateLimitExceededException)
+            {
+                // TODO: Put the URL back to exploration queue
+                throw;
             }
         }
     }
