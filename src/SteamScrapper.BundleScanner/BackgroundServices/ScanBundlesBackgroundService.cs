@@ -9,7 +9,8 @@ namespace SteamScrapper.BundleScanner.BackgroundServices
 {
     public class ScanBundlesBackgroundService : BackgroundService
     {
-        private const int DelayMillis = 5000;
+        private const int DelaySecondsOnError = 60;
+        private const int DelaySecondsOnNoMoreItems = 300;
 
         private readonly IScanBundleBatchCommandHandler handler;
         private readonly ILogger logger;
@@ -26,27 +27,30 @@ namespace SteamScrapper.BundleScanner.BackgroundServices
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                var shouldDelay = true;
+                var delaySeconds = 0;
 
                 try
                 {
                     var result = await handler.ScanBundleBatchAsync(stoppingToken);
 
-                    if (result == ScanBundleBatchCommandResult.Success)
+                    if (result == ScanBundleBatchCommandResult.NoMoreItems)
                     {
-                        shouldDelay = false;
+                        logger.LogInformation("No more bundles were found for scanning. Retrying in {@Delay} seconds.", DelaySecondsOnNoMoreItems);
+                        delaySeconds = DelaySecondsOnNoMoreItems;
                     }
                 }
                 catch (Exception e)
                 {
-                    logger.LogError(e, "An unhandled error occurred while scanning a batch of bundles.");
+                    logger.LogError(e, "An unhandled error occurred while scanning a batch of bundles. Retrying in {@Delay} seconds.", DelaySecondsOnError);
+
+                    delaySeconds = DelaySecondsOnError;
                 }
 
-                if (shouldDelay)
+                if (delaySeconds > 0)
                 {
                     try
                     {
-                        await Task.Delay(TimeSpan.FromMilliseconds(DelayMillis), stoppingToken);
+                        await Task.Delay(TimeSpan.FromSeconds(delaySeconds), stoppingToken);
                     }
                     catch (TaskCanceledException)
                     {
