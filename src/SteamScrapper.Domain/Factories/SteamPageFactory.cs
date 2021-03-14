@@ -94,7 +94,7 @@ namespace SteamScrapper.Domain.Factories
         public async Task<BundlePage> CreateBundlePageAsync(int bundleId)
         {
             var uri = SteamLinkHelper.CreateBundleUri(bundleId);
-            var html = await steamService.GetPageHtmlAsync(uri);
+            var html = await steamService.GetPageHtmlWithoutRetryAsync(uri);
             var doc = new HtmlDocument();
 
             doc.LoadHtml(html);

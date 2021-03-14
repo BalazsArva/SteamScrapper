@@ -85,14 +85,14 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
 
         private async Task ProcessSubIdsAsync(IEnumerable<int> subIds)
         {
-            var fetchSubTasks = new List<Task<SubData>>(degreeOfParallelism);
+            var downloadTasks = new List<Task<SubData>>(degreeOfParallelism);
 
             foreach (var subId in subIds)
             {
-                fetchSubTasks.Add(Task.Run(async () => await GetSubDataAsync(subId)));
+                downloadTasks.Add(Task.Run(async () => await GetSubDataAsync(subId)));
             }
 
-            var subData = await Task.WhenAll(fetchSubTasks);
+            var subData = await Task.WhenAll(downloadTasks);
 
             await subScanningService.UpdateSubsAsync(subData);
         }

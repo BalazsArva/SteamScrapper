@@ -13,6 +13,7 @@ using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
 {
@@ -84,29 +85,32 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
 
         private async Task ProcessBundleIdsAsync(IEnumerable<int> bundleIds)
         {
-            var fetchBundleTasks = new List<Task<BundlePage>>(degreeOfParallelism);
+            var downloadTasks = new List<Task<BundleData>>(degreeOfParallelism);
 
             foreach (var bundleId in bundleIds)
             {
-                fetchBundleTasks.Add(Task.Run(async () => await steamPageFactory.CreateBundlePageAsync(bundleId)));
+                downloadTasks.Add(Task.Run(async () => await GetBundleDataAsync(bundleId)));
             }
 
-            var bundlePages = await Task.WhenAll(fetchBundleTasks);
-            var bundleData = new List<BundleData>(bundlePages.Length);
+            var bundleData = await Task.WhenAll(downloadTasks);
 
-            for (var i = 0; i < bundlePages.Length; ++i)
+            await bundleScanningService.UpdateBundlesAsync(bundleData);
+        }
+
+        private async Task<BundleData> GetBundleDataAsync(int bundleId)
+        {
+            try
             {
-                var bundlePage = bundlePages[i];
-                var bundleId = bundlePage.BundleId;
-                var friendlyName = bundlePage.FriendlyName;
-                var bannerUrl = bundlePage.BannerUrl?.AbsoluteUri;
+                var page = await steamPageFactory.CreateBundlePageAsync(bundleId);
+                var friendlyName = page.FriendlyName;
+                var bannerUrl = page.BannerUrl?.AbsoluteUri;
 
                 if (friendlyName == BundlePage.UnknownBundleName || friendlyName == SteamPage.UnknownPageTitle)
                 {
                     logger.LogWarning(
                         "Could not extract friendly name for bundle {@BundleId} located at address {@Uri}.",
                         bundleId,
-                        bundlePage.NormalizedAddress.AbsoluteUri);
+                        page.NormalizedAddress.AbsoluteUri);
                 }
 
                 if (string.IsNullOrWhiteSpace(bannerUrl))
@@ -114,13 +118,23 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                     logger.LogWarning(
                         "Could not extract banner URL for bundle {@BundleId} located at address {@Uri}.",
                         bundleId,
-                        bundlePage.NormalizedAddress.AbsoluteUri);
+                        page.NormalizedAddress.AbsoluteUri);
                 }
 
-                bundleData.Add(new BundleData(bundleId, friendlyName, bannerUrl));
+                return new BundleData(bundleId, friendlyName, bannerUrl);
             }
+            catch (SteamPageRemovedException e)
+            {
+                logger.LogWarning(
+                    e,
+                    "The Steam page located at address {@Uri} for bundle {@BundleId} is not accessible. A status code of {@StatusCode} was received while downloading the page contents.",
+                    e.Uri.AbsoluteUri,
+                    bundleId,
+                    e.StatusCode);
 
-            await bundleScanningService.UpdateBundlesAsync(bundleData);
+                // Return an "unknown" record, because if the database record is not marked as processed, then it'd be kept being retried (after the Redis reservation expires).
+                return new BundleData(bundleId, BundlePage.UnknownBundleName, null);
+            }
         }
     }
 }
