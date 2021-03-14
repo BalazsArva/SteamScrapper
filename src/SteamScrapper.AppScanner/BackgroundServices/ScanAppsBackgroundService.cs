@@ -9,7 +9,8 @@ namespace SteamScrapper.AppScanner.BackgroundServices
 {
     public class ScanAppsBackgroundService : BackgroundService
     {
-        private const int DelayMillis = 5000;
+        private const int DelaySecondsOnError = 60;
+        private const int DelaySecondsOnNoMoreItems = 300;
 
         private readonly IScanAppBatchCommandHandler handler;
         private readonly ILogger<ScanAppsBackgroundService> logger;
@@ -26,27 +27,30 @@ namespace SteamScrapper.AppScanner.BackgroundServices
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                var shouldDelay = true;
+                var delaySeconds = 0;
 
                 try
                 {
                     var result = await handler.ScanAppBatchAsync(stoppingToken);
 
-                    if (result == ScanAppBatchCommandResult.Success)
+                    if (result == ScanAppBatchCommandResult.NoMoreItems)
                     {
-                        shouldDelay = false;
+                        logger.LogInformation("No more apps were found for scanning. Retrying in {@Delay} seconds.", DelaySecondsOnNoMoreItems);
+                        delaySeconds = DelaySecondsOnNoMoreItems;
                     }
                 }
                 catch (Exception e)
                 {
-                    logger.LogError(e, "An unhandled error occurred while scanning a batch of apps.");
+                    logger.LogError(e, "An unhandled error occurred while scanning a batch of apps. Retrying in {@Delay} seconds.", DelaySecondsOnError);
+
+                    delaySeconds = DelaySecondsOnError;
                 }
 
-                if (shouldDelay)
+                if (delaySeconds > 0)
                 {
                     try
                     {
-                        await Task.Delay(TimeSpan.FromMilliseconds(DelayMillis), stoppingToken);
+                        await Task.Delay(TimeSpan.FromSeconds(delaySeconds), stoppingToken);
                     }
                     catch (TaskCanceledException)
                     {
