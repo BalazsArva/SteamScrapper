@@ -13,6 +13,7 @@ using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
 {
@@ -84,29 +85,32 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
 
         private async Task ProcessAppIdsAsync(IEnumerable<int> appIds)
         {
-            var fetchAppTasks = new List<Task<AppPage>>(degreeOfParallelism);
+            var downloadTasks = new List<Task<AppData>>(degreeOfParallelism);
 
             foreach (var appId in appIds)
             {
-                fetchAppTasks.Add(Task.Run(async () => await steamPageFactory.CreateAppPageAsync(appId)));
+                downloadTasks.Add(Task.Run(async () => await GetAppDataAsync(appId)));
             }
 
-            var appPages = await Task.WhenAll(fetchAppTasks);
-            var appData = new List<AppData>(appPages.Length);
+            var appData = await Task.WhenAll(downloadTasks);
 
-            for (var i = 0; i < appPages.Length; ++i)
+            await appScanningService.UpdateAppsAsync(appData);
+        }
+
+        private async Task<AppData> GetAppDataAsync(int appId)
+        {
+            try
             {
-                var appPage = appPages[i];
-                var appId = appPage.AppId;
-                var friendlyName = appPage.FriendlyName;
-                var bannerUrl = appPage.BannerUrl?.AbsoluteUri;
+                var page = await steamPageFactory.CreateAppPageAsync(appId);
+                var friendlyName = page.FriendlyName;
+                var bannerUrl = page.BannerUrl?.AbsoluteUri;
 
                 if (friendlyName == AppPage.UnknownAppName || friendlyName == SteamPage.UnknownPageTitle)
                 {
                     logger.LogWarning(
                         "Could not extract friendly name for app {@AppId} located at address {@Uri}.",
                         appId,
-                        appPage.NormalizedAddress.AbsoluteUri);
+                        page.NormalizedAddress.AbsoluteUri);
                 }
 
                 if (string.IsNullOrWhiteSpace(bannerUrl))
@@ -117,10 +121,20 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                         bannerUrl);
                 }
 
-                appData.Add(new AppData(appId, friendlyName, bannerUrl));
+                return new AppData(appId, friendlyName, bannerUrl);
             }
+            catch (SteamPageRemovedException e)
+            {
+                logger.LogWarning(
+                    e,
+                    "The Steam page located at address {@Uri} for app {@AppId} is not accessible. A status code of {@StatusCode} was received while downloading the page contents.",
+                    e.Uri.AbsoluteUri,
+                    appId,
+                    e.StatusCode);
 
-            await appScanningService.UpdateAppsAsync(appData);
+                // Return an "unknown" record, because if the database record is not marked as processed, then it'd be kept being retried (after the Redis reservation expires).
+                return new AppData(appId, AppPage.UnknownAppName, null);
+            }
         }
     }
 }
