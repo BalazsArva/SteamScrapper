@@ -4,12 +4,14 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SteamScrapper.BundleScanner.Commands.ScanBundleBatch;
+using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.BundleScanner.BackgroundServices
 {
     public class ScanBundlesBackgroundService : BackgroundService
     {
-        private const int DelaySecondsOnError = 60;
+        private const int DelaySecondsOnUnknownError = 60;
+        private const int DelaySecondsOnRateLimitExceededError = 300;
         private const int DelaySecondsOnNoMoreItems = 300;
 
         private readonly IScanBundleBatchCommandHandler handler;
@@ -39,11 +41,15 @@ namespace SteamScrapper.BundleScanner.BackgroundServices
                         delaySeconds = DelaySecondsOnNoMoreItems;
                     }
                 }
+                catch (SteamRateLimitExceededException e)
+                {
+                    logger.LogError(e, "The request rate limit has been exceeded while scanning a batch of bundles. Retrying in {@Delay} seconds.", DelaySecondsOnRateLimitExceededError);
+                    delaySeconds = DelaySecondsOnRateLimitExceededError;
+                }
                 catch (Exception e)
                 {
-                    logger.LogError(e, "An unhandled error occurred while scanning a batch of bundles. Retrying in {@Delay} seconds.", DelaySecondsOnError);
-
-                    delaySeconds = DelaySecondsOnError;
+                    logger.LogError(e, "An unhandled error occurred while scanning a batch of bundles. Retrying in {@Delay} seconds.", DelaySecondsOnUnknownError);
+                    delaySeconds = DelaySecondsOnUnknownError;
                 }
 
                 if (delaySeconds > 0)
