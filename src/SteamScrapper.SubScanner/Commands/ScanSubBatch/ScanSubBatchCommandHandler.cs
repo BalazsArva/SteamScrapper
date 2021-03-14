@@ -73,12 +73,15 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
                 await ProcessSubIdsAsync(subIdsSegment);
             }
 
+            var remainingCount = await subScanningService.GetCountOfUnscannedSubsAsync();
+
             stopwatch.Stop();
 
             logger.LogInformation(
-                "Scanned {@SubIdsCount} subs in {@ElapsedMillis} millis.",
+                "Scanned {@SubIdsCount} subs in {@ElapsedMillis} millis. About {@RemainingCount} apps still need to be scanned.",
                 subIdsToScan.Count(),
-                stopwatch.ElapsedMilliseconds);
+                stopwatch.ElapsedMilliseconds,
+                remainingCount);
 
             return ScanSubBatchCommandResult.Success;
         }
