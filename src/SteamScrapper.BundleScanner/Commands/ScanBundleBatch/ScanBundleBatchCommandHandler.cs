@@ -73,12 +73,15 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                 await ProcessBundleIdsAsync(bundleIdsSegment);
             }
 
+            var remainingCount = await bundleScanningService.GetCountOfUnscannedBundlesAsync();
+
             stopwatch.Stop();
 
             logger.LogInformation(
-                "Scanned {@BundleIdsCount} bundles in {@ElapsedMillis} millis.",
+                "Scanned {@BundleIdsCount} bundles in {@ElapsedMillis} millis. About {@RemainingCount} bundles still need to be scanned.",
                 bundleIdsToScan.Count(),
-                stopwatch.ElapsedMilliseconds);
+                stopwatch.ElapsedMilliseconds,
+                remainingCount);
 
             return ScanBundleBatchCommandResult.Success;
         }
