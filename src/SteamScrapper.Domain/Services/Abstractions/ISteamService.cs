@@ -7,6 +7,8 @@ namespace SteamScrapper.Domain.Services.Abstractions
     {
         Task<string> GetPageHtmlAsync(Uri uri);
 
+        Task<string> GetPageHtmlWithoutRetryAsync(Uri uri);
+
         Task<TResult> GetJsonAsync<TResult>(Uri uri);
     }
 }

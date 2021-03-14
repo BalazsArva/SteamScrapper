@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using SteamScrapper.Domain.Services.Abstractions;
+using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.Infrastructure.Services
 {
@@ -17,7 +18,7 @@ namespace SteamScrapper.Infrastructure.Services
         public const int WebRequestRetryDelayIncrementMillis = 250;
 
         private readonly HttpClient client;
-        private readonly ILogger<SteamService> logger;
+        private readonly ILogger logger;
 
         public SteamService(ILogger<SteamService> logger)
         {
@@ -29,7 +30,55 @@ namespace SteamScrapper.Infrastructure.Services
             cookieContainer.Add(new Uri(baseAddress), new Cookie("birthtime", "312850801"));
             cookieContainer.Add(new Uri(baseAddress), new Cookie("wants_mature_content", "1"));
 
-            client = new HttpClient(new HttpClientHandler { CookieContainer = cookieContainer });
+            var clientHandler = new HttpClientHandler
+            {
+                AllowAutoRedirect = false,
+                CookieContainer = cookieContainer,
+            };
+
+            client = new HttpClient(clientHandler);
+        }
+
+        public async Task<string> GetPageHtmlWithoutRetryAsync(Uri uri)
+        {
+            if (uri is null)
+            {
+                throw new ArgumentNullException(nameof(uri));
+            }
+
+            HttpStatusCode statusCode;
+
+            try
+            {
+                var responseMessage = await client.GetAsync(uri, HttpCompletionOption.ResponseContentRead);
+
+                if (responseMessage.IsSuccessStatusCode)
+                {
+                    return await responseMessage.Content.ReadAsStringAsync();
+                }
+
+                statusCode = responseMessage.StatusCode;
+            }
+            catch (Exception e)
+            {
+                throw new SteamServiceException(uri, e);
+            }
+
+            if (statusCode == HttpStatusCode.Forbidden)
+            {
+                throw new SteamRateLimitExceededException(uri);
+            }
+
+            if (statusCode == HttpStatusCode.Moved ||
+                statusCode == HttpStatusCode.MovedPermanently ||
+                statusCode == HttpStatusCode.Redirect ||
+                statusCode == HttpStatusCode.RedirectMethod ||
+                statusCode == HttpStatusCode.Found)
+            {
+                throw new SteamPageRemovedException((int)statusCode, uri);
+            }
+
+            throw new SteamUnexpectedStatusCodeException((int)statusCode, uri);
         }
 
         public async Task<string> GetPageHtmlAsync(Uri uri)
@@ -46,6 +95,15 @@ namespace SteamScrapper.Infrastructure.Services
             {
                 try
                 {
+                    var responseMessage = await client.GetAsync(uri, HttpCompletionOption.ResponseContentRead);
+
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        return await responseMessage.Content.ReadAsStringAsync();
+                    }
+
+                    logger.LogWarning("An unexpected status code {@StatusCode} was received while downloading page HTML from URI {@Uri}.", responseMessage.StatusCode, uri.AbsoluteUri);
+
                     return await client.GetStringAsync(uri);
                 }
                 catch (Exception e)
