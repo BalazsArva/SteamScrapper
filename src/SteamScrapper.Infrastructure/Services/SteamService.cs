@@ -13,11 +13,13 @@ namespace SteamScrapper.Infrastructure.Services
     public class SteamService : ISteamService
     {
         public const string baseAddress = "https://store.steampowered.com/";
+
         public const int WebRequestRetryLimit = 15;
         public const int WebRequestRetryDelayInitialMillis = 1000;
         public const int WebRequestRetryDelayIncrementMillis = 250;
 
         private readonly HttpClient client;
+        private readonly HttpClient redirectionFollowerClient;
         private readonly ILogger logger;
 
         public SteamService(ILogger<SteamService> logger)
@@ -37,6 +39,10 @@ namespace SteamScrapper.Infrastructure.Services
             };
 
             client = new HttpClient(clientHandler);
+            redirectionFollowerClient = new HttpClient(new HttpClientHandler
+            {
+                CookieContainer = cookieContainer,
+            });
         }
 
         public async Task<string> GetPageHtmlWithoutRetryAsync(Uri uri)
@@ -95,16 +101,7 @@ namespace SteamScrapper.Infrastructure.Services
             {
                 try
                 {
-                    var responseMessage = await client.GetAsync(uri, HttpCompletionOption.ResponseContentRead);
-
-                    if (responseMessage.IsSuccessStatusCode)
-                    {
-                        return await responseMessage.Content.ReadAsStringAsync();
-                    }
-
-                    logger.LogWarning("An unexpected status code {@StatusCode} was received while downloading page HTML from URI {@Uri}.", responseMessage.StatusCode, uri.AbsoluteUri);
-
-                    return await client.GetStringAsync(uri);
+                    return await redirectionFollowerClient.GetStringAsync(uri);
                 }
                 catch (Exception e)
                 {
@@ -139,7 +136,7 @@ namespace SteamScrapper.Infrastructure.Services
             {
                 try
                 {
-                    var responseJson = await client.GetStringAsync(uri);
+                    var responseJson = await redirectionFollowerClient.GetStringAsync(uri);
 
                     return JsonConvert.DeserializeObject<TResult>(responseJson);
                 }
