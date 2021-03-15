@@ -6,11 +6,15 @@ using Microsoft.Extensions.Logging;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Crawler.Commands.ExplorePage;
 using SteamScrapper.Crawler.Commands.RegisterStartingAddresses;
+using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.Crawler.BackgroundServices
 {
     public class CrawlerBackgroundService : BackgroundService
     {
+        private const int DelaySecondsOnUnknownError = 60;
+        private const int DelaySecondsOnRateLimitExceededError = 300;
+
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly IExplorePageCommandHandler explorePageCommandHandler;
         private readonly ILogger logger;
@@ -36,6 +40,8 @@ namespace SteamScrapper.Crawler.BackgroundServices
 
                 while (!stoppingToken.IsCancellationRequested)
                 {
+                    var delaySeconds = 0;
+
                     try
                     {
                         var result = await explorePageCommandHandler.ExplorePageAsync(stoppingToken);
@@ -45,9 +51,27 @@ namespace SteamScrapper.Crawler.BackgroundServices
                             break;
                         }
                     }
+                    catch (SteamRateLimitExceededException e)
+                    {
+                        logger.LogError(e, "The request rate limit has been exceeded during the crawling process. Retrying in {@Delay} seconds.", DelaySecondsOnRateLimitExceededError);
+                        delaySeconds = DelaySecondsOnRateLimitExceededError;
+                    }
                     catch (Exception e)
                     {
-                        logger.LogError(e, "An unhandled error occurred during the crawling process.");
+                        logger.LogError(e, "An unhandled error occurred during the crawling process. Retrying in {@Delay} seconds.", DelaySecondsOnUnknownError);
+                        delaySeconds = DelaySecondsOnUnknownError;
+                    }
+
+                    if (delaySeconds > 0)
+                    {
+                        try
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(delaySeconds), stoppingToken);
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            break;
+                        }
                     }
                 }
 
