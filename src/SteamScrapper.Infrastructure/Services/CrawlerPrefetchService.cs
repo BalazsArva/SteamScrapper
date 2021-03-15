@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
+using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.Infrastructure.Services
 {
@@ -55,6 +56,14 @@ namespace SteamScrapper.Infrastructure.Services
 
             // Add a new prefetch task to fill the place of the just removed completed fetch task.
             await PrefetchNewItemsIfNeededAsync(executionDate);
+
+            if (completedTaskResult.Exception is SteamRateLimitExceededException)
+            {
+                // If we had one rate limit error, then we likely have more. Undo all reservations and start fresh at the new request,
+                // otherwise we'd have to wait the cooldown for each of the already failed tasks, even if the error would otherwise no
+                // longer occur.
+                await CancelAllReservationsAsync(executionDate);
+            }
 
             if (completedTaskResult.Exception is not null)
             {
