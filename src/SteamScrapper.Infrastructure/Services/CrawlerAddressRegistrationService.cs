@@ -18,6 +18,8 @@ namespace SteamScrapper.Infrastructure.Services
 {
     public class CrawlerAddressRegistrationService : ICrawlerAddressRegistrationService
     {
+        private const string RedisDateStampFormat = "yyyyMMdd";
+
         // It's sure there are Ids > 2 million, so 3 * 1000 * 1000 should be okay.
         private const int DefaultBitmapSize = 3 * 1000 * 1000;
 
@@ -95,7 +97,7 @@ namespace SteamScrapper.Infrastructure.Services
 
         public async Task<Uri> GetNextAddressAsync(DateTime executionDate, CancellationToken cancellationToken)
         {
-            var redisKeyDateStamp = executionDate.ToString("yyyyMMdd");
+            var redisKeyDateStamp = executionDate.ToString(RedisDateStampFormat);
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -119,6 +121,46 @@ namespace SteamScrapper.Infrastructure.Services
             return null;
         }
 
+        public async Task UndoReservationsAsync(DateTime executionDate, IEnumerable<Uri> uris)
+        {
+            if (uris is null)
+            {
+                throw new ArgumentNullException(nameof(uris));
+            }
+
+            if (!uris.Any())
+            {
+                return;
+            }
+
+            if (uris.Any(x => string.IsNullOrWhiteSpace(x.AbsoluteUri)))
+            {
+                throw new ArgumentException($"All providede URIs must have their {nameof(Uri.AbsoluteUri)} values set.", nameof(uris));
+            }
+
+            var redisKeyDateStamp = executionDate.ToString(RedisDateStampFormat);
+
+            var transaction = redisDatabase.CreateTransaction();
+
+            foreach (var uri in uris)
+            {
+                var absoluteUri = uri.AbsoluteUri;
+
+                // Remove from "explored" sets.
+                _ = transaction.SetRemoveAsync($"Crawler:{redisKeyDateStamp}:Explored", absoluteUri);
+                _ = transaction.SetRemoveAsync($"Crawler:{redisKeyDateStamp}:Explored:Apps", absoluteUri);
+                _ = transaction.SetRemoveAsync($"Crawler:{redisKeyDateStamp}:Explored:Subs", absoluteUri);
+                _ = transaction.SetRemoveAsync($"Crawler:{redisKeyDateStamp}:Explored:Bundles", absoluteUri);
+                _ = transaction.SetRemoveAsync($"Crawler:{redisKeyDateStamp}:Explored:Developer", absoluteUri);
+                _ = transaction.SetRemoveAsync($"Crawler:{redisKeyDateStamp}:Explored:Publisher", absoluteUri);
+
+                // Add back to "to be explored" set.
+                _ = transaction.SetAddAsync($"Crawler:{redisKeyDateStamp}:ToBeExplored", absoluteUri);
+            }
+
+            await transaction.ExecuteAsync();
+        }
+
         public async Task<ISet<string>> RegisterNonExploredLinksForExplorationAsync(DateTime executionDate, IEnumerable<Uri> foundLinks)
         {
             if (foundLinks is null)
@@ -131,7 +173,7 @@ namespace SteamScrapper.Infrastructure.Services
                 return new HashSet<string>();
             }
 
-            var redisKeyDateStamp = executionDate.ToString("yyyyMMdd");
+            var redisKeyDateStamp = executionDate.ToString(RedisDateStampFormat);
             var toBeExploredLinks = foundLinks.Where(uri => IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
             var helperSetId = $"Crawler:{redisKeyDateStamp}:HelperSets:{Guid.NewGuid():n}";
 
