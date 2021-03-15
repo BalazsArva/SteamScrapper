@@ -57,7 +57,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
                 stopwatch.Stop();
 
                 logger.LogInformation(
-                    "Processed URL '{@Url}'. Elapsed millis: {@ElapsedMillis}, Found {@NotExploredAppCount} not explored apps, {@NotKnownAppCount} not known apps, " +
+                    "Processed URI '{@Uri}'. Elapsed millis: {@ElapsedMillis}, Found {@NotExploredAppCount} not explored apps, {@NotKnownAppCount} not known apps, " +
                     "{@NotExploredSubCount} not explored subs, {@NotKnownSubCount} not known subs and " +
                     "{@NotExploredBundleCount} not explored bundles, {@NotKnownBundleCount} not known bundles.",
                     steamPage.NormalizedAddress.AbsoluteUri,
@@ -73,7 +73,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
             }
             catch (SteamPageRemovedException e)
             {
-                logger.LogWarning("The page located at URL {@Url} has been removed.", e.Uri);
+                logger.LogWarning("The page located at URL {@Uri} has been removed.", e.Uri);
 
                 return ExplorePageCommandResult.Success;
             }
