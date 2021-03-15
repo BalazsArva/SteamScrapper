@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using SteamScrapper.Common.Extensions;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
-using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.Infrastructure.Services
 {
@@ -73,84 +71,6 @@ namespace SteamScrapper.Infrastructure.Services
             await crawlerAddressRegistrationService.UndoReservationsAsync(executionDate, uris);
 
             prefetchList.Clear();
-        }
-
-        private bool TryGetRateLimitExceededException(out SteamRateLimitExceededException steamRateLimitExceededException)
-        {
-            for (var i = 0; i < prefetchList.Count; ++i)
-            {
-                var prefetchTask = prefetchList[i].HtmlDownloadTask;
-
-                if (prefetchTask.Status == TaskStatus.Faulted)
-                {
-                    var unwrappedExceptions = UnwrapAggregateException(prefetchTask.Exception);
-
-                    var result = unwrappedExceptions.FirstOrDefault(x => x is SteamRateLimitExceededException);
-                    if (result is not null)
-                    {
-                        steamRateLimitExceededException = (SteamRateLimitExceededException)result;
-                        return true;
-                    }
-                }
-            }
-
-            steamRateLimitExceededException = default;
-            return false;
-        }
-
-        private IEnumerable<Exception> UnwrapAggregateException(AggregateException aggregateException)
-        {
-            var result = new List<Exception>();
-            var processingQueue = new Queue<Exception>(50);
-
-            processingQueue.Enqueue(aggregateException);
-
-            while (processingQueue.Count > 0)
-            {
-                var nextException = processingQueue.Dequeue();
-
-                if (nextException is AggregateException nextAggregateException)
-                {
-                    processingQueue.EnqueueRange(nextAggregateException.InnerExceptions);
-                }
-                else
-                {
-                    result.Add(nextException);
-                }
-            }
-
-            return result;
-        }
-
-        private async Task RemoveFailedPrefetchTasksAsync(DateTime executionDate)
-        {
-            var unreserveUris = new List<Uri>(prefetchList.Count);
-
-            for (var i = prefetchList.Count - 1; i >= 0; --i)
-            {
-                var item = prefetchList[i];
-                var task = item.HtmlDownloadTask;
-                var taskStatus = task.Status;
-
-                if (taskStatus == TaskStatus.Canceled)
-                {
-                    prefetchList.RemoveAt(i);
-                }
-                else if (taskStatus == TaskStatus.Faulted)
-                {
-                    var unwrappedException = UnwrapAggregateException(task.Exception);
-
-                    if (unwrappedException.All(x => x is not SteamPageRemovedException))
-                    {
-                        // The error does not indicate that the page is removed, so it can be unreserved and retried later.
-                        unreserveUris.Add(item.Uri);
-                    }
-
-                    prefetchList.RemoveAt(i);
-                }
-            }
-
-            await crawlerAddressRegistrationService.UndoReservationsAsync(executionDate, unreserveUris);
         }
 
         private async Task PrefetchNewItemsIfNeededAsync(DateTime utcNow)
