@@ -44,7 +44,6 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
                 if (steamPage is null)
                 {
                     // No links remain to explore.
-                    // TODO: Restart the next day. But check cancellation token as well.
                     return ExplorePageCommandResult.NoMoreItems;
                 }
 
