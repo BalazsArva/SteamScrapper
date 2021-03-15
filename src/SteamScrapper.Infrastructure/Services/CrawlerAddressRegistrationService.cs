@@ -121,7 +121,7 @@ namespace SteamScrapper.Infrastructure.Services
             return null;
         }
 
-        public async Task UndoReservationsAsync(DateTime executionDate, IEnumerable<Uri> uris)
+        public async Task CancelReservationsAsync(DateTime executionDate, IEnumerable<Uri> uris)
         {
             if (uris is null)
             {

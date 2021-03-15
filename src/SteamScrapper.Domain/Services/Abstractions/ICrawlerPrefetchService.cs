@@ -7,5 +7,7 @@ namespace SteamScrapper.Domain.Services.Abstractions
     public interface ICrawlerPrefetchService
     {
         Task<SteamPage> GetNextPageAsync(DateTime utcNow);
+
+        Task CancelAllReservationsAsync(DateTime executionDate);
     }
 }

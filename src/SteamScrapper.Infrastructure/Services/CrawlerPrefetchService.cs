@@ -77,7 +77,7 @@ namespace SteamScrapper.Infrastructure.Services
         {
             var uris = prefetchList.Select(x => x.Uri).ToList();
 
-            await crawlerAddressRegistrationService.UndoReservationsAsync(executionDate, uris);
+            await crawlerAddressRegistrationService.CancelReservationsAsync(executionDate, uris);
 
             prefetchList.Clear();
         }
