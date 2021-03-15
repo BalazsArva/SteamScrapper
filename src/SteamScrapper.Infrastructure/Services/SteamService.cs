@@ -87,42 +87,6 @@ namespace SteamScrapper.Infrastructure.Services
             throw new SteamUnexpectedStatusCodeException((int)statusCode, uri);
         }
 
-        public async Task<string> GetPageHtmlAsync(Uri uri)
-        {
-            if (uri is null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-
-            var capturedExceptions = new List<Exception>(WebRequestRetryLimit);
-            var delay = WebRequestRetryDelayInitialMillis;
-
-            for (var i = 0; i < WebRequestRetryLimit; ++i)
-            {
-                try
-                {
-                    return await redirectionFollowerClient.GetStringAsync(uri);
-                }
-                catch (Exception e)
-                {
-                    capturedExceptions.Add(e);
-
-                    if (i < WebRequestRetryLimit - 1)
-                    {
-                        logger.LogWarning(e, "An error occurred while trying to download HTML content from address '{@Uri}'.", uri.AbsoluteUri);
-
-                        await Task.Delay(delay);
-
-                        delay += WebRequestRetryDelayIncrementMillis;
-                    }
-                }
-            }
-
-            throw new AggregateException(
-                $"One or more errors occurred during the execution of GET page HTML request to '{uri.AbsoluteUri}'.",
-                capturedExceptions);
-        }
-
         public async Task<TResult> GetJsonAsync<TResult>(Uri uri)
         {
             if (uri is null)

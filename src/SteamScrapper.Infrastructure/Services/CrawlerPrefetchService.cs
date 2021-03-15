@@ -11,23 +11,20 @@ namespace SteamScrapper.Infrastructure.Services
 {
     public class CrawlerPrefetchService : ICrawlerPrefetchService
     {
-        private record FetchResult(string PageHtml, Exception Exception);
-        private record FetchDescriptor(Uri Uri, Task<FetchResult> HtmlDownloadTask);
+        private record FetchResult(SteamPage Page, Exception Exception);
+        private record FetchDescriptor(Uri Uri, Task<FetchResult> PageDownloadTask);
 
         private const int PrefetchCount = 5;
 
-        private readonly ISteamService steamService;
         private readonly ICrawlerAddressRegistrationService crawlerAddressRegistrationService;
         private readonly ISteamPageFactory steamPageFactory;
 
         private readonly List<FetchDescriptor> prefetchList = new List<FetchDescriptor>(PrefetchCount);
 
         public CrawlerPrefetchService(
-            ISteamService steamService,
             ICrawlerAddressRegistrationService crawlerAddressRegistrationService,
             ISteamPageFactory steamPageFactory)
         {
-            this.steamService = steamService ?? throw new ArgumentNullException(nameof(steamService));
             this.crawlerAddressRegistrationService = crawlerAddressRegistrationService ?? throw new ArgumentNullException(nameof(crawlerAddressRegistrationService));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
         }
@@ -42,12 +39,12 @@ namespace SteamScrapper.Infrastructure.Services
                 return null;
             }
 
-            await Task.WhenAny(prefetchList.Select(x => x.HtmlDownloadTask));
+            await Task.WhenAny(prefetchList.Select(x => x.PageDownloadTask));
 
             // Find a completed item.
-            var completedTaskIndex = prefetchList.FindIndex(x => x.HtmlDownloadTask.IsCompleted);
+            var completedTaskIndex = prefetchList.FindIndex(x => x.PageDownloadTask.IsCompleted);
             var completedTask = prefetchList[completedTaskIndex];
-            var completedTaskResult = completedTask.HtmlDownloadTask.Result;
+            var completedTaskResult = completedTask.PageDownloadTask.Result;
 
             prefetchList.RemoveAt(completedTaskIndex);
 
@@ -67,7 +64,7 @@ namespace SteamScrapper.Infrastructure.Services
                 throw completedTaskResult.Exception;
             }
 
-            return await steamPageFactory.CreateSteamPageAsync(completedTask.Uri, completedTaskResult.PageHtml);
+            return completedTaskResult.Page;
         }
 
         public async Task CancelAllReservationsAsync(DateTime executionDate)
@@ -101,9 +98,9 @@ namespace SteamScrapper.Infrastructure.Services
         {
             try
             {
-                var pageHtml = await steamService.GetPageHtmlWithoutRetryAsync(address);
+                var page = await steamPageFactory.CreateSteamPageAsync(address);
 
-                return new(pageHtml, null);
+                return new(page, null);
             }
             catch (Exception e)
             {
