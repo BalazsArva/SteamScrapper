@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
+using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.Crawler.Commands.ExplorePage
 {
@@ -34,39 +35,48 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
 
         public async Task<ExplorePageCommandResult> ExplorePageAsync(CancellationToken cancellationToken)
         {
-            var stopwatch = Stopwatch.StartNew();
-            var utcNow = dateTimeProvider.UtcNow;
-
-            var steamPage = await crawlerPrefetchService.GetNextPageAsync(utcNow);
-            if (steamPage is null)
+            try
             {
-                // No links remain to explore.
-                // TODO: Restart the next day. But check cancellation token as well.
-                return ExplorePageCommandResult.NoMoreItems;
+                var stopwatch = Stopwatch.StartNew();
+                var utcNow = dateTimeProvider.UtcNow;
+
+                var steamPage = await crawlerPrefetchService.GetNextPageAsync(utcNow);
+                if (steamPage is null)
+                {
+                    // No links remain to explore.
+                    // TODO: Restart the next day. But check cancellation token as well.
+                    return ExplorePageCommandResult.NoMoreItems;
+                }
+
+                var notYetExploredLinks = await crawlerAddressRegistrationService.RegisterNonExploredLinksForExplorationAsync(utcNow, steamPage.NormalizedLinks);
+
+                var unknownApps = await RegisterFoundAppsAsync(steamPage, notYetExploredLinks);
+                var unknownBundles = await RegisterFoundBundlesAsync(steamPage, notYetExploredLinks);
+                var unknownSubs = await RegisterFoundSubsAsync(steamPage, notYetExploredLinks);
+
+                stopwatch.Stop();
+
+                logger.LogInformation(
+                    "Processed URL '{@Url}'. Elapsed millis: {@ElapsedMillis}, Found {@NotExploredAppCount} not explored apps, {@NotKnownAppCount} not known apps, " +
+                    "{@NotExploredSubCount} not explored subs, {@NotKnownSubCount} not known subs and " +
+                    "{@NotExploredBundleCount} not explored bundles, {@NotKnownBundleCount} not known bundles.",
+                    steamPage.NormalizedAddress.AbsoluteUri,
+                    stopwatch.ElapsedMilliseconds,
+                    unknownApps.NotYetExploredCount,
+                    unknownApps.NotYetKnownCount,
+                    unknownSubs.NotYetExploredCount,
+                    unknownSubs.NotYetKnownCount,
+                    unknownBundles.NotYetExploredCount,
+                    unknownBundles.NotYetKnownCount);
+
+                return ExplorePageCommandResult.Success;
             }
+            catch (SteamPageRemovedException e)
+            {
+                logger.LogWarning("The page located at URL {@Url} has been removed.", e.Uri);
 
-            var notYetExploredLinks = await crawlerAddressRegistrationService.RegisterNonExploredLinksForExplorationAsync(utcNow, steamPage.NormalizedLinks);
-
-            var unknownApps = await RegisterFoundAppsAsync(steamPage, notYetExploredLinks);
-            var unknownBundles = await RegisterFoundBundlesAsync(steamPage, notYetExploredLinks);
-            var unknownSubs = await RegisterFoundSubsAsync(steamPage, notYetExploredLinks);
-
-            stopwatch.Stop();
-
-            logger.LogInformation(
-                "Processed URL '{@Url}'. Elapsed millis: {@ElapsedMillis}, Found {@NotExploredAppCount} not explored apps, {@NotKnownAppCount} not known apps, " +
-                "{@NotExploredSubCount} not explored subs, {@NotKnownSubCount} not known subs and " +
-                "{@NotExploredBundleCount} not explored bundles, {@NotKnownBundleCount} not known bundles.",
-                steamPage.NormalizedAddress.AbsoluteUri,
-                stopwatch.ElapsedMilliseconds,
-                unknownApps.NotYetExploredCount,
-                unknownApps.NotYetKnownCount,
-                unknownSubs.NotYetExploredCount,
-                unknownSubs.NotYetKnownCount,
-                unknownBundles.NotYetExploredCount,
-                unknownBundles.NotYetKnownCount);
-
-            return ExplorePageCommandResult.Success;
+                return ExplorePageCommandResult.Success;
+            }
         }
 
         private async Task<(int NotYetExploredCount, int NotYetKnownCount)> RegisterFoundBundlesAsync(SteamPage steamPage, ISet<string> notYetExploredLinks)
