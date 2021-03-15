@@ -19,7 +19,6 @@ namespace SteamScrapper.Infrastructure.Services
         public const int WebRequestRetryDelayIncrementMillis = 250;
 
         private readonly HttpClient client;
-        private readonly HttpClient redirectionFollowerClient;
         private readonly ILogger logger;
 
         public SteamService(ILogger<SteamService> logger)
@@ -39,13 +38,93 @@ namespace SteamScrapper.Infrastructure.Services
             };
 
             client = new HttpClient(clientHandler);
-            redirectionFollowerClient = new HttpClient(new HttpClientHandler
-            {
-                CookieContainer = cookieContainer,
-            });
         }
 
-        public async Task<string> GetPageHtmlWithoutRetryAsync(Uri uri)
+        public async Task<string> GetHtmlAsync(Uri uri)
+        {
+            if (uri is null)
+            {
+                throw new ArgumentNullException(nameof(uri));
+            }
+
+            var capturedExceptions = new List<Exception>(WebRequestRetryLimit);
+
+            for (var i = 0; i < WebRequestRetryLimit; ++i)
+            {
+                try
+                {
+                    return await GetStringAsync(uri);
+                }
+                catch (SteamRateLimitExceededException)
+                {
+                    throw;
+                }
+                catch (SteamPageRemovedException)
+                {
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    capturedExceptions.Add(e);
+
+                    if (i < WebRequestRetryLimit - 1)
+                    {
+                        logger.LogWarning(e, "An error occurred while trying to download HTML content from address '{@Uri}'.", uri.AbsoluteUri);
+
+                        await Task.Delay(WebRequestRetryDelayInitialMillis);
+                    }
+                }
+            }
+
+            throw new AggregateException(
+                $"One or more errors occurred during the execution of GET HTML request to '{uri.AbsoluteUri}'.",
+                capturedExceptions);
+        }
+
+        public async Task<TResult> GetJsonAsync<TResult>(Uri uri)
+        {
+            if (uri is null)
+            {
+                throw new ArgumentNullException(nameof(uri));
+            }
+
+            var capturedExceptions = new List<Exception>(WebRequestRetryLimit);
+
+            for (var i = 0; i < WebRequestRetryLimit; ++i)
+            {
+                try
+                {
+                    var responseJson = await GetStringAsync(uri);
+
+                    return JsonConvert.DeserializeObject<TResult>(responseJson);
+                }
+                catch (SteamRateLimitExceededException)
+                {
+                    throw;
+                }
+                catch (SteamPageRemovedException)
+                {
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    capturedExceptions.Add(e);
+
+                    if (i < WebRequestRetryLimit - 1)
+                    {
+                        logger.LogWarning(e, "An error occurred while trying to download JSON content from address '{@Uri}'.", uri.AbsoluteUri);
+
+                        await Task.Delay(WebRequestRetryDelayInitialMillis);
+                    }
+                }
+            }
+
+            throw new AggregateException(
+                $"One or more errors occurred during the execution of GET JSON request to '{uri.AbsoluteUri}'.",
+                capturedExceptions);
+        }
+
+        private async Task<string> GetStringAsync(Uri uri)
         {
             if (uri is null)
             {
@@ -85,41 +164,6 @@ namespace SteamScrapper.Infrastructure.Services
             }
 
             throw new SteamUnexpectedStatusCodeException((int)statusCode, uri);
-        }
-
-        public async Task<TResult> GetJsonAsync<TResult>(Uri uri)
-        {
-            if (uri is null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-
-            var capturedExceptions = new List<Exception>(WebRequestRetryLimit);
-
-            for (var i = 0; i < WebRequestRetryLimit; ++i)
-            {
-                try
-                {
-                    var responseJson = await redirectionFollowerClient.GetStringAsync(uri);
-
-                    return JsonConvert.DeserializeObject<TResult>(responseJson);
-                }
-                catch (Exception e)
-                {
-                    capturedExceptions.Add(e);
-
-                    if (i < WebRequestRetryLimit - 1)
-                    {
-                        logger.LogWarning(e, "An error occurred while trying to download JSON content from address '{@Uri}'.", uri.AbsoluteUri);
-
-                        await Task.Delay(WebRequestRetryDelayInitialMillis);
-                    }
-                }
-            }
-
-            throw new AggregateException(
-                $"One or more errors occurred during the execution of GET JSON request to '{uri.AbsoluteUri}'.",
-                capturedExceptions);
         }
     }
 }

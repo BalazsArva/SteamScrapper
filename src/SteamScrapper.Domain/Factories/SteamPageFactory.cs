@@ -40,7 +40,7 @@ namespace SteamScrapper.Domain.Factories
                 return await CreateDeveloperListPageAsync();
             }
 
-            var pageHtml = await steamService.GetPageHtmlWithoutRetryAsync(uri);
+            var pageHtml = await steamService.GetHtmlAsync(uri);
             var doc = new HtmlDocument();
 
             doc.LoadHtml(pageHtml);
@@ -66,7 +66,7 @@ namespace SteamScrapper.Domain.Factories
         public async Task<AppPage> CreateAppPageAsync(int appId)
         {
             var uri = SteamLinkHelper.CreateAppUri(appId);
-            var html = await steamService.GetPageHtmlWithoutRetryAsync(uri);
+            var html = await steamService.GetHtmlAsync(uri);
             var doc = new HtmlDocument();
 
             doc.LoadHtml(html);
@@ -77,7 +77,7 @@ namespace SteamScrapper.Domain.Factories
         public async Task<SubPage> CreateSubPageAsync(int subId)
         {
             var uri = SteamLinkHelper.CreateSubUri(subId);
-            var html = await steamService.GetPageHtmlWithoutRetryAsync(uri);
+            var html = await steamService.GetHtmlAsync(uri);
             var doc = new HtmlDocument();
 
             doc.LoadHtml(html);
@@ -88,7 +88,7 @@ namespace SteamScrapper.Domain.Factories
         public async Task<BundlePage> CreateBundlePageAsync(int bundleId)
         {
             var uri = SteamLinkHelper.CreateBundleUri(bundleId);
-            var html = await steamService.GetPageHtmlWithoutRetryAsync(uri);
+            var html = await steamService.GetHtmlAsync(uri);
             var doc = new HtmlDocument();
 
             doc.LoadHtml(html);
@@ -101,7 +101,7 @@ namespace SteamScrapper.Domain.Factories
             var doc = new HtmlDocument();
             var addressUri = new Uri(PageUrls.DeveloperList, UriKind.Absolute);
 
-            var result = await steamService.GetPageHtmlWithoutRetryAsync(addressUri);
+            var result = await steamService.GetHtmlAsync(addressUri);
 
             doc.LoadHtml(result);
 
