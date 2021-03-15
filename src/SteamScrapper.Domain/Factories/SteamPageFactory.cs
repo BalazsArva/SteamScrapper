@@ -10,6 +10,7 @@ using SteamScrapper.Common.Urls;
 using SteamScrapper.Common.Utilities.Links;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Services.Abstractions;
+using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.Domain.Factories
 {
@@ -141,6 +142,7 @@ namespace SteamScrapper.Domain.Factories
             foreach (var segment in segmentedPages)
             {
                 var tasks = new List<Task<PagingResult>>();
+
                 foreach (var page in segment)
                 {
                     tasks.Add(Task.Run(async () =>
@@ -154,18 +156,39 @@ namespace SteamScrapper.Domain.Factories
 
                             return await steamService.GetJsonAsync<PagingResult>(new Uri(address, UriKind.Absolute));
                         }
+                        catch (SteamPageRemovedException e)
+                        {
+                            logger.LogWarning(e, "Could not download from address '{@Uri}' because the page is gone.", address);
+
+                            // Can't do anything but ignore and skip this item.
+                            return null;
+                        }
                         catch (Exception e)
                         {
                             logger.LogWarning(e, "Could not download from address '{@Uri}'.", address);
-
-                            return null;
+                            throw;
                         }
                     }));
                 }
 
-                var results = await Task.WhenAll(tasks);
+                try
+                {
+                    var results = await Task.WhenAll(tasks);
 
-                finalResults.AddRange(results.Where(x => x is not null));
+                    finalResults.AddRange(results.Where(x => x is not null));
+                }
+                catch (AggregateException e)
+                {
+                    var collectedExceptions = e.Unwrap();
+                    var rateLimitException = collectedExceptions.FirstOrDefault(x => x is SteamRateLimitExceededException);
+
+                    if (rateLimitException is not null)
+                    {
+                        throw rateLimitException;
+                    }
+
+                    throw;
+                }
             }
 
             return finalResults;
