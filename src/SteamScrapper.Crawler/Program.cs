@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Crawler.BackgroundServices;
+using SteamScrapper.Crawler.Commands.CancelReservations;
 using SteamScrapper.Crawler.Commands.ExplorePage;
 using SteamScrapper.Crawler.Commands.RegisterStartingAddresses;
 using SteamScrapper.Crawler.Options;
@@ -20,8 +21,9 @@ namespace SteamScrapper.Crawler
         public static async Task Main(string[] args)
         {
             var hostBuilder = CreateHostBuilder(args);
+            var host = hostBuilder.Build();
 
-            await hostBuilder.Build().RunAsync();
+            await host.RunAsync();
         }
 
         private static IHostBuilder CreateHostBuilder(string[] args)
@@ -46,6 +48,7 @@ namespace SteamScrapper.Crawler
 
                     services.AddSingleton<IRegisterStartingAddressesCommandHandler, RegisterStartingAddressesCommandHandler>();
                     services.AddSingleton<IExplorePageCommandHandler, ExplorePageCommandHandler>();
+                    services.AddSingleton<ICancelReservationsCommandHandler, CancelReservationsCommandHandler>();
 
                     services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
                     services.AddSingleton(sqlConnection);

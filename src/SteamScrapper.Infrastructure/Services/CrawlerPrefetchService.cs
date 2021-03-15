@@ -9,9 +9,6 @@ using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.Infrastructure.Services
 {
-    // TODO: Account for interruption (app stops before all items are processed).
-    // Need to try to add back any URIs that are already reserved and are here in memory.
-    // Add those back to the 'to be explored' set and remove them from the 'explored' set.
     public class CrawlerPrefetchService : ICrawlerPrefetchService
     {
         private record FetchResult(string PageHtml, Exception Exception);

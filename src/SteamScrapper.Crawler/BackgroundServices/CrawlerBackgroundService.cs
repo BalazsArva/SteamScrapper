@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SteamScrapper.Common.Providers;
+using SteamScrapper.Crawler.Commands.CancelReservations;
 using SteamScrapper.Crawler.Commands.ExplorePage;
 using SteamScrapper.Crawler.Commands.RegisterStartingAddresses;
 using SteamScrapper.Domain.Services.Exceptions;
@@ -17,17 +18,20 @@ namespace SteamScrapper.Crawler.BackgroundServices
 
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly IExplorePageCommandHandler explorePageCommandHandler;
+        private readonly ICancelReservationsCommandHandler cancelReservationsCommandHandler;
         private readonly ILogger logger;
         private readonly IRegisterStartingAddressesCommandHandler registerStartingAddressesCommandHandler;
 
         public CrawlerBackgroundService(
             IDateTimeProvider dateTimeProvider,
             IExplorePageCommandHandler explorePageCommandHandler,
+            ICancelReservationsCommandHandler cancelReservationsCommandHandler,
             ILogger<CrawlerBackgroundService> logger,
             IRegisterStartingAddressesCommandHandler registerStartingAddressesCommandHandler)
         {
             this.dateTimeProvider = dateTimeProvider;
             this.explorePageCommandHandler = explorePageCommandHandler ?? throw new ArgumentNullException(nameof(explorePageCommandHandler));
+            this.cancelReservationsCommandHandler = cancelReservationsCommandHandler ?? throw new ArgumentNullException(nameof(cancelReservationsCommandHandler));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.registerStartingAddressesCommandHandler = registerStartingAddressesCommandHandler ?? throw new ArgumentNullException(nameof(registerStartingAddressesCommandHandler));
         }
@@ -93,6 +97,8 @@ namespace SteamScrapper.Crawler.BackgroundServices
                     break;
                 }
             }
+
+            await cancelReservationsCommandHandler.CancelReservations();
 
             logger.LogInformation("Appplication shutdown requested, the crawler service has been terminated.");
         }
