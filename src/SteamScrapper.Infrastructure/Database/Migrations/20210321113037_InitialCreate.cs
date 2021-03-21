@@ -11,8 +11,7 @@ namespace SteamScrapper.Infrastructure.Database.Migrations
                 name: "Apps",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
                     UtcDateTimeRecorded = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
                     UtcDateTimeLastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "CONVERT(datetime2(7), N'2000-01-01T00:00:00+00:00')"),
                     IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValueSql: "0"),
@@ -28,8 +27,7 @@ namespace SteamScrapper.Infrastructure.Database.Migrations
                 name: "Bundles",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
                     UtcDateTimeRecorded = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
                     UtcDateTimeLastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "CONVERT(datetime2(7), N'2000-01-01T00:00:00+00:00')"),
                     IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValueSql: "0"),
@@ -45,8 +43,7 @@ namespace SteamScrapper.Infrastructure.Database.Migrations
                 name: "Subs",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<long>(type: "bigint", nullable: false),
                     UtcDateTimeRecorded = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
                     UtcDateTimeLastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "CONVERT(datetime2(7), N'2000-01-01T00:00:00+00:00')"),
                     IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValueSql: "0"),

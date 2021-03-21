@@ -42,6 +42,11 @@ namespace SteamScrapper.Infrastructure.Database.Context
 
             using var sqlCommand = Apps.CreateDbCommand();
 
+            if (sqlCommand.Connection.State == ConnectionState.Closed || sqlCommand.Connection.State == ConnectionState.Broken)
+            {
+                await sqlCommand.Connection.OpenAsync();
+            }
+
             var commandTexts = appIds
                 .Distinct()
                 .Select(appId => IncludeInsertUnknownApp(sqlCommand, appId))
@@ -76,6 +81,11 @@ namespace SteamScrapper.Infrastructure.Database.Context
                 .HasKey(x => x.Id);
 
             // Column setup
+            modelBuilder
+                .Entity<App>()
+                .Property(x => x.Id)
+                .ValueGeneratedNever();
+
             modelBuilder
                 .Entity<App>()
                 .Property(x => x.UtcDateTimeRecorded)
@@ -130,6 +140,11 @@ namespace SteamScrapper.Infrastructure.Database.Context
             // Column setup
             modelBuilder
                 .Entity<Bundle>()
+                .Property(x => x.Id)
+                .ValueGeneratedNever();
+
+            modelBuilder
+                .Entity<Bundle>()
                 .Property(x => x.UtcDateTimeRecorded)
                 .HasDefaultValueSql(SystemUtcDateTimeValueSql);
 
@@ -182,6 +197,11 @@ namespace SteamScrapper.Infrastructure.Database.Context
             // Column setup
             modelBuilder
                 .Entity<Sub>()
+                .Property(x => x.Id)
+                .ValueGeneratedNever();
+
+            modelBuilder
+                .Entity<Sub>()
                 .Property(x => x.UtcDateTimeRecorded)
                 .HasDefaultValueSql(SystemUtcDateTimeValueSql);
 
@@ -228,10 +248,11 @@ namespace SteamScrapper.Infrastructure.Database.Context
             parameter.DbType = DbType.Int64;
             parameter.Direction = ParameterDirection.Input;
 
+            command.Parameters.Add(parameter);
+
             return
                 $"IF NOT EXISTS (SELECT 1 FROM [dbo].[Apps] AS [A] WHERE [A].[Id] = @{parameterName}) " +
-                $"INSERT INTO [dbo].[Apps] ([Id]) " +
-                $"VALUES (@{parameterName})";
+                $"INSERT INTO [dbo].[Apps] ([Id]) VALUES (@{parameterName})";
         }
     }
 }

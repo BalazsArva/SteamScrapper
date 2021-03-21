@@ -22,9 +22,7 @@ namespace SteamScrapper.Infrastructure.Database.Migrations
             modelBuilder.Entity("SteamScrapper.Infrastructure.Database.Entities.App", b =>
                 {
                     b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("bigint");
 
                     b.Property<string>("BannerUrl")
                         .HasMaxLength(2048)
@@ -64,9 +62,7 @@ namespace SteamScrapper.Infrastructure.Database.Migrations
             modelBuilder.Entity("SteamScrapper.Infrastructure.Database.Entities.Bundle", b =>
                 {
                     b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("bigint");
 
                     b.Property<string>("BannerUrl")
                         .HasMaxLength(2048)
@@ -106,9 +102,7 @@ namespace SteamScrapper.Infrastructure.Database.Migrations
             modelBuilder.Entity("SteamScrapper.Infrastructure.Database.Entities.Sub", b =>
                 {
                     b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("bigint");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
