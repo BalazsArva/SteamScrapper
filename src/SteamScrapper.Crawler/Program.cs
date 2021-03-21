@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Crawler.BackgroundServices;
 using SteamScrapper.Crawler.Commands.CancelReservations;
@@ -21,6 +22,8 @@ namespace SteamScrapper.Crawler
 {
     public static class Program
     {
+        private const int SqlConnectionPoolSize = 32;
+
         public static async Task Main(string[] args)
         {
             var hostBuilder = CreateHostBuilder(args);
@@ -31,17 +34,16 @@ namespace SteamScrapper.Crawler
 
         private static IHostBuilder CreateHostBuilder(string[] args)
         {
-            // TODO: Configuration
-            var sqlConnectionString = "Data Source=(localdb)\\MSSQLLocalDb;Initial Catalog=SteamScrapper;Integrated Security=true";
-
             return Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.Configure<SqlServerOptions>(hostContext.Configuration.GetSection(SqlServerOptions.SectionName));
                     services.Configure<RedisOptions>(hostContext.Configuration.GetSection(RedisOptions.SectionName));
                     services.Configure<RegisterStartingAddressesOptions>(hostContext.Configuration.GetSection(RegisterStartingAddressesOptions.SectionName));
                     services.Configure<CrawlerAddressRegistrationOptions>(hostContext.Configuration.GetSection(CrawlerAddressRegistrationOptions.SectionName));
 
-                    services.AddPooledDbContextFactory<SteamContext>(opts => opts.UseSqlServer(sqlConnectionString), 16);
+                    services.AddPooledDbContextFactory<SteamContext>(
+                        (services, opts) => opts.UseSqlServer(services.GetRequiredService<IOptions<SqlServerOptions>>().Value.ConnectionString), SqlConnectionPoolSize);
 
                     services.AddSingleton<IAppRepository, AppRepository>();
                     services.AddSingleton<IBundleRepository, BundleRepository>();
