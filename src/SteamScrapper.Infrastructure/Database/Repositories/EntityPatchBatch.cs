@@ -46,13 +46,6 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             return entityPatchOperations[key];
         }
 
-        public string ToPatchSqlCommandText()
-        {
-            var commandTextsPerId = entityPatchOperations.Values.Select(x => x.ToPatchSqlCommandText()).Where(x => !string.IsNullOrWhiteSpace(x));
-
-            return string.Join('\n', commandTextsPerId);
-        }
-
         public async Task<int> ExecuteAsync()
         {
             var completeCommandText = ToPatchSqlCommandText();
@@ -83,6 +76,13 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
 
                 disposedValue = true;
             }
+        }
+
+        private string ToPatchSqlCommandText()
+        {
+            var commandTextsPerId = entityPatchOperations.Values.Select(x => x.ToPatchSqlCommandText()).Where(x => !string.IsNullOrWhiteSpace(x));
+
+            return string.Join('\n', commandTextsPerId);
         }
     }
 }
