@@ -33,37 +33,6 @@ namespace SteamScrapper.Infrastructure.Database.Context
 
         public DbSet<Sub> Subs => Set<Sub>();
 
-        public async Task<int> RegisterUnknownAppsAsync(IEnumerable<int> appIds)
-        {
-            if (appIds is null)
-            {
-                throw new ArgumentNullException(nameof(appIds));
-            }
-
-            using var sqlCommand = Apps.CreateDbCommand();
-
-            if (sqlCommand.Connection.State == ConnectionState.Closed || sqlCommand.Connection.State == ConnectionState.Broken)
-            {
-                await sqlCommand.Connection.OpenAsync();
-            }
-
-            var commandTexts = appIds
-                .Distinct()
-                .Select(appId => IncludeInsertUnknownApp(sqlCommand, appId))
-                .ToList();
-
-            if (commandTexts.Count == 0)
-            {
-                return 0;
-            }
-
-            var completeCommandText = string.Join('\n', commandTexts);
-
-            sqlCommand.CommandText = completeCommandText;
-
-            return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
-        }
-
         public async Task<int> RegisterUnknownBundlesAsync(IEnumerable<int> bundleIds)
         {
             if (bundleIds is null)
@@ -298,23 +267,6 @@ namespace SteamScrapper.Infrastructure.Database.Context
             modelBuilder
                 .Entity<Sub>()
                 .HasIndex(x => x.UtcDateTimeLastModified);
-        }
-
-        private static string IncludeInsertUnknownApp(DbCommand command, long appId)
-        {
-            var parameter = command.CreateParameter();
-            var parameterName = $"app_{appId}";
-
-            parameter.ParameterName = parameterName;
-            parameter.Value = appId;
-            parameter.DbType = DbType.Int64;
-            parameter.Direction = ParameterDirection.Input;
-
-            command.Parameters.Add(parameter);
-
-            return
-                $"IF NOT EXISTS (SELECT 1 FROM [dbo].[Apps] AS [A] WHERE [A].[Id] = @{parameterName}) " +
-                $"INSERT INTO [dbo].[Apps] ([Id]) VALUES (@{parameterName})";
         }
 
         private static string IncludeInsertUnknownBundle(DbCommand command, long bundleId)
