@@ -5,12 +5,12 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SteamScrapper.Infrastructure.Database;
+using SteamScrapper.Infrastructure.Database.Context;
 
 namespace SteamScrapper.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(SteamContext))]
-    [Migration("20210321103636_InitialCreate")]
+    [Migration("20210321111108_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -39,8 +39,10 @@ namespace SteamScrapper.Infrastructure.Database.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)");
+                        .HasColumnType("nvarchar(2048)")
+                        .HasDefaultValueSql("N'Unknown App'");
 
                     b.Property<DateTime>("UtcDateTimeLastModified")
                         .ValueGeneratedOnAdd()
@@ -58,7 +60,7 @@ namespace SteamScrapper.Infrastructure.Database.Migrations
 
                     b.HasIndex("UtcDateTimeLastModified");
 
-                    b.ToTable("App");
+                    b.ToTable("Apps");
                 });
 
             modelBuilder.Entity("SteamScrapper.Infrastructure.Database.Entities.Bundle", b =>
@@ -79,8 +81,10 @@ namespace SteamScrapper.Infrastructure.Database.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)");
+                        .HasColumnType("nvarchar(2048)")
+                        .HasDefaultValueSql("N'Unknown Bundle'");
 
                     b.Property<DateTime>("UtcDateTimeLastModified")
                         .ValueGeneratedOnAdd()
@@ -98,7 +102,7 @@ namespace SteamScrapper.Infrastructure.Database.Migrations
 
                     b.HasIndex("UtcDateTimeLastModified");
 
-                    b.ToTable("Bundle");
+                    b.ToTable("Bundles");
                 });
 
             modelBuilder.Entity("SteamScrapper.Infrastructure.Database.Entities.Sub", b =>
@@ -115,8 +119,10 @@ namespace SteamScrapper.Infrastructure.Database.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)");
+                        .HasColumnType("nvarchar(2048)")
+                        .HasDefaultValueSql("N'Unknown Sub'");
 
                     b.Property<DateTime>("UtcDateTimeLastModified")
                         .ValueGeneratedOnAdd()
@@ -134,7 +140,7 @@ namespace SteamScrapper.Infrastructure.Database.Migrations
 
                     b.HasIndex("UtcDateTimeLastModified");
 
-                    b.ToTable("Sub");
+                    b.ToTable("Subs");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,12 +1,22 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using SteamScrapper.Infrastructure.Database.Entities;
 
-namespace SteamScrapper.Infrastructure.Database
+namespace SteamScrapper.Infrastructure.Database.Context
 {
     public class SteamContext : DbContext
     {
         private const int BannerUrlMaxLength = 2048;
         private const int TitleMaxLength = 2048;
+
+        private const string AppNameDefaultValueSql = "N'Unknown App'";
+        private const string BundleNameDefaultValueSql = "N'Unknown Bundle'";
+        private const string SubNameDefaultValueSql = "N'Unknown Sub'";
 
         private const string BooleanFalseValueSql = "0";
         private const string SystemUtcDateTimeValueSql = "SYSUTCDATETIME()";
@@ -15,6 +25,38 @@ namespace SteamScrapper.Infrastructure.Database
         public SteamContext(DbContextOptions<SteamContext> dbContextOptions)
             : base(dbContextOptions)
         {
+        }
+
+        public DbSet<App> Apps => Set<App>();
+
+        public DbSet<Bundle> Bundles => Set<Bundle>();
+
+        public DbSet<Sub> Subs => Set<Sub>();
+
+        public async Task<int> RegisterUnknownAppsAsync(IEnumerable<int> appIds)
+        {
+            if (appIds is null)
+            {
+                throw new ArgumentNullException(nameof(appIds));
+            }
+
+            using var sqlCommand = Apps.CreateDbCommand();
+
+            var commandTexts = appIds
+                .Distinct()
+                .Select(appId => IncludeInsertUnknownApp(sqlCommand, appId))
+                .ToList();
+
+            if (commandTexts.Count == 0)
+            {
+                return 0;
+            }
+
+            var completeCommandText = string.Join('\n', commandTexts);
+
+            sqlCommand.CommandText = completeCommandText;
+
+            return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -65,6 +107,7 @@ namespace SteamScrapper.Infrastructure.Database
                 .Entity<App>()
                 .Property(x => x.Title)
                 .IsRequired(true)
+                .HasDefaultValueSql(AppNameDefaultValueSql)
                 .HasMaxLength(TitleMaxLength);
 
             // Index setup
@@ -116,6 +159,7 @@ namespace SteamScrapper.Infrastructure.Database
                 .Entity<Bundle>()
                 .Property(x => x.Title)
                 .IsRequired(true)
+                .HasDefaultValueSql(BundleNameDefaultValueSql)
                 .HasMaxLength(TitleMaxLength);
 
             // Index setup
@@ -161,6 +205,7 @@ namespace SteamScrapper.Infrastructure.Database
                 .Entity<Sub>()
                 .Property(x => x.Title)
                 .IsRequired(true)
+                .HasDefaultValueSql(SubNameDefaultValueSql)
                 .HasMaxLength(TitleMaxLength);
 
             // Index setup
@@ -171,6 +216,22 @@ namespace SteamScrapper.Infrastructure.Database
             modelBuilder
                 .Entity<Sub>()
                 .HasIndex(x => x.UtcDateTimeLastModified);
+        }
+
+        private static string IncludeInsertUnknownApp(DbCommand command, long appId)
+        {
+            var parameter = command.CreateParameter();
+            var parameterName = $"app_{appId}";
+
+            parameter.ParameterName = parameterName;
+            parameter.Value = appId;
+            parameter.DbType = DbType.Int64;
+            parameter.Direction = ParameterDirection.Input;
+
+            return
+                $"IF NOT EXISTS (SELECT 1 FROM [dbo].[Apps] AS [A] WHERE [A].[Id] = @{parameterName}) " +
+                $"INSERT INTO [dbo].[Apps] ([Id]) " +
+                $"VALUES (@{parameterName})";
         }
     }
 }

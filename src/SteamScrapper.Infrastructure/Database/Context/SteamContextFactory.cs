@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
-namespace SteamScrapper.Infrastructure.Database
+namespace SteamScrapper.Infrastructure.Database.Context
 {
     public class SteamContextFactory : IDesignTimeDbContextFactory<SteamContext>
     {
