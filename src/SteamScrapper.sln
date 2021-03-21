@@ -23,7 +23,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SteamScrapper.AppScanner", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SteamScrapper.SubScanner", "SteamScrapper.SubScanner\SteamScrapper.SubScanner.csproj", "{A4EBFDB2-C23C-4C10-A0D8-7390125445A9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamScrapper.BundleScanner", "SteamScrapper.BundleScanner\SteamScrapper.BundleScanner.csproj", "{3EC13090-8EF3-46FF-A988-4DBAE2354388}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SteamScrapper.BundleScanner", "SteamScrapper.BundleScanner\SteamScrapper.BundleScanner.csproj", "{3EC13090-8EF3-46FF-A988-4DBAE2354388}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utils", "Utils", "{B7F9026D-668B-4DE7-B181-3B23384F8A18}"
+	ProjectSection(SolutionItems) = preProject
+		add-migration.ps1 = add-migration.ps1
+		.config\dotnet-tools.json = .config\dotnet-tools.json
+		update-database.ps1 = update-database.ps1
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
