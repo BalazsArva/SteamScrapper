@@ -75,7 +75,7 @@ namespace SteamScrapper.Domain.Factories
             return new AppPage(uri, doc);
         }
 
-        public async Task<SubPage> CreateSubPageAsync(int subId)
+        public async Task<SubPage> CreateSubPageAsync(long subId)
         {
             var uri = SteamLinkHelper.CreateSubUri(subId);
             var html = await steamService.GetHtmlAsync(uri);
@@ -86,7 +86,7 @@ namespace SteamScrapper.Domain.Factories
             return new SubPage(uri, doc);
         }
 
-        public async Task<BundlePage> CreateBundlePageAsync(int bundleId)
+        public async Task<BundlePage> CreateBundlePageAsync(long bundleId)
         {
             var uri = SteamLinkHelper.CreateBundleUri(bundleId);
             var html = await steamService.GetHtmlAsync(uri);

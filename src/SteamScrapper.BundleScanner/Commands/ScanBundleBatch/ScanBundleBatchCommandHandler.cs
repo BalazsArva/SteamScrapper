@@ -86,7 +86,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
             return ScanBundleBatchCommandResult.Success;
         }
 
-        private async Task ProcessBundleIdsAsync(IEnumerable<int> bundleIds)
+        private async Task ProcessBundleIdsAsync(IEnumerable<long> bundleIds)
         {
             var downloadTasks = new List<Task<BundleData>>(degreeOfParallelism);
 
@@ -100,7 +100,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
             await bundleScanningService.UpdateBundlesAsync(bundleData);
         }
 
-        private async Task<BundleData> GetBundleDataAsync(int bundleId)
+        private async Task<BundleData> GetBundleDataAsync(long bundleId)
         {
             try
             {

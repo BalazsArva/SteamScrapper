@@ -9,7 +9,7 @@ namespace SteamScrapper.Domain.Services.Abstractions
     {
         Task<int> GetCountOfUnscannedSubsAsync();
 
-        Task<IEnumerable<int>> GetNextSubIdsForScanningAsync(DateTime executionDate);
+        Task<IEnumerable<long>> GetNextSubIdsForScanningAsync(DateTime executionDate);
 
         Task UpdateSubsAsync(IEnumerable<SubData> subData);
     }

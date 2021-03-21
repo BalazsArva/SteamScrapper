@@ -86,7 +86,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
             return ScanSubBatchCommandResult.Success;
         }
 
-        private async Task ProcessSubIdsAsync(IEnumerable<int> subIds)
+        private async Task ProcessSubIdsAsync(IEnumerable<long> subIds)
         {
             var downloadTasks = new List<Task<SubData>>(degreeOfParallelism);
 
@@ -100,7 +100,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
             await subScanningService.UpdateSubsAsync(subData);
         }
 
-        private async Task<SubData> GetSubDataAsync(int subId)
+        private async Task<SubData> GetSubDataAsync(long subId)
         {
             try
             {

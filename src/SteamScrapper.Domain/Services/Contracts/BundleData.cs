@@ -1,4 +1,4 @@
 ﻿namespace SteamScrapper.Domain.Services.Contracts
 {
-    public record BundleData(int BundleId, string Title, string BannerUrl);
+    public record BundleData(long BundleId, string Title, string BannerUrl);
 }

@@ -40,15 +40,15 @@ namespace SteamScrapper.Infrastructure.Services
             return (int)await sqlCommand.ExecuteScalarAsync();
         }
 
-        public async Task<IEnumerable<int>> GetNextSubIdsForScanningAsync(DateTime executionDate)
+        public async Task<IEnumerable<long>> GetNextSubIdsForScanningAsync(DateTime executionDate)
         {
             const int batchSize = 50;
             const string offsetSqlParamName = "offset";
             const string batchSizeSqlParamName = "batchSize";
 
             var attempt = 0;
-            var subIds = new List<int>(batchSize);
-            var results = new List<int>(batchSize);
+            var subIds = new List<long>(batchSize);
+            var results = new List<long>(batchSize);
 
             // Read subIds form the DB that are not scanned today and try to acquire reservation against concurrent processing.
             // If nothing is retrieved from the DB, then we are done for today.
@@ -71,17 +71,17 @@ namespace SteamScrapper.Infrastructure.Services
                 using var sqlDataReader = await sqlCommand.ExecuteReaderAsync();
                 while (await sqlDataReader.ReadAsync())
                 {
-                    subIds.Add(sqlDataReader.GetInt32(0));
+                    subIds.Add(sqlDataReader.GetInt64(0));
                 }
 
                 if (subIds.Count == 0)
                 {
                     // Could not find anything in the database waiting for scanning today.
-                    return Array.Empty<int>();
+                    return Array.Empty<long>();
                 }
 
                 var reservationTransaction = redisDatabase.CreateTransaction();
-                var reservationTasks = new Dictionary<int, Task<bool>>(batchSize);
+                var reservationTasks = new Dictionary<long, Task<bool>>(batchSize);
 
                 for (var i = 0; i < subIds.Count; ++i)
                 {

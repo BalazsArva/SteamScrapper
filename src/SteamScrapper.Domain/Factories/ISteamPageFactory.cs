@@ -10,8 +10,8 @@ namespace SteamScrapper.Domain.Factories
 
         Task<AppPage> CreateAppPageAsync(long appId);
 
-        Task<SubPage> CreateSubPageAsync(int subId);
+        Task<SubPage> CreateSubPageAsync(long subId);
 
-        Task<BundlePage> CreateBundlePageAsync(int bundleId);
+        Task<BundlePage> CreateBundlePageAsync(long bundleId);
     }
 }

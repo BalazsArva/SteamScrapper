@@ -90,12 +90,12 @@ namespace SteamScrapper.Common.Utilities.Links
             return new Uri(PageUrlPrefixes.App + appId.ToString(CultureInfo.InvariantCulture), UriKind.Absolute);
         }
 
-        public static Uri CreateSubUri(int subId)
+        public static Uri CreateSubUri(long subId)
         {
             return new Uri(PageUrlPrefixes.Sub + subId.ToString(CultureInfo.InvariantCulture), UriKind.Absolute);
         }
 
-        public static Uri CreateBundleUri(int bundleId)
+        public static Uri CreateBundleUri(long bundleId)
         {
             return new Uri(PageUrlPrefixes.Bundle + bundleId.ToString(CultureInfo.InvariantCulture), UriKind.Absolute);
         }
