@@ -29,26 +29,15 @@ namespace SteamScrapper.Infrastructure.Services
             this.sqlConnection = sqlConnection ?? throw new ArgumentNullException(nameof(sqlConnection));
         }
 
-        public async Task<int> GetCountOfUnscannedAppsAsync()
-        {
-            using var sqlCommand = await CreateSqlCommandAsync();
-
-            sqlCommand.CommandText =
-                $"SELECT COUNT([Id]) FROM [SteamScrapper].[dbo].[Apps] " +
-                $"WHERE [UtcDateTimeLastModified] < CONVERT(date, SYSUTCDATETIME())";
-
-            return (int)await sqlCommand.ExecuteScalarAsync();
-        }
-
-        public async Task<IEnumerable<int>> GetNextAppIdsForScanningAsync(DateTime executionDate)
+        public async Task<IEnumerable<long>> GetNextAppIdsForScanningAsync(DateTime executionDate)
         {
             const int batchSize = 50;
             const string offsetSqlParamName = "offset";
             const string batchSizeSqlParamName = "batchSize";
 
             var attempt = 0;
-            var appIds = new List<int>(batchSize);
-            var results = new List<int>(batchSize);
+            var appIds = new List<long>(batchSize);
+            var results = new List<long>(batchSize);
 
             // Read appIds form the DB that are not scanned today and try to acquire reservation against concurrent processing.
             // If nothing is retrieved from the DB, then we are done for today.
@@ -71,17 +60,17 @@ namespace SteamScrapper.Infrastructure.Services
                 using var sqlDataReader = await sqlCommand.ExecuteReaderAsync();
                 while (await sqlDataReader.ReadAsync())
                 {
-                    appIds.Add(sqlDataReader.GetInt32(0));
+                    appIds.Add(sqlDataReader.GetInt64(0));
                 }
 
                 if (appIds.Count == 0)
                 {
                     // Could not find anything in the database waiting for scanning today.
-                    return Array.Empty<int>();
+                    return Array.Empty<long>();
                 }
 
                 var reservationTransaction = redisDatabase.CreateTransaction();
-                var reservationTasks = new Dictionary<int, Task<bool>>(batchSize);
+                var reservationTasks = new Dictionary<long, Task<bool>>(batchSize);
 
                 for (var i = 0; i < appIds.Count; ++i)
                 {

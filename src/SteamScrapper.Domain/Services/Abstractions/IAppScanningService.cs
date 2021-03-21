@@ -7,9 +7,7 @@ namespace SteamScrapper.Domain.Services.Abstractions
 {
     public interface IAppScanningService
     {
-        Task<int> GetCountOfUnscannedAppsAsync();
-
-        Task<IEnumerable<int>> GetNextAppIdsForScanningAsync(DateTime executionDate);
+        Task<IEnumerable<long>> GetNextAppIdsForScanningAsync(DateTime executionDate);
 
         Task UpdateAppsAsync(IEnumerable<AppData> appData);
     }

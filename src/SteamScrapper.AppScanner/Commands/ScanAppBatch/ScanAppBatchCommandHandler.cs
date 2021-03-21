@@ -11,6 +11,7 @@ using SteamScrapper.Common.Extensions;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
+using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.Domain.Services.Exceptions;
@@ -19,6 +20,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
 {
     public class ScanAppBatchCommandHandler : IScanAppBatchCommandHandler
     {
+        private readonly IAppQueryRepository appQueryRepository;
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly IAppScanningService appScanningService;
         private readonly ISteamPageFactory steamPageFactory;
@@ -27,6 +29,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
         private readonly int degreeOfParallelism;
 
         public ScanAppBatchCommandHandler(
+            IAppQueryRepository appQueryRepository,
             IDateTimeProvider dateTimeProvider,
             IAppScanningService appScanningService,
             ISteamPageFactory steamPageFactory,
@@ -45,6 +48,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                     nameof(options));
             }
 
+            this.appQueryRepository = appQueryRepository ?? throw new ArgumentNullException(nameof(appQueryRepository));
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.appScanningService = appScanningService ?? throw new ArgumentNullException(nameof(appScanningService));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
@@ -73,7 +77,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                 await ProcessAppIdsAsync(appIdsSegment);
             }
 
-            var remainingCount = await appScanningService.GetCountOfUnscannedAppsAsync();
+            var remainingCount = await appQueryRepository.CountUnscannedAppsAsync();
 
             stopwatch.Stop();
 
@@ -86,7 +90,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
             return ScanAppBatchCommandResult.Success;
         }
 
-        private async Task ProcessAppIdsAsync(IEnumerable<int> appIds)
+        private async Task ProcessAppIdsAsync(IEnumerable<long> appIds)
         {
             var downloadTasks = new List<Task<AppData>>(degreeOfParallelism);
 
@@ -100,7 +104,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
             await appScanningService.UpdateAppsAsync(appData);
         }
 
-        private async Task<AppData> GetAppDataAsync(int appId)
+        private async Task<AppData> GetAppDataAsync(long appId)
         {
             try
             {
