@@ -7,25 +7,25 @@ using SteamScrapper.Infrastructure.Database.Context;
 
 namespace SteamScrapper.Infrastructure.Database.Repositories
 {
-    public class AppRepository : IAppRepository
+    public class SubRepository : ISubRepository
     {
         private readonly IDbContextFactory<SteamContext> dbContextFactory;
 
-        public AppRepository(IDbContextFactory<SteamContext> dbContextFactory)
+        public SubRepository(IDbContextFactory<SteamContext> dbContextFactory)
         {
             this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
         }
 
-        public async Task<int> RegisterUnknownAppsAsync(IEnumerable<int> appIds)
+        public async Task<int> RegisterUnknownSubsAsync(IEnumerable<int> subIds)
         {
-            if (appIds is null)
+            if (subIds is null)
             {
-                throw new ArgumentNullException(nameof(appIds));
+                throw new ArgumentNullException(nameof(subIds));
             }
 
             using var context = dbContextFactory.CreateDbContext();
 
-            return await context.RegisterUnknownAppsAsync(appIds);
+            return await context.RegisterUnknownSubsAsync(subIds);
         }
     }
 }

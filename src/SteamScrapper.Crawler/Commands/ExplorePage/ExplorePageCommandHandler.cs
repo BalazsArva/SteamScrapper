@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.PageModels;
+using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Exceptions;
 
@@ -17,20 +18,26 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
         private readonly ILogger logger;
         private readonly ICrawlerAddressRegistrationService crawlerAddressRegistrationService;
         private readonly ICrawlerPrefetchService crawlerPrefetchService;
-        private readonly ISteamContentRegistrationService steamContentRegistrationService;
+        private readonly IAppRepository appRepository;
+        private readonly IBundleRepository bundleRepository;
+        private readonly ISubRepository subRepository;
 
         public ExplorePageCommandHandler(
             IDateTimeProvider dateTimeProvider,
             ILogger<ExplorePageCommandHandler> logger,
             ICrawlerAddressRegistrationService crawlerAddressRegistrationService,
             ICrawlerPrefetchService crawlerPrefetchService,
-            ISteamContentRegistrationService steamContentRegistrationService)
+            IAppRepository appRepository,
+            IBundleRepository bundleRepository,
+            ISubRepository subRepository)
         {
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.crawlerAddressRegistrationService = crawlerAddressRegistrationService ?? throw new ArgumentNullException(nameof(crawlerAddressRegistrationService));
             this.crawlerPrefetchService = crawlerPrefetchService ?? throw new ArgumentNullException(nameof(crawlerPrefetchService));
-            this.steamContentRegistrationService = steamContentRegistrationService ?? throw new ArgumentNullException(nameof(steamContentRegistrationService));
+            this.appRepository = appRepository ?? throw new ArgumentNullException(nameof(appRepository));
+            this.bundleRepository = bundleRepository ?? throw new ArgumentNullException(nameof(bundleRepository));
+            this.subRepository = subRepository ?? throw new ArgumentNullException(nameof(subRepository));
         }
 
         public async Task<ExplorePageCommandResult> ExplorePageAsync(CancellationToken cancellationToken)
@@ -91,7 +98,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
                 }
             }
 
-            var notYetKnownCount = await steamContentRegistrationService.RegisterUnknownBundlesAsync(unknownBundleIds);
+            var notYetKnownCount = await bundleRepository.RegisterUnknownBundlesAsync(unknownBundleIds);
 
             return (unknownBundleIds.Count, notYetKnownCount);
         }
@@ -109,7 +116,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
                 }
             }
 
-            var notYetKnownCount = await steamContentRegistrationService.RegisterUnknownSubsAsync(unknownSubIds);
+            var notYetKnownCount = await subRepository.RegisterUnknownSubsAsync(unknownSubIds);
 
             return (unknownSubIds.Count, notYetKnownCount);
         }
@@ -127,7 +134,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
                 }
             }
 
-            var notYetKnownCount = await steamContentRegistrationService.RegisterUnknownAppsAsync(unknownAppIds);
+            var notYetKnownCount = await appRepository.RegisterUnknownAppsAsync(unknownAppIds);
 
             return (unknownAppIds.Count, notYetKnownCount);
         }

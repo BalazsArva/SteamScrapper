@@ -64,6 +64,68 @@ namespace SteamScrapper.Infrastructure.Database.Context
             return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
         }
 
+        public async Task<int> RegisterUnknownBundlesAsync(IEnumerable<int> bundleIds)
+        {
+            if (bundleIds is null)
+            {
+                throw new ArgumentNullException(nameof(bundleIds));
+            }
+
+            using var sqlCommand = Apps.CreateDbCommand();
+
+            if (sqlCommand.Connection.State == ConnectionState.Closed || sqlCommand.Connection.State == ConnectionState.Broken)
+            {
+                await sqlCommand.Connection.OpenAsync();
+            }
+
+            var commandTexts = bundleIds
+                .Distinct()
+                .Select(bundleId => IncludeInsertUnknownBundle(sqlCommand, bundleId))
+                .ToList();
+
+            if (commandTexts.Count == 0)
+            {
+                return 0;
+            }
+
+            var completeCommandText = string.Join('\n', commandTexts);
+
+            sqlCommand.CommandText = completeCommandText;
+
+            return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
+        }
+
+        public async Task<int> RegisterUnknownSubsAsync(IEnumerable<int> subIds)
+        {
+            if (subIds is null)
+            {
+                throw new ArgumentNullException(nameof(subIds));
+            }
+
+            using var sqlCommand = Apps.CreateDbCommand();
+
+            if (sqlCommand.Connection.State == ConnectionState.Closed || sqlCommand.Connection.State == ConnectionState.Broken)
+            {
+                await sqlCommand.Connection.OpenAsync();
+            }
+
+            var commandTexts = subIds
+                .Distinct()
+                .Select(subId => IncludeInsertUnknownSub(sqlCommand, subId))
+                .ToList();
+
+            if (commandTexts.Count == 0)
+            {
+                return 0;
+            }
+
+            var completeCommandText = string.Join('\n', commandTexts);
+
+            sqlCommand.CommandText = completeCommandText;
+
+            return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -253,6 +315,40 @@ namespace SteamScrapper.Infrastructure.Database.Context
             return
                 $"IF NOT EXISTS (SELECT 1 FROM [dbo].[Apps] AS [A] WHERE [A].[Id] = @{parameterName}) " +
                 $"INSERT INTO [dbo].[Apps] ([Id]) VALUES (@{parameterName})";
+        }
+
+        private static string IncludeInsertUnknownBundle(DbCommand command, long bundleId)
+        {
+            var parameter = command.CreateParameter();
+            var parameterName = $"bundle_{bundleId}";
+
+            parameter.ParameterName = parameterName;
+            parameter.Value = bundleId;
+            parameter.DbType = DbType.Int64;
+            parameter.Direction = ParameterDirection.Input;
+
+            command.Parameters.Add(parameter);
+
+            return
+                $"IF NOT EXISTS (SELECT 1 FROM [dbo].[Bundles] AS [B] WHERE [B].[Id] = @{parameterName}) " +
+                $"INSERT INTO [dbo].[Bundles] ([Id]) VALUES (@{parameterName})";
+        }
+
+        private static string IncludeInsertUnknownSub(DbCommand command, long subId)
+        {
+            var parameter = command.CreateParameter();
+            var parameterName = $"sub_{subId}";
+
+            parameter.ParameterName = parameterName;
+            parameter.Value = subId;
+            parameter.DbType = DbType.Int64;
+            parameter.Direction = ParameterDirection.Input;
+
+            command.Parameters.Add(parameter);
+
+            return
+                $"IF NOT EXISTS (SELECT 1 FROM [dbo].[Subs] AS [S] WHERE [S].[Id] = @{parameterName}) " +
+                $"INSERT INTO [dbo].[Subs] ([Id]) VALUES (@{parameterName})";
         }
     }
 }
