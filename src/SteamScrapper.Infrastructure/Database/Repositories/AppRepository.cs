@@ -9,6 +9,7 @@ using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.Infrastructure.Database.Context;
+using SteamScrapper.Infrastructure.Database.Entities;
 
 namespace SteamScrapper.Infrastructure.Database.Repositories
 {
@@ -73,75 +74,28 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             }
 
             using var context = dbContextFactory.CreateDbContext();
-
-            using var sqlCommand = await CreateSqlCommandAsync(context);
-
-            var commandTexts = new List<string>();
+            using var patchBatch = new EntityPatchBatch<App, long>(context);
 
             foreach (var app in appData)
             {
-                commandTexts.Add(AddAppDetailsToUpdateCommand(sqlCommand, app));
+                var batch = patchBatch
+                    .ForEntity(app.AppId)
+                    .Patch(x => x.IsActive, app.IsActive)
+                    .Patch(x => x.Title, app.Title)
+                    .Patch(x => x.BannerUrl, app.BannerUrl)
+                    .Patch(x => x.UtcDateTimeLastModified, dateTimeProvider.UtcNow);
             }
 
-            var completeCommandText = string.Join('\n', commandTexts);
-
-            sqlCommand.CommandText = completeCommandText;
-
-            await sqlCommand.ExecuteNonQueryAsync();
+            await patchBatch.ExecuteAsync();
         }
 
         public async Task<int> CountUnscannedAppsAsync()
         {
-            var now = dateTimeProvider.UtcNow;
+            var today = dateTimeProvider.UtcNow.Date;
 
             using var context = dbContextFactory.CreateDbContext();
 
-            return await context.Apps.CountAsync(x => x.UtcDateTimeLastModified < now);
-        }
-
-        private static string AddAppDetailsToUpdateCommand(DbCommand command, AppData appData)
-        {
-            var appId = appData.AppId;
-
-            var idParameterName = $"appId_{appId}";
-            var isActiveParameterName = $"isActive_{appId}";
-            var titleParameterName = $"appTitle_{appId}";
-            var bannerUrlParameterName = $"appBanner_{appId}";
-
-            var idParameter = command.CreateParameter();
-            var isActiveParameter = command.CreateParameter();
-            var titleParameter = command.CreateParameter();
-            var bannerUrlParameter = command.CreateParameter();
-
-            idParameter.ParameterName = idParameterName;
-            idParameter.Value = appId;
-            idParameter.DbType = DbType.Int64;
-            idParameter.Direction = ParameterDirection.Input;
-
-            titleParameter.ParameterName = titleParameterName;
-            titleParameter.Value = appData.Title;
-            titleParameter.DbType = DbType.String;
-            titleParameter.Direction = ParameterDirection.Input;
-
-            bannerUrlParameter.ParameterName = bannerUrlParameterName;
-            bannerUrlParameter.Value = appData.BannerUrl ?? (object)DBNull.Value;
-            bannerUrlParameter.DbType = DbType.String;
-            bannerUrlParameter.Direction = ParameterDirection.Input;
-
-            isActiveParameter.ParameterName = isActiveParameterName;
-            isActiveParameter.Value = appData.IsActive;
-            isActiveParameter.DbType = DbType.Boolean;
-            isActiveParameter.Direction = ParameterDirection.Input;
-
-            command.Parameters.Add(idParameter);
-            command.Parameters.Add(isActiveParameter);
-            command.Parameters.Add(titleParameter);
-            command.Parameters.Add(bannerUrlParameter);
-
-            return string.Concat(
-                $"UPDATE [dbo].[Apps] ",
-                $"SET [Title] = @{titleParameterName}, [IsActive] = @{isActiveParameterName}, [BannerUrl] = @{bannerUrlParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() ",
-                $"WHERE [Id] = @{idParameterName}");
+            return await context.Apps.CountAsync(x => x.UtcDateTimeLastModified < today);
         }
 
         private static string IncludeInsertUnknownApp(DbCommand command, long appId)
