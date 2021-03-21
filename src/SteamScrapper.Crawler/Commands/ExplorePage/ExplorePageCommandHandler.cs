@@ -18,7 +18,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
         private readonly ILogger logger;
         private readonly ICrawlerAddressRegistrationService crawlerAddressRegistrationService;
         private readonly ICrawlerPrefetchService crawlerPrefetchService;
-        private readonly IAppRepository appRepository;
+        private readonly IAppWriteRepository appRepository;
         private readonly IBundleRepository bundleRepository;
         private readonly ISubRepository subRepository;
 
@@ -27,7 +27,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
             ILogger<ExplorePageCommandHandler> logger,
             ICrawlerAddressRegistrationService crawlerAddressRegistrationService,
             ICrawlerPrefetchService crawlerPrefetchService,
-            IAppRepository appRepository,
+            IAppWriteRepository appRepository,
             IBundleRepository bundleRepository,
             ISubRepository subRepository)
         {

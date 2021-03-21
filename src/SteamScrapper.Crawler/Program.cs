@@ -45,7 +45,7 @@ namespace SteamScrapper.Crawler
                     services.AddPooledDbContextFactory<SteamContext>(
                         (services, opts) => opts.UseSqlServer(services.GetRequiredService<IOptions<SqlServerOptions>>().Value.ConnectionString), SqlConnectionPoolSize);
 
-                    services.AddSingleton<IAppRepository, AppRepository>();
+                    services.AddSingleton<IAppWriteRepository, AppRepository>();
                     services.AddSingleton<IBundleRepository, BundleRepository>();
                     services.AddSingleton<ISubRepository, SubRepository>();
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();

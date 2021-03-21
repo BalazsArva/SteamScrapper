@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace SteamScrapper.Domain.Repositories
 {
-    public interface IAppRepository
+    public interface IAppWriteRepository
     {
         Task<int> RegisterUnknownAppsAsync(IEnumerable<int> appIds);
     }
