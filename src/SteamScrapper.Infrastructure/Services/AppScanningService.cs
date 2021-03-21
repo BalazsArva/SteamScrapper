@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Threading.Tasks;
 using StackExchange.Redis;
 using SteamScrapper.Domain.Services.Abstractions;
@@ -98,34 +97,6 @@ namespace SteamScrapper.Infrastructure.Services
 
                 ++attempt;
             }
-        }
-
-        public async Task UpdateAppsAsync(IEnumerable<AppData> appData)
-        {
-            if (appData is null)
-            {
-                throw new ArgumentNullException(nameof(appData));
-            }
-
-            if (!appData.Any())
-            {
-                return;
-            }
-
-            using var sqlCommand = await CreateSqlCommandAsync();
-
-            var commandTexts = new List<string>();
-
-            foreach (var app in appData)
-            {
-                commandTexts.Add(AddAppDetailsToUpdateCommand(sqlCommand, app));
-            }
-
-            var completeCommandText = string.Join('\n', commandTexts);
-
-            sqlCommand.CommandText = completeCommandText;
-
-            await sqlCommand.ExecuteNonQueryAsync();
         }
 
         private static string AddAppDetailsToUpdateCommand(SqlCommand command, AppData appData)

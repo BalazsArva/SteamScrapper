@@ -21,6 +21,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
     public class ScanAppBatchCommandHandler : IScanAppBatchCommandHandler
     {
         private readonly IAppQueryRepository appQueryRepository;
+        private readonly IAppWriteRepository appWriteRepository;
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly IAppScanningService appScanningService;
         private readonly ISteamPageFactory steamPageFactory;
@@ -30,6 +31,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
 
         public ScanAppBatchCommandHandler(
             IAppQueryRepository appQueryRepository,
+            IAppWriteRepository appWriteRepository,
             IDateTimeProvider dateTimeProvider,
             IAppScanningService appScanningService,
             ISteamPageFactory steamPageFactory,
@@ -49,6 +51,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
             }
 
             this.appQueryRepository = appQueryRepository ?? throw new ArgumentNullException(nameof(appQueryRepository));
+            this.appWriteRepository = appWriteRepository ?? throw new ArgumentNullException(nameof(appWriteRepository));
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.appScanningService = appScanningService ?? throw new ArgumentNullException(nameof(appScanningService));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
@@ -101,7 +104,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
 
             var appData = await Task.WhenAll(downloadTasks);
 
-            await appScanningService.UpdateAppsAsync(appData);
+            await appWriteRepository.UpdateAppsAsync(appData);
         }
 
         private async Task<AppData> GetAppDataAsync(long appId)
@@ -111,6 +114,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                 var page = await steamPageFactory.CreateAppPageAsync(appId);
                 var friendlyName = page.FriendlyName;
                 var bannerUrl = page.BannerUrl?.AbsoluteUri;
+                var isActive = true;
 
                 if (friendlyName == AppPage.UnknownAppName || friendlyName == SteamPage.UnknownPageTitle)
                 {
@@ -118,6 +122,8 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                         "Could not extract friendly name for app {@AppId} located at address {@Uri}.",
                         appId,
                         page.NormalizedAddress.AbsoluteUri);
+
+                    isActive = false;
                 }
 
                 if (string.IsNullOrWhiteSpace(bannerUrl))
@@ -126,9 +132,11 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                         "Could not extract banner URL for app {@AppId} located at address {@Uri}.",
                         appId,
                         bannerUrl);
+
+                    isActive = false;
                 }
 
-                return new AppData(appId, friendlyName, bannerUrl);
+                return new AppData(appId, friendlyName, bannerUrl, isActive);
             }
             catch (SteamPageRemovedException e)
             {
@@ -140,7 +148,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                     e.StatusCode);
 
                 // Return an "unknown" record, because if the database record is not marked as processed, then it'd be kept being retried (after the Redis reservation expires).
-                return new AppData(appId, AppPage.UnknownAppName, null);
+                return new AppData(appId, AppPage.UnknownAppName, null, false);
             }
         }
     }

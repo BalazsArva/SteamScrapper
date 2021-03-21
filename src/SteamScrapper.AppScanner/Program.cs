@@ -47,6 +47,7 @@ namespace SteamScrapper.AppScanner
 
                     services.AddSingleton<AppRepository>();
                     services.AddSingleton<IAppQueryRepository>(services => services.GetRequiredService<AppRepository>());
+                    services.AddSingleton<IAppWriteRepository>(services => services.GetRequiredService<AppRepository>());
 
                     services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
