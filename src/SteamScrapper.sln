@@ -27,8 +27,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SteamScrapper.BundleScanner
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utils", "Utils", "{B7F9026D-668B-4DE7-B181-3B23384F8A18}"
 	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		..\.gitignore = ..\.gitignore
 		add-migration.ps1 = add-migration.ps1
 		.config\dotnet-tools.json = .config\dotnet-tools.json
+		..\README.md = ..\README.md
 		update-database.ps1 = update-database.ps1
 	EndProjectSection
 EndProject
