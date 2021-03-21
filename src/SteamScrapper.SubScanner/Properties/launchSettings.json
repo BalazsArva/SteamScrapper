@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "SteamScrapper.SubExplorer": {
+    "SteamScrapper.SubScanner": {
       "commandName": "Project",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
