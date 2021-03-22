@@ -78,7 +78,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
             stopwatch.Stop();
 
             logger.LogInformation(
-                "Scanned {@SubIdsCount} subs in {@ElapsedMillis} millis. About {@RemainingCount} apps still need to be scanned.",
+                "Scanned {@SubIdsCount} subs in {@ElapsedMillis} millis. About {@RemainingCount} subs still need to be scanned.",
                 subIdsToScan.Count(),
                 stopwatch.ElapsedMilliseconds,
                 remainingCount);
