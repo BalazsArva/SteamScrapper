@@ -18,6 +18,6 @@ namespace SteamScrapper.Domain.PageModels.SpecialLinks
 
         public Uri Address { get; }
 
-        public int SubId { get; }
+        public long SubId { get; }
     }
 }

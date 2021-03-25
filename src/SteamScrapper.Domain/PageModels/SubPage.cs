@@ -26,7 +26,7 @@ namespace SteamScrapper.Domain.PageModels
             Price = ExtractPrice();
         }
 
-        public int SubId { get; }
+        public long SubId { get; }
 
         public decimal Price { get; }
 

@@ -16,7 +16,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
         }
 
-        public async Task<int> RegisterUnknownSubsAsync(IEnumerable<int> subIds)
+        public async Task<int> RegisterUnknownSubsAsync(IEnumerable<long> subIds)
         {
             if (subIds is null)
             {

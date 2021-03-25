@@ -33,7 +33,7 @@ namespace SteamScrapper.Infrastructure.Database.Context
 
         public DbSet<Sub> Subs => Set<Sub>();
 
-        public async Task<int> RegisterUnknownBundlesAsync(IEnumerable<int> bundleIds)
+        public async Task<int> RegisterUnknownBundlesAsync(IEnumerable<long> bundleIds)
         {
             if (bundleIds is null)
             {
@@ -64,7 +64,7 @@ namespace SteamScrapper.Infrastructure.Database.Context
             return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
         }
 
-        public async Task<int> RegisterUnknownSubsAsync(IEnumerable<int> subIds)
+        public async Task<int> RegisterUnknownSubsAsync(IEnumerable<long> subIds)
         {
             if (subIds is null)
             {

@@ -24,7 +24,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
 
-        public async Task<int> RegisterUnknownAppsAsync(IEnumerable<int> appIds)
+        public async Task<int> RegisterUnknownAppsAsync(IEnumerable<long> appIds)
         {
             if (appIds is null)
             {

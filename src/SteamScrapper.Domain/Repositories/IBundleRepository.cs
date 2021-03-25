@@ -5,6 +5,6 @@ namespace SteamScrapper.Domain.Repositories
 {
     public interface IBundleRepository
     {
-        Task<int> RegisterUnknownBundlesAsync(IEnumerable<int> bundleIds);
+        Task<int> RegisterUnknownBundlesAsync(IEnumerable<long> bundleIds);
     }
 }

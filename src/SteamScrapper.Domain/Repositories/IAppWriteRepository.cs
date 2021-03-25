@@ -6,7 +6,7 @@ namespace SteamScrapper.Domain.Repositories
 {
     public interface IAppWriteRepository
     {
-        Task<int> RegisterUnknownAppsAsync(IEnumerable<int> appIds);
+        Task<int> RegisterUnknownAppsAsync(IEnumerable<long> appIds);
 
         Task UpdateAppsAsync(IEnumerable<AppData> appData);
     }

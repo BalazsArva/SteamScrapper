@@ -27,7 +27,7 @@ namespace SteamScrapper.Domain.PageModels
             BannerUrl = ExtractBannerUrl();
         }
 
-        public int BundleId { get; }
+        public long BundleId { get; }
 
         public Uri BannerUrl { get; }
 

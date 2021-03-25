@@ -87,7 +87,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
 
         private async Task<(int NotYetExploredCount, int NotYetKnownCount)> RegisterFoundBundlesAsync(SteamPage steamPage, ISet<string> notYetExploredLinks)
         {
-            var unknownBundleIds = new List<int>(notYetExploredLinks.Count);
+            var unknownBundleIds = new List<long>(notYetExploredLinks.Count);
 
             foreach (var bundleLink in steamPage.BundleLinks)
             {
@@ -105,7 +105,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
 
         private async Task<(int NotYetExploredCount, int NotYetKnownCount)> RegisterFoundSubsAsync(SteamPage steamPage, ISet<string> notYetExploredLinks)
         {
-            var unknownSubIds = new List<int>(notYetExploredLinks.Count);
+            var unknownSubIds = new List<long>(notYetExploredLinks.Count);
 
             foreach (var subLink in steamPage.SubLinks)
             {
@@ -123,7 +123,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
 
         private async Task<(int NotYetExploredCount, int NotYetKnownCount)> RegisterFoundAppsAsync(SteamPage steamPage, ISet<string> notYetExploredLinks)
         {
-            var unknownAppIds = new List<int>(notYetExploredLinks.Count);
+            var unknownAppIds = new List<long>(notYetExploredLinks.Count);
 
             foreach (var appLink in steamPage.AppLinks)
             {

@@ -5,6 +5,6 @@ namespace SteamScrapper.Domain.Repositories
 {
     public interface ISubRepository
     {
-        Task<int> RegisterUnknownSubsAsync(IEnumerable<int> subIds);
+        Task<int> RegisterUnknownSubsAsync(IEnumerable<long> subIds);
     }
 }

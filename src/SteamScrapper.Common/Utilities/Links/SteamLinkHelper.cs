@@ -7,7 +7,7 @@ namespace SteamScrapper.Common.Utilities.Links
 {
     public static class SteamLinkHelper
     {
-        public static int ExtractBundleId(Uri address)
+        public static long ExtractBundleId(Uri address)
         {
             if (address is null)
             {
@@ -23,7 +23,7 @@ namespace SteamScrapper.Common.Utilities.Links
                     nameof(address));
             }
 
-            if (!int.TryParse(segmentsWithoutSlashes[2], out var bundleId) || bundleId < 1)
+            if (!long.TryParse(segmentsWithoutSlashes[2], out var bundleId) || bundleId < 1)
             {
                 throw new ArgumentException(
                    $"The provided address is invalid. The bundle Id in a valid address must be a positive integer.",
@@ -33,7 +33,7 @@ namespace SteamScrapper.Common.Utilities.Links
             return bundleId;
         }
 
-        public static int ExtractSubId(Uri address)
+        public static long ExtractSubId(Uri address)
         {
             if (address is null)
             {
@@ -49,7 +49,7 @@ namespace SteamScrapper.Common.Utilities.Links
                     nameof(address));
             }
 
-            if (!int.TryParse(segmentsWithoutSlashes[2], out var subId) || subId < 1)
+            if (!long.TryParse(segmentsWithoutSlashes[2], out var subId) || subId < 1)
             {
                 throw new ArgumentException(
                    $"The provided address is invalid. The sub Id in a valid address must be a positive integer.",
@@ -59,7 +59,7 @@ namespace SteamScrapper.Common.Utilities.Links
             return subId;
         }
 
-        public static int ExtractAppId(Uri address)
+        public static long ExtractAppId(Uri address)
         {
             if (address is null)
             {
@@ -75,7 +75,7 @@ namespace SteamScrapper.Common.Utilities.Links
                     nameof(address));
             }
 
-            if (!int.TryParse(segmentsWithoutSlashes[2], out var appId) || appId < 1)
+            if (!long.TryParse(segmentsWithoutSlashes[2], out var appId) || appId < 1)
             {
                 throw new ArgumentException(
                    $"The provided address is invalid. The app Id in a valid address must be a positive integer.",

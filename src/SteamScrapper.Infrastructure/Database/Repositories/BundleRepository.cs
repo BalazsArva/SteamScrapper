@@ -16,7 +16,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
         }
 
-        public async Task<int> RegisterUnknownBundlesAsync(IEnumerable<int> bundleIds)
+        public async Task<int> RegisterUnknownBundlesAsync(IEnumerable<long> bundleIds)
         {
             if (bundleIds is null)
             {

@@ -22,7 +22,7 @@ namespace SteamScrapper.Common.DataStructures
             buckets = new ulong[bucketCount];
         }
 
-        public void Set(int index, bool bit)
+        public void Set(long index, bool bit)
         {
             if (index < 0)
             {
@@ -35,11 +35,11 @@ namespace SteamScrapper.Common.DataStructures
             }
 
             var bucketIndex = index / bucketSize;
-            var bucketOffset = index % bucketSize;
+            var bucketOffset = (int)(index % bucketSize);
 
             if (bit)
             {
-                var mask = ((ulong)1) << bucketOffset;
+                var mask = 1UL << bucketOffset;
 
                 buckets[bucketIndex] |= mask;
             }
@@ -52,7 +52,7 @@ namespace SteamScrapper.Common.DataStructures
             }
         }
 
-        public bool Get(int index)
+        public bool Get(long index)
         {
             if (index < 0)
             {
@@ -65,7 +65,7 @@ namespace SteamScrapper.Common.DataStructures
             }
 
             var bucketIndex = index / bucketSize;
-            var bucketOffset = index % bucketSize;
+            var bucketOffset = (int)(index % bucketSize);
 
             var value = buckets[bucketIndex];
 

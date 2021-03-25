@@ -19,7 +19,7 @@ namespace SteamScrapper.Domain.PageModels
             BannerUrl = ExtractBannerUrl();
         }
 
-        public int AppId { get; }
+        public long AppId { get; }
 
         public Uri BannerUrl { get; }
 
