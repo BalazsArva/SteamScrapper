@@ -29,17 +29,6 @@ namespace SteamScrapper.Infrastructure.Services
             this.sqlConnection = sqlConnection ?? throw new ArgumentNullException(nameof(sqlConnection));
         }
 
-        public async Task<int> GetCountOfUnscannedSubsAsync()
-        {
-            using var sqlCommand = await CreateSqlCommandAsync();
-
-            sqlCommand.CommandText =
-                $"SELECT COUNT([Id]) FROM [SteamScrapper].[dbo].[Subs] " +
-                $"WHERE [UtcDateTimeLastModified] < CONVERT(date, SYSUTCDATETIME())";
-
-            return (int)await sqlCommand.ExecuteScalarAsync();
-        }
-
         public async Task<IEnumerable<long>> GetNextSubIdsForScanningAsync(DateTime executionDate)
         {
             const int batchSize = 50;
