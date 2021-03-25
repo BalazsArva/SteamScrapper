@@ -11,7 +11,7 @@ using SteamScrapper.Infrastructure.Database.Context;
 
 namespace SteamScrapper.Infrastructure.Database.Repositories
 {
-    public class SubRepository : ISubRepository
+    public class SubRepository : ISubQueryRepository, ISubWriteRepository
     {
         private readonly IDbContextFactory<SteamContext> dbContextFactory;
         private readonly IDateTimeProvider dateTimeProvider;

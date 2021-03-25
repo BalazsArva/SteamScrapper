@@ -3,10 +3,8 @@ using System.Threading.Tasks;
 
 namespace SteamScrapper.Domain.Repositories
 {
-    public interface ISubRepository
+    public interface ISubWriteRepository
     {
         Task<int> RegisterUnknownSubsAsync(IEnumerable<long> subIds);
-
-        Task<int> CountUnscannedSubsAsync();
     }
 }

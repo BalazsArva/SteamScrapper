@@ -22,7 +22,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
     {
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly ISubScanningService subScanningService;
-        private readonly ISubRepository subRepository;
+        private readonly ISubQueryRepository subQueryRepository;
         private readonly ISteamPageFactory steamPageFactory;
         private readonly ILogger logger;
 
@@ -31,7 +31,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
         public ScanSubBatchCommandHandler(
             IDateTimeProvider dateTimeProvider,
             ISubScanningService subScanningService,
-            ISubRepository subRepository,
+            ISubQueryRepository subQueryRepository,
             IOptions<ScanSubBatchOptions> options,
             ISteamPageFactory steamPageFactory,
             ILogger<ScanSubBatchCommandHandler> logger)
@@ -50,7 +50,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
 
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.subScanningService = subScanningService ?? throw new ArgumentNullException(nameof(subScanningService));
-            this.subRepository = subRepository ?? throw new ArgumentNullException(nameof(subRepository));
+            this.subQueryRepository = subQueryRepository ?? throw new ArgumentNullException(nameof(subQueryRepository));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -77,7 +77,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
                 await ProcessSubIdsAsync(subIdsSegment);
             }
 
-            var remainingCount = await subRepository.CountUnscannedSubsAsync();
+            var remainingCount = await subQueryRepository.CountUnscannedSubsAsync();
 
             stopwatch.Stop();
 

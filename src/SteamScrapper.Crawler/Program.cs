@@ -47,7 +47,7 @@ namespace SteamScrapper.Crawler
 
                     services.AddSingleton<IAppWriteRepository, AppRepository>();
                     services.AddSingleton<IBundleRepository, BundleRepository>();
-                    services.AddSingleton<ISubRepository, SubRepository>();
+                    services.AddSingleton<ISubWriteRepository, SubRepository>();
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
                     services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 

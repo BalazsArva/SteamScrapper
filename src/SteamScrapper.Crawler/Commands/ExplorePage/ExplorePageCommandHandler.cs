@@ -20,7 +20,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
         private readonly ICrawlerPrefetchService crawlerPrefetchService;
         private readonly IAppWriteRepository appRepository;
         private readonly IBundleRepository bundleRepository;
-        private readonly ISubRepository subRepository;
+        private readonly ISubWriteRepository subWriteRepository;
 
         public ExplorePageCommandHandler(
             IDateTimeProvider dateTimeProvider,
@@ -29,7 +29,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
             ICrawlerPrefetchService crawlerPrefetchService,
             IAppWriteRepository appRepository,
             IBundleRepository bundleRepository,
-            ISubRepository subRepository)
+            ISubWriteRepository subWriteRepository)
         {
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -37,7 +37,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
             this.crawlerPrefetchService = crawlerPrefetchService ?? throw new ArgumentNullException(nameof(crawlerPrefetchService));
             this.appRepository = appRepository ?? throw new ArgumentNullException(nameof(appRepository));
             this.bundleRepository = bundleRepository ?? throw new ArgumentNullException(nameof(bundleRepository));
-            this.subRepository = subRepository ?? throw new ArgumentNullException(nameof(subRepository));
+            this.subWriteRepository = subWriteRepository ?? throw new ArgumentNullException(nameof(subWriteRepository));
         }
 
         public async Task<ExplorePageCommandResult> ExplorePageAsync(CancellationToken cancellationToken)
@@ -116,7 +116,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
                 }
             }
 
-            var notYetKnownCount = await subRepository.RegisterUnknownSubsAsync(unknownSubIds);
+            var notYetKnownCount = await subWriteRepository.RegisterUnknownSubsAsync(unknownSubIds);
 
             return (unknownSubIds.Count, notYetKnownCount);
         }

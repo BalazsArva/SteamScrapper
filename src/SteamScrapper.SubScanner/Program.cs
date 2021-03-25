@@ -46,7 +46,8 @@ namespace SteamScrapper.SubScanner
                         (services, opts) => opts.UseSqlServer(services.GetRequiredService<IOptions<SqlServerOptions>>().Value.ConnectionString), SqlConnectionPoolSize);
 
                     services.AddSingleton<SubRepository>();
-                    services.AddSingleton<ISubRepository>(services => services.GetRequiredService<SubRepository>());
+                    services.AddSingleton<ISubQueryRepository>(services => services.GetRequiredService<SubRepository>());
+                    services.AddSingleton<ISubWriteRepository>(services => services.GetRequiredService<SubRepository>());
 
                     services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
