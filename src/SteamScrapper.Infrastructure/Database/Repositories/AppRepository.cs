@@ -31,11 +31,6 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
                 throw new ArgumentNullException(nameof(appIds));
             }
 
-            if (appIds is null)
-            {
-                throw new ArgumentNullException(nameof(appIds));
-            }
-
             if (!appIds.Any())
             {
                 return 0;
