@@ -5,7 +5,6 @@ using System.Data.SqlClient;
 using System.Threading.Tasks;
 using StackExchange.Redis;
 using SteamScrapper.Domain.Services.Abstractions;
-using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.Infrastructure.Redis;
 
 namespace SteamScrapper.Infrastructure.Services
@@ -97,24 +96,6 @@ namespace SteamScrapper.Infrastructure.Services
 
                 ++attempt;
             }
-        }
-
-        private static string AddAppDetailsToUpdateCommand(SqlCommand command, AppData appData)
-        {
-            var appId = appData.AppId;
-
-            var idParameterName = $"appId_{appId}";
-            var titleParameterName = $"appTitle_{appId}";
-            var bannerUrlParameterName = $"appBanner_{appId}";
-
-            command.Parameters.AddWithValue(idParameterName, appId);
-            command.Parameters.AddWithValue(titleParameterName, appData.Title);
-            command.Parameters.AddWithValue(bannerUrlParameterName, appData.BannerUrl ?? (object)DBNull.Value);
-
-            return string.Concat(
-                $"UPDATE [dbo].[Apps] ",
-                $"SET [Title] = @{titleParameterName}, [BannerUrl] = @{bannerUrlParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() ",
-                $"WHERE [Id] = @{idParameterName}");
         }
 
         private async Task<SqlCommand> CreateSqlCommandAsync()
