@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,7 +7,6 @@ using StackExchange.Redis;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Services.Abstractions;
-using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.Infrastructure.Redis;
 
 namespace SteamScrapper.Infrastructure.Services
@@ -16,7 +14,6 @@ namespace SteamScrapper.Infrastructure.Services
     public class SubScanningService : ISubScanningService
     {
         private readonly ISubQueryRepository subQueryRepository;
-        private readonly SqlConnection sqlConnection;
         private readonly IDatabase redisDatabase;
         private readonly IDateTimeProvider dateTimeProvider;
 
@@ -29,8 +26,6 @@ namespace SteamScrapper.Infrastructure.Services
 
             redisDatabase = redisConnectionWrapper.ConnectionMultiplexer.GetDatabase();
 
-            // TODO: Swap to a data access abstraction
-            this.sqlConnection = sqlConnection ?? throw new ArgumentNullException(nameof(sqlConnection));
             this.subQueryRepository = subQueryRepository ?? throw new ArgumentNullException(nameof(subQueryRepository));
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
@@ -82,60 +77,6 @@ namespace SteamScrapper.Infrastructure.Services
 
                 ++attempt;
             }
-        }
-
-        public async Task UpdateSubsAsync(IEnumerable<SubData> subData)
-        {
-            if (subData is null)
-            {
-                throw new ArgumentNullException(nameof(subData));
-            }
-
-            if (!subData.Any())
-            {
-                return;
-            }
-
-            using var sqlCommand = await CreateSqlCommandAsync();
-
-            var commandTexts = new List<string>();
-
-            foreach (var sub in subData)
-            {
-                commandTexts.Add(AddSubDetailsToUpdateCommand(sqlCommand, sub));
-            }
-
-            var completeCommandText = string.Join('\n', commandTexts);
-
-            sqlCommand.CommandText = completeCommandText;
-
-            await sqlCommand.ExecuteNonQueryAsync();
-        }
-
-        private static string AddSubDetailsToUpdateCommand(SqlCommand command, SubData subData)
-        {
-            var subId = subData.SubId;
-
-            var idParameterName = $"subId_{subId}";
-            var titleParameterName = $"subTitle_{subId}";
-
-            command.Parameters.AddWithValue(idParameterName, subId);
-            command.Parameters.AddWithValue(titleParameterName, subData.Title);
-
-            return string.Concat(
-                $"UPDATE [dbo].[Subs] ",
-                $"SET [Title] = @{titleParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() ",
-                $"WHERE [Id] = @{idParameterName}");
-        }
-
-        private async Task<SqlCommand> CreateSqlCommandAsync()
-        {
-            if (sqlConnection.State == ConnectionState.Closed || sqlConnection.State == ConnectionState.Broken)
-            {
-                await sqlConnection.OpenAsync();
-            }
-
-            return sqlConnection.CreateCommand();
         }
     }
 }

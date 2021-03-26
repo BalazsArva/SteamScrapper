@@ -23,6 +23,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly ISubScanningService subScanningService;
         private readonly ISubQueryRepository subQueryRepository;
+        private readonly ISubWriteRepository subWriteRepository;
         private readonly ISteamPageFactory steamPageFactory;
         private readonly ILogger logger;
 
@@ -32,6 +33,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
             IDateTimeProvider dateTimeProvider,
             ISubScanningService subScanningService,
             ISubQueryRepository subQueryRepository,
+            ISubWriteRepository subWriteRepository,
             IOptions<ScanSubBatchOptions> options,
             ISteamPageFactory steamPageFactory,
             ILogger<ScanSubBatchCommandHandler> logger)
@@ -51,6 +53,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.subScanningService = subScanningService ?? throw new ArgumentNullException(nameof(subScanningService));
             this.subQueryRepository = subQueryRepository ?? throw new ArgumentNullException(nameof(subQueryRepository));
+            this.subWriteRepository = subWriteRepository ?? throw new ArgumentNullException(nameof(subWriteRepository));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -101,7 +104,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
 
             var subData = await Task.WhenAll(downloadTasks);
 
-            await subScanningService.UpdateSubsAsync(subData);
+            await subWriteRepository.UpdateSubsAsync(subData);
         }
 
         private async Task<SubData> GetSubDataAsync(long subId)
@@ -110,6 +113,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
             {
                 var page = await steamPageFactory.CreateSubPageAsync(subId);
                 var friendlyName = page.FriendlyName;
+                var isActive = true;
 
                 if (friendlyName == SubPage.UnknownSubName || friendlyName == SteamPage.UnknownPageTitle)
                 {
@@ -117,9 +121,11 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
                         "Could not extract friendly name for sub {@SubId} located at address {@Uri}.",
                         subId,
                         page.NormalizedAddress.AbsoluteUri);
+
+                    isActive = false;
                 }
 
-                return new SubData(page.SubId, page.FriendlyName);
+                return new SubData(page.SubId, page.FriendlyName, isActive);
             }
             catch (SteamPageRemovedException e)
             {
@@ -131,7 +137,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
                     e.StatusCode);
 
                 // Return an "unknown" record, because if the database record is not marked as processed, then it'd be kept being retried (after the Redis reservation expires).
-                return new SubData(subId, SubPage.UnknownSubName);
+                return new SubData(subId, SubPage.UnknownSubName, false);
             }
         }
     }

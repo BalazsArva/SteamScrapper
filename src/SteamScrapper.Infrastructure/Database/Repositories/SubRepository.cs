@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
+using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.Infrastructure.Database.Context;
 
 namespace SteamScrapper.Infrastructure.Database.Repositories
@@ -49,6 +50,36 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
         }
 
+        // TODO: SubData is no longer a "service contract" (namespace!). Use some aggregate instead.
+        public async Task UpdateSubsAsync(IEnumerable<SubData> subData)
+        {
+            if (subData is null)
+            {
+                throw new ArgumentNullException(nameof(subData));
+            }
+
+            if (!subData.Any())
+            {
+                return;
+            }
+
+            using var context = dbContextFactory.CreateDbContext();
+            using var sqlCommand = await CreateSqlCommandAsync(context);
+
+            var commandTexts = new List<string>();
+
+            foreach (var sub in subData)
+            {
+                commandTexts.Add(AddSubDetailsToUpdateCommand(sqlCommand, sub));
+            }
+
+            var completeCommandText = string.Join('\n', commandTexts);
+
+            sqlCommand.CommandText = completeCommandText;
+
+            await sqlCommand.ExecuteNonQueryAsync();
+        }
+
         public async Task<int> CountUnscannedSubsAsync()
         {
             var today = dateTimeProvider.UtcNow.Date;
@@ -87,6 +118,43 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             }
 
             return await filteredResults.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        }
+
+        private static string AddSubDetailsToUpdateCommand(DbCommand command, SubData subData)
+        {
+            var subId = subData.SubId;
+
+            var idParameter = command.CreateParameter();
+            var titleParameter = command.CreateParameter();
+            var isActiveParameter = command.CreateParameter();
+
+            var idParameterName = $"subId_{subId}";
+            var titleParameterName = $"subTitle_{subId}";
+            var isActiveParameterName = $"subIsActive_{subId}";
+
+            idParameter.ParameterName = idParameterName;
+            idParameter.Value = subId;
+            idParameter.DbType = DbType.Int64;
+            idParameter.Direction = ParameterDirection.Input;
+
+            titleParameter.ParameterName = titleParameterName;
+            titleParameter.Value = subData.Title;
+            titleParameter.DbType = DbType.String;
+            titleParameter.Direction = ParameterDirection.Input;
+
+            isActiveParameter.ParameterName = isActiveParameterName;
+            isActiveParameter.Value = subData.IsActive;
+            isActiveParameter.DbType = DbType.Boolean;
+            isActiveParameter.Direction = ParameterDirection.Input;
+
+            command.Parameters.Add(idParameter);
+            command.Parameters.Add(titleParameter);
+            command.Parameters.Add(isActiveParameter);
+
+            return string.Concat(
+                $"UPDATE [dbo].[Subs] ",
+                $"SET [Title] = @{titleParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME(), [IsActive] = @{isActiveParameterName} ",
+                $"WHERE [Id] = @{idParameterName}");
         }
 
         private static string IncludeInsertUnknownSub(DbCommand command, long subId)
