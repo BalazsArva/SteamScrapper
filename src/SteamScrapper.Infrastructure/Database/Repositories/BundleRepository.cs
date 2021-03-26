@@ -44,11 +44,6 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
                 .Select(bundleId => IncludeInsertUnknownBundle(sqlCommand, bundleId))
                 .ToList();
 
-            if (commandTexts.Count == 0)
-            {
-                return 0;
-            }
-
             var completeCommandText = string.Join('\n', commandTexts);
 
             sqlCommand.CommandText = completeCommandText;

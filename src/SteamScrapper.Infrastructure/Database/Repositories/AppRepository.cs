@@ -44,11 +44,6 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
                 .Select(appId => IncludeInsertUnknownApp(sqlCommand, appId))
                 .ToList();
 
-            if (commandTexts.Count == 0)
-            {
-                return 0;
-            }
-
             var completeCommandText = string.Join('\n', commandTexts);
 
             sqlCommand.CommandText = completeCommandText;
