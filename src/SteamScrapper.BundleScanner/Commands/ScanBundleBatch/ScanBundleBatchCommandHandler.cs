@@ -11,6 +11,7 @@ using SteamScrapper.Common.Extensions;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
+using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.Domain.Services.Exceptions;
@@ -21,6 +22,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
     {
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly IBundleScanningService bundleScanningService;
+        private readonly IBundleQueryRepository bundleQueryRepository;
         private readonly ISteamPageFactory steamPageFactory;
         private readonly ILogger logger;
 
@@ -29,6 +31,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
         public ScanBundleBatchCommandHandler(
             IDateTimeProvider dateTimeProvider,
             IBundleScanningService bundleScanningService,
+            IBundleQueryRepository bundleQueryRepository,
             IOptions<ScanBundleBatchOptions> options,
             ISteamPageFactory steamPageFactory,
             ILogger<ScanBundleBatchCommandHandler> logger)
@@ -47,6 +50,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
 
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.bundleScanningService = bundleScanningService ?? throw new ArgumentNullException(nameof(bundleScanningService));
+            this.bundleQueryRepository = bundleQueryRepository ?? throw new ArgumentNullException(nameof(bundleQueryRepository));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -73,7 +77,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                 await ProcessBundleIdsAsync(bundleIdsSegment);
             }
 
-            var remainingCount = await bundleScanningService.GetCountOfUnscannedBundlesAsync();
+            var remainingCount = await bundleQueryRepository.CountUnscannedBundlesAsync();
 
             stopwatch.Stop();
 

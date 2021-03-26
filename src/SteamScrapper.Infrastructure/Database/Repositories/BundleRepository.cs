@@ -5,18 +5,21 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Infrastructure.Database.Context;
 
 namespace SteamScrapper.Infrastructure.Database.Repositories
 {
-    public class BundleRepository : IBundleWriteRepository
+    public class BundleRepository : IBundleQueryRepository, IBundleWriteRepository
     {
         private readonly IDbContextFactory<SteamContext> dbContextFactory;
+        private readonly IDateTimeProvider dateTimeProvider;
 
-        public BundleRepository(IDbContextFactory<SteamContext> dbContextFactory)
+        public BundleRepository(IDbContextFactory<SteamContext> dbContextFactory, IDateTimeProvider dateTimeProvider)
         {
             this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
+            this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
 
         public async Task<int> RegisterUnknownBundlesAsync(IEnumerable<long> bundleIds)
@@ -49,6 +52,15 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             sqlCommand.CommandText = completeCommandText;
 
             return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
+        }
+
+        public async Task<int> CountUnscannedBundlesAsync()
+        {
+            var today = dateTimeProvider.UtcNow.Date;
+
+            using var context = dbContextFactory.CreateDbContext();
+
+            return await context.Bundles.CountAsync(x => x.UtcDateTimeLastModified < today);
         }
 
         private static string IncludeInsertUnknownBundle(DbCommand command, long bundleId)

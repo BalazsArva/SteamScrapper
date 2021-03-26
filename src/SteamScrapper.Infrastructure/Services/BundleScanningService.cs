@@ -29,17 +29,6 @@ namespace SteamScrapper.Infrastructure.Services
             this.sqlConnection = sqlConnection ?? throw new ArgumentNullException(nameof(sqlConnection));
         }
 
-        public async Task<int> GetCountOfUnscannedBundlesAsync()
-        {
-            using var sqlCommand = await CreateSqlCommandAsync();
-
-            sqlCommand.CommandText =
-                $"SELECT COUNT([Id]) FROM [SteamScrapper].[dbo].[Bundles] " +
-                $"WHERE [UtcDateTimeLastModified] < CONVERT(date, SYSUTCDATETIME())";
-
-            return (int)await sqlCommand.ExecuteScalarAsync();
-        }
-
         public async Task<IEnumerable<long>> GetNextBundleIdsForScanningAsync(DateTime executionDate)
         {
             const int batchSize = 50;

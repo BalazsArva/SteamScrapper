@@ -7,8 +7,6 @@ namespace SteamScrapper.Domain.Services.Abstractions
 {
     public interface IBundleScanningService
     {
-        Task<int> GetCountOfUnscannedBundlesAsync();
-
         Task<IEnumerable<long>> GetNextBundleIdsForScanningAsync(DateTime executionDate);
 
         Task UpdateBundlesAsync(IEnumerable<BundleData> bundleData);
