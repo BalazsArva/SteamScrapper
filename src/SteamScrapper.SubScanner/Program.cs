@@ -32,9 +32,6 @@ namespace SteamScrapper.SubScanner
 
         private static IHostBuilder CreateHostBuilder(string[] args)
         {
-            // TODO: Improve these dependencies
-            var sqlConnection = new SqlConnection("Data Source=(localdb)\\MSSQLLocalDb;Initial Catalog=SteamScrapper;Integrated Security=true");
-
             return Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
@@ -58,7 +55,12 @@ namespace SteamScrapper.SubScanner
                     services.AddSingleton<IScanSubBatchCommandHandler, ScanSubBatchCommandHandler>();
 
                     services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
-                    services.AddSingleton(sqlConnection);
+                    services.AddSingleton(services =>
+                    {
+                        var sqlConnectionString = services.GetRequiredService<IOptions<SqlServerOptions>>().Value.ConnectionString;
+
+                        return new SqlConnection(sqlConnectionString);
+                    });
 
                     services.AddHostedService<ScanSubsBackgroundService>();
                 });
