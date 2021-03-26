@@ -5,6 +5,8 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using StackExchange.Redis;
+using SteamScrapper.Common.Providers;
+using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.Infrastructure.Redis;
@@ -13,10 +15,12 @@ namespace SteamScrapper.Infrastructure.Services
 {
     public class SubScanningService : ISubScanningService
     {
+        private readonly ISubQueryRepository subQueryRepository;
         private readonly SqlConnection sqlConnection;
         private readonly IDatabase redisDatabase;
+        private readonly IDateTimeProvider dateTimeProvider;
 
-        public SubScanningService(IRedisConnectionWrapper redisConnectionWrapper, SqlConnection sqlConnection)
+        public SubScanningService(IRedisConnectionWrapper redisConnectionWrapper, IDateTimeProvider dateTimeProvider, ISubQueryRepository subQueryRepository, SqlConnection sqlConnection)
         {
             if (redisConnectionWrapper is null)
             {
@@ -27,43 +31,24 @@ namespace SteamScrapper.Infrastructure.Services
 
             // TODO: Swap to a data access abstraction
             this.sqlConnection = sqlConnection ?? throw new ArgumentNullException(nameof(sqlConnection));
+            this.subQueryRepository = subQueryRepository ?? throw new ArgumentNullException(nameof(subQueryRepository));
+            this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
 
         public async Task<IEnumerable<long>> GetNextSubIdsForScanningAsync(DateTime executionDate)
         {
             const int batchSize = 50;
-            const string offsetSqlParamName = "offset";
-            const string batchSizeSqlParamName = "batchSize";
 
-            var attempt = 0;
-            var subIds = new List<long>(batchSize);
+            var attempt = 1;
             var results = new List<long>(batchSize);
 
             // Read subIds form the DB that are not scanned today and try to acquire reservation against concurrent processing.
             // If nothing is retrieved from the DB, then we are done for today.
             while (true)
             {
-                subIds.Clear();
-                results.Clear();
+                var subIds = await subQueryRepository.GetSubIdsNotScannedFromAsync(dateTimeProvider.UtcNow.Date, attempt, batchSize, SortDirection.Descending);
 
-                using var sqlCommand = await CreateSqlCommandAsync();
-
-                sqlCommand.Parameters.AddWithValue(offsetSqlParamName, attempt * batchSize);
-                sqlCommand.Parameters.AddWithValue(batchSizeSqlParamName, batchSize);
-                sqlCommand.CommandText =
-                    $"SELECT [Id] FROM [SteamScrapper].[dbo].[Subs] " +
-                    $"WHERE [UtcDateTimeLastModified] < CONVERT(date, SYSUTCDATETIME()) " +
-                    $"ORDER BY [ID] DESC " +
-                    $"OFFSET @{offsetSqlParamName} ROWS " +
-                    $"FETCH NEXT @{batchSizeSqlParamName} ROWS ONLY";
-
-                using var sqlDataReader = await sqlCommand.ExecuteReaderAsync();
-                while (await sqlDataReader.ReadAsync())
-                {
-                    subIds.Add(sqlDataReader.GetInt64(0));
-                }
-
-                if (subIds.Count == 0)
+                if (!subIds.Any())
                 {
                     // Could not find anything in the database waiting for scanning today.
                     return Array.Empty<long>();
@@ -72,9 +57,8 @@ namespace SteamScrapper.Infrastructure.Services
                 var reservationTransaction = redisDatabase.CreateTransaction();
                 var reservationTasks = new Dictionary<long, Task<bool>>(batchSize);
 
-                for (var i = 0; i < subIds.Count; ++i)
+                foreach (var subId in subIds)
                 {
-                    var subId = subIds[i];
                     var redisKey = $"SubScanner:{executionDate:yyyyMMdd}:{subId}";
 
                     reservationTasks[subId] = reservationTransaction.StringSetAsync(redisKey, string.Empty, TimeSpan.FromMinutes(1), When.NotExists);
