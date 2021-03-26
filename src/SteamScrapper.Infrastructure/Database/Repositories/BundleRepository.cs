@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
+using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.Infrastructure.Database.Context;
 
 namespace SteamScrapper.Infrastructure.Database.Repositories
@@ -20,6 +21,36 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
         {
             this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
+        }
+
+        // TODO: BundleData is no longer a "service contract" (namespace!). Use some aggregate instead.
+        public async Task UpdateBundlesAsync(IEnumerable<BundleData> bundleData)
+        {
+            if (bundleData is null)
+            {
+                throw new ArgumentNullException(nameof(bundleData));
+            }
+
+            if (!bundleData.Any())
+            {
+                return;
+            }
+
+            using var context = dbContextFactory.CreateDbContext();
+            using var sqlCommand = await CreateSqlCommandAsync(context);
+
+            var commandTexts = new List<string>();
+
+            foreach (var bundle in bundleData)
+            {
+                commandTexts.Add(AddBundleDetailsToUpdateCommand(sqlCommand, bundle));
+            }
+
+            var completeCommandText = string.Join('\n', commandTexts);
+
+            sqlCommand.CommandText = completeCommandText;
+
+            await sqlCommand.ExecuteNonQueryAsync();
         }
 
         public async Task<int> RegisterUnknownBundlesAsync(IEnumerable<long> bundleIds)
@@ -90,6 +121,51 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             }
 
             return command;
+        }
+
+        private static string AddBundleDetailsToUpdateCommand(DbCommand command, BundleData bundleData)
+        {
+            var bundleId = bundleData.BundleId;
+
+            var idParameter = command.CreateParameter();
+            var titleParameter = command.CreateParameter();
+            var bannerUrlParameter = command.CreateParameter();
+            var isActiveParameter = command.CreateParameter();
+
+            var idParameterName = $"bundleId_{bundleId}";
+            var titleParameterName = $"bundleTitle_{bundleId}";
+            var bannerUrlParameterName = $"bundleBanner_{bundleId}";
+            var isActiveParameterName = $"bundleIsActive_{bundleId}";
+
+            idParameter.ParameterName = idParameterName;
+            idParameter.Value = bundleId;
+            idParameter.DbType = DbType.Int64;
+            idParameter.Direction = ParameterDirection.Input;
+
+            titleParameter.ParameterName = titleParameterName;
+            titleParameter.Value = bundleData.Title;
+            titleParameter.DbType = DbType.String;
+            titleParameter.Direction = ParameterDirection.Input;
+
+            bannerUrlParameter.ParameterName = bannerUrlParameterName;
+            bannerUrlParameter.Value = bundleData.BannerUrl ?? (object)DBNull.Value;
+            bannerUrlParameter.DbType = DbType.String;
+            bannerUrlParameter.Direction = ParameterDirection.Input;
+
+            isActiveParameter.ParameterName = isActiveParameterName;
+            isActiveParameter.Value = bundleData.IsActive;
+            isActiveParameter.DbType = DbType.Boolean;
+            isActiveParameter.Direction = ParameterDirection.Input;
+
+            command.Parameters.Add(idParameter);
+            command.Parameters.Add(titleParameter);
+            command.Parameters.Add(bannerUrlParameter);
+            command.Parameters.Add(isActiveParameter);
+
+            return string.Concat(
+                $"UPDATE [dbo].[Bundles] ",
+                $"SET [Title] = @{titleParameterName}, [BannerUrl] = @{bannerUrlParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME(), [IsActive] = @{isActiveParameterName} ",
+                $"WHERE [Id] = @{idParameterName}");
         }
     }
 }

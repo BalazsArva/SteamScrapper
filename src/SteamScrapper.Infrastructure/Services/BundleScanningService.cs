@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Threading.Tasks;
 using StackExchange.Redis;
 using SteamScrapper.Domain.Services.Abstractions;
-using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.Infrastructure.Redis;
 
 namespace SteamScrapper.Infrastructure.Services
@@ -98,52 +96,6 @@ namespace SteamScrapper.Infrastructure.Services
 
                 ++attempt;
             }
-        }
-
-        public async Task UpdateBundlesAsync(IEnumerable<BundleData> bundleData)
-        {
-            if (bundleData is null)
-            {
-                throw new ArgumentNullException(nameof(bundleData));
-            }
-
-            if (!bundleData.Any())
-            {
-                return;
-            }
-
-            using var sqlCommand = await CreateSqlCommandAsync();
-
-            var commandTexts = new List<string>();
-
-            foreach (var bundle in bundleData)
-            {
-                commandTexts.Add(AddBundleDetailsToUpdateCommand(sqlCommand, bundle));
-            }
-
-            var completeCommandText = string.Join('\n', commandTexts);
-
-            sqlCommand.CommandText = completeCommandText;
-
-            await sqlCommand.ExecuteNonQueryAsync();
-        }
-
-        private static string AddBundleDetailsToUpdateCommand(SqlCommand command, BundleData bundleData)
-        {
-            var bundleId = bundleData.BundleId;
-
-            var idParameterName = $"bundleId_{bundleId}";
-            var titleParameterName = $"bundleTitle_{bundleId}";
-            var bannerUrlParameterName = $"bundleBanner_{bundleId}";
-
-            command.Parameters.AddWithValue(idParameterName, bundleId);
-            command.Parameters.AddWithValue(titleParameterName, bundleData.Title);
-            command.Parameters.AddWithValue(bannerUrlParameterName, bundleData.BannerUrl ?? (object)DBNull.Value);
-
-            return string.Concat(
-                $"UPDATE [dbo].[Bundles] ",
-                $"SET [Title] = @{titleParameterName}, [BannerUrl] = @{bannerUrlParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME() ",
-                $"WHERE [Id] = @{idParameterName}");
         }
 
         private async Task<SqlCommand> CreateSqlCommandAsync()

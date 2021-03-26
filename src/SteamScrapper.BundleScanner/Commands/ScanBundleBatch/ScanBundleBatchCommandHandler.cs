@@ -23,6 +23,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly IBundleScanningService bundleScanningService;
         private readonly IBundleQueryRepository bundleQueryRepository;
+        private readonly IBundleWriteRepository bundleWriteRepository;
         private readonly ISteamPageFactory steamPageFactory;
         private readonly ILogger logger;
 
@@ -32,6 +33,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
             IDateTimeProvider dateTimeProvider,
             IBundleScanningService bundleScanningService,
             IBundleQueryRepository bundleQueryRepository,
+            IBundleWriteRepository bundleWriteRepository,
             IOptions<ScanBundleBatchOptions> options,
             ISteamPageFactory steamPageFactory,
             ILogger<ScanBundleBatchCommandHandler> logger)
@@ -51,6 +53,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.bundleScanningService = bundleScanningService ?? throw new ArgumentNullException(nameof(bundleScanningService));
             this.bundleQueryRepository = bundleQueryRepository ?? throw new ArgumentNullException(nameof(bundleQueryRepository));
+            this.bundleWriteRepository = bundleWriteRepository ?? throw new ArgumentNullException(nameof(bundleWriteRepository));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -101,7 +104,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
 
             var bundleData = await Task.WhenAll(downloadTasks);
 
-            await bundleScanningService.UpdateBundlesAsync(bundleData);
+            await bundleWriteRepository.UpdateBundlesAsync(bundleData);
         }
 
         private async Task<BundleData> GetBundleDataAsync(long bundleId)
@@ -111,6 +114,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                 var page = await steamPageFactory.CreateBundlePageAsync(bundleId);
                 var friendlyName = page.FriendlyName;
                 var bannerUrl = page.BannerUrl?.AbsoluteUri;
+                var isActive = true;
 
                 if (friendlyName == BundlePage.UnknownBundleName || friendlyName == SteamPage.UnknownPageTitle)
                 {
@@ -118,6 +122,8 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                         "Could not extract friendly name for bundle {@BundleId} located at address {@Uri}.",
                         bundleId,
                         page.NormalizedAddress.AbsoluteUri);
+
+                    isActive = false;
                 }
 
                 if (string.IsNullOrWhiteSpace(bannerUrl))
@@ -128,7 +134,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                         page.NormalizedAddress.AbsoluteUri);
                 }
 
-                return new BundleData(bundleId, friendlyName, bannerUrl);
+                return new BundleData(bundleId, friendlyName, bannerUrl, isActive);
             }
             catch (SteamPageRemovedException e)
             {
@@ -140,7 +146,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                     e.StatusCode);
 
                 // Return an "unknown" record, because if the database record is not marked as processed, then it'd be kept being retried (after the Redis reservation expires).
-                return new BundleData(bundleId, BundlePage.UnknownBundleName, null);
+                return new BundleData(bundleId, BundlePage.UnknownBundleName, null, false);
             }
         }
     }
