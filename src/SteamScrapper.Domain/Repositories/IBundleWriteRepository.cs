@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace SteamScrapper.Domain.Repositories
 {
-    public interface IBundleRepository
+    public interface IBundleWriteRepository
     {
         Task<int> RegisterUnknownBundlesAsync(IEnumerable<long> bundleIds);
     }

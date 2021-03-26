@@ -19,7 +19,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
         private readonly ICrawlerAddressRegistrationService crawlerAddressRegistrationService;
         private readonly ICrawlerPrefetchService crawlerPrefetchService;
         private readonly IAppWriteRepository appRepository;
-        private readonly IBundleRepository bundleRepository;
+        private readonly IBundleWriteRepository bundleRepository;
         private readonly ISubWriteRepository subWriteRepository;
 
         public ExplorePageCommandHandler(
@@ -28,7 +28,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
             ICrawlerAddressRegistrationService crawlerAddressRegistrationService,
             ICrawlerPrefetchService crawlerPrefetchService,
             IAppWriteRepository appRepository,
-            IBundleRepository bundleRepository,
+            IBundleWriteRepository bundleRepository,
             ISubWriteRepository subWriteRepository)
         {
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));

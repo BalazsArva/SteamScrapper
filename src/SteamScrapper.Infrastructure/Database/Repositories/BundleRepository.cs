@@ -7,7 +7,7 @@ using SteamScrapper.Infrastructure.Database.Context;
 
 namespace SteamScrapper.Infrastructure.Database.Repositories
 {
-    public class BundleRepository : IBundleRepository
+    public class BundleRepository : IBundleWriteRepository
     {
         private readonly IDbContextFactory<SteamContext> dbContextFactory;
 
