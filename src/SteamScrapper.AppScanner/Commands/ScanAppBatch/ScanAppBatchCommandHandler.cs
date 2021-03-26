@@ -132,8 +132,6 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                         "Could not extract banner URL for app {@AppId} located at address {@Uri}.",
                         appId,
                         bannerUrl);
-
-                    isActive = false;
                 }
 
                 return new AppData(appId, friendlyName, bannerUrl, isActive);
