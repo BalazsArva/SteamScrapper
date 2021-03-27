@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using StackExchange.Redis;
@@ -17,7 +16,7 @@ namespace SteamScrapper.Infrastructure.Services
         private readonly IDatabase redisDatabase;
         private readonly IDateTimeProvider dateTimeProvider;
 
-        public SubScanningService(IRedisConnectionWrapper redisConnectionWrapper, IDateTimeProvider dateTimeProvider, ISubQueryRepository subQueryRepository, SqlConnection sqlConnection)
+        public SubScanningService(IRedisConnectionWrapper redisConnectionWrapper, IDateTimeProvider dateTimeProvider, ISubQueryRepository subQueryRepository)
         {
             if (redisConnectionWrapper is null)
             {
