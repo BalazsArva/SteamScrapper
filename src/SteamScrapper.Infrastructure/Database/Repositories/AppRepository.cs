@@ -88,6 +88,37 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             return await context.Apps.CountAsync(x => x.UtcDateTimeLastModified < today);
         }
 
+        public async Task<IEnumerable<long>> GetAppIdsNotScannedFromAsync(DateTime from, int page, int pageSize, SortDirection sortDirection)
+        {
+            if (page < 1)
+            {
+                throw new ArgumentException($"The value of the '{nameof(page)}' must be at least 1.", nameof(page));
+            }
+
+            if (pageSize < 1)
+            {
+                throw new ArgumentException($"The value of the '{nameof(pageSize)}' must be at least 1.", nameof(pageSize));
+            }
+
+            using var context = dbContextFactory.CreateDbContext();
+
+            var filteredResults = context
+                .Apps
+                .Where(x => x.UtcDateTimeLastModified < from)
+                .Select(x => x.Id);
+
+            if (sortDirection == SortDirection.Ascending)
+            {
+                filteredResults = filteredResults.OrderBy(x => x);
+            }
+            else
+            {
+                filteredResults = filteredResults.OrderByDescending(x => x);
+            }
+
+            return await filteredResults.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        }
+
         private static string IncludeInsertUnknownApp(DbCommand command, long appId)
         {
             var parameter = command.CreateParameter();
