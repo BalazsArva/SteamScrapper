@@ -7,6 +7,7 @@ namespace SteamScrapper.Infrastructure.Database.Context
     {
         private const int BannerUrlMaxLength = 2048;
         private const int TitleMaxLength = 2048;
+        private const int CurrencyMaxLength = 16;
 
         private const string AppNameDefaultValueSql = "N'Unknown App'";
         private const string BundleNameDefaultValueSql = "N'Unknown Bundle'";
@@ -15,6 +16,11 @@ namespace SteamScrapper.Infrastructure.Database.Context
         private const string BooleanFalseValueSql = "0";
         private const string SystemUtcDateTimeValueSql = "SYSUTCDATETIME()";
         private const string UtcDateTimeLastModifiedDefaultValueSql = "CONVERT(datetime2(7), N'2000-01-01T00:00:00+00:00')";
+
+        private const string AppsTableName = "Apps";
+        private const string BundlesTableName = "Bundles";
+        private const string SubsTableName = "Subs";
+        private const string SubPricesTableName = "SubPrices";
 
         public SteamContext(DbContextOptions<SteamContext> dbContextOptions)
             : base(dbContextOptions)
@@ -34,10 +40,16 @@ namespace SteamScrapper.Infrastructure.Database.Context
             SetupAppsTable(modelBuilder);
             SetupBundlesTable(modelBuilder);
             SetupSubsTable(modelBuilder);
+            SetupSubPricesTable(modelBuilder);
         }
 
         private static void SetupAppsTable(ModelBuilder modelBuilder)
         {
+            // Table setup
+            modelBuilder
+                .Entity<App>()
+                .ToTable(AppsTableName);
+
             // Key setup
             modelBuilder
                 .Entity<App>()
@@ -95,6 +107,11 @@ namespace SteamScrapper.Infrastructure.Database.Context
 
         private static void SetupBundlesTable(ModelBuilder modelBuilder)
         {
+            // Table setup
+            modelBuilder
+                .Entity<Bundle>()
+                .ToTable(BundlesTableName);
+
             // Key setup
             modelBuilder
                 .Entity<Bundle>()
@@ -152,6 +169,11 @@ namespace SteamScrapper.Infrastructure.Database.Context
 
         private static void SetupSubsTable(ModelBuilder modelBuilder)
         {
+            // Table setup
+            modelBuilder
+                .Entity<Sub>()
+                .ToTable(SubsTableName);
+
             // Key setup
             modelBuilder
                 .Entity<Sub>()
@@ -199,6 +221,52 @@ namespace SteamScrapper.Infrastructure.Database.Context
             modelBuilder
                 .Entity<Sub>()
                 .HasIndex(x => x.UtcDateTimeLastModified);
+        }
+
+        private static void SetupSubPricesTable(ModelBuilder modelBuilder)
+        {
+            // Table setup
+            modelBuilder
+                .Entity<SubPrice>()
+                .ToTable(SubPricesTableName);
+
+            // Key setup
+            modelBuilder
+                .Entity<SubPrice>()
+                .HasKey(x => x.Id);
+
+            // FK setup
+            modelBuilder
+                .Entity<SubPrice>()
+                .HasOne(x => x.Sub)
+                .WithMany(x => x.Prices);
+
+            // Column setup
+            modelBuilder
+                .Entity<SubPrice>()
+                .Property(x => x.Id)
+                .UseIdentityColumn();
+
+            modelBuilder
+                .Entity<SubPrice>()
+                .Property(x => x.UtcDateTimeRecorded)
+                .HasDefaultValueSql(SystemUtcDateTimeValueSql);
+
+            modelBuilder
+                .Entity<SubPrice>()
+                .Property(x => x.Price)
+                .IsRequired(true);
+
+            modelBuilder
+                .Entity<SubPrice>()
+                .Property(x => x.Currency)
+                .IsRequired(true)
+                .HasMaxLength(CurrencyMaxLength);
+
+            // Index setup
+            modelBuilder
+                .Entity<SubPrice>()
+                .HasIndex(x => x.UtcDateTimeRecorded);
         }
     }
 }
