@@ -119,7 +119,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                 if (friendlyName == BundlePage.UnknownBundleName || friendlyName == SteamPage.UnknownPageTitle)
                 {
                     logger.LogWarning(
-                        "Could not extract friendly name for bundle {@BundleId} located at address {@Uri}.",
+                        "Could not extract friendly name for bundle {@BundleId} located at address {@Uri}. Marking this bundle as inactive.",
                         bundleId,
                         page.NormalizedAddress.AbsoluteUri);
 
@@ -140,7 +140,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
             {
                 logger.LogWarning(
                     e,
-                    "The Steam page located at address {@Uri} for bundle {@BundleId} is not accessible. A status code of {@StatusCode} was received while downloading the page contents.",
+                    "The Steam page located at address {@Uri} for bundle {@BundleId} is not accessible. A status code of {@StatusCode} was received while downloading the page contents. Marking this bundle as inactive.",
                     e.Uri.AbsoluteUri,
                     bundleId,
                     e.StatusCode);

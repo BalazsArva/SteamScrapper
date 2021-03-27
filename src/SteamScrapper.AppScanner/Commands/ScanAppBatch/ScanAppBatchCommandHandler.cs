@@ -119,7 +119,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                 if (friendlyName == AppPage.UnknownAppName || friendlyName == SteamPage.UnknownPageTitle)
                 {
                     logger.LogWarning(
-                        "Could not extract friendly name for app {@AppId} located at address {@Uri}.",
+                        "Could not extract friendly name for app {@AppId} located at address {@Uri}. Marking this app as inactive.",
                         appId,
                         page.NormalizedAddress.AbsoluteUri);
 
@@ -140,7 +140,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
             {
                 logger.LogWarning(
                     e,
-                    "The Steam page located at address {@Uri} for app {@AppId} is not accessible. A status code of {@StatusCode} was received while downloading the page contents.",
+                    "The Steam page located at address {@Uri} for app {@AppId} is not accessible. A status code of {@StatusCode} was received while downloading the page contents. Marking this app as inactive.",
                     e.Uri.AbsoluteUri,
                     appId,
                     e.StatusCode);

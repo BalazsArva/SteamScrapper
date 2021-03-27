@@ -118,7 +118,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
                 if (friendlyName == SubPage.UnknownSubName || friendlyName == SteamPage.UnknownPageTitle)
                 {
                     logger.LogWarning(
-                        "Could not extract friendly name for sub {@SubId} located at address {@Uri}.",
+                        "Could not extract friendly name for sub {@SubId} located at address {@Uri}. Marking this sub as inactive.",
                         subId,
                         page.NormalizedAddress.AbsoluteUri);
 
@@ -131,7 +131,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
             {
                 logger.LogWarning(
                     e,
-                    "The Steam page located at address {@Uri} for sub {@SubId} is not accessible. A status code of {@StatusCode} was received while downloading the page contents.",
+                    "The Steam page located at address {@Uri} for sub {@SubId} is not accessible. A status code of {@StatusCode} was received while downloading the page contents. Marking this sub as inactive.",
                     e.Uri.AbsoluteUri,
                     subId,
                     e.StatusCode);
