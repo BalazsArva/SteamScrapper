@@ -7,9 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
-using SteamScrapper.Domain.Repositories.Models;
 using SteamScrapper.Infrastructure.Database.Context;
-using SteamScrapper.Infrastructure.Database.Entities;
 
 namespace SteamScrapper.Infrastructure.Database.Repositories
 {
