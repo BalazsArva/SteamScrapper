@@ -1,4 +1,3 @@
-using System.Data.SqlClient;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,6 +38,8 @@ namespace SteamScrapper.AppScanner
                     services.Configure<RedisOptions>(hostContext.Configuration.GetSection(RedisOptions.SectionName));
                     services.Configure<ScanAppBatchOptions>(hostContext.Configuration.GetSection(ScanAppBatchOptions.SectionName));
 
+                    services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
+
                     services.AddPooledDbContextFactory<SteamContext>(
                         (services, opts) => opts.UseSqlServer(services.GetRequiredService<IOptions<SqlServerOptions>>().Value.ConnectionString), SqlConnectionPoolSize);
 
@@ -49,19 +50,9 @@ namespace SteamScrapper.AppScanner
                     services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
                     services.AddSingleton<ISteamPageFactory, SteamPageFactory>();
                     services.AddSingleton<ISteamService, SteamService>();
-
                     services.AddSingleton<IAppScanningService, AppScanningService>();
 
                     services.AddSingleton<IScanAppBatchCommandHandler, ScanAppBatchCommandHandler>();
-
-                    services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
-                    services.AddSingleton(services =>
-                    {
-                        var sqlConnectionString = services.GetRequiredService<IOptions<SqlServerOptions>>().Value.ConnectionString;
-
-                        return new SqlConnection(sqlConnectionString);
-                    });
-
                     services.AddHostedService<ScanAppsBackgroundService>();
                 });
         }
