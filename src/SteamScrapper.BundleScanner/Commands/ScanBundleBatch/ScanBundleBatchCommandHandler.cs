@@ -12,8 +12,8 @@ using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Repositories;
+using SteamScrapper.Domain.Repositories.Models;
 using SteamScrapper.Domain.Services.Abstractions;
-using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
@@ -95,7 +95,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
 
         private async Task ProcessBundleIdsAsync(IEnumerable<long> bundleIds)
         {
-            var downloadTasks = new List<Task<BundleData>>(degreeOfParallelism);
+            var downloadTasks = new List<Task<Bundle>>(degreeOfParallelism);
 
             foreach (var bundleId in bundleIds)
             {
@@ -107,7 +107,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
             await bundleWriteRepository.UpdateBundlesAsync(bundleData);
         }
 
-        private async Task<BundleData> GetBundleDataAsync(long bundleId)
+        private async Task<Bundle> GetBundleDataAsync(long bundleId)
         {
             try
             {
@@ -134,7 +134,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                         page.NormalizedAddress.AbsoluteUri);
                 }
 
-                return new BundleData(bundleId, friendlyName, bannerUrl, isActive);
+                return new Bundle(bundleId, friendlyName, bannerUrl, isActive);
             }
             catch (SteamPageRemovedException e)
             {
@@ -146,7 +146,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                     e.StatusCode);
 
                 // Return an "unknown" record, because if the database record is not marked as processed, then it'd be kept being retried (after the Redis reservation expires).
-                return new BundleData(bundleId, BundlePage.UnknownBundleName, null, false);
+                return new Bundle(bundleId, BundlePage.UnknownBundleName, null, false);
             }
         }
     }

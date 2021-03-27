@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.Domain.Repositories.Models;
 
 namespace SteamScrapper.Domain.Repositories
 {
@@ -8,6 +8,6 @@ namespace SteamScrapper.Domain.Repositories
     {
         Task<int> RegisterUnknownAppsAsync(IEnumerable<long> appIds);
 
-        Task UpdateAppsAsync(IEnumerable<AppData> appData);
+        Task UpdateAppsAsync(IEnumerable<App> appData);
     }
 }

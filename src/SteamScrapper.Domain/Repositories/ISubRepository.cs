@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.Domain.Repositories.Models;
 
 namespace SteamScrapper.Domain.Repositories
 {
@@ -8,6 +8,6 @@ namespace SteamScrapper.Domain.Repositories
     {
         Task<int> RegisterUnknownSubsAsync(IEnumerable<long> subIds);
 
-        Task UpdateSubsAsync(IEnumerable<SubData> subData);
+        Task UpdateSubsAsync(IEnumerable<Sub> subData);
     }
 }

@@ -11,8 +11,8 @@ using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Repositories;
+using SteamScrapper.Domain.Repositories.Models;
 using SteamScrapper.Domain.Services.Abstractions;
-using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.Domain.Services.Exceptions;
 using SteamScrapper.SubScanner.Options;
 
@@ -95,7 +95,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
 
         private async Task ProcessSubIdsAsync(IEnumerable<long> subIds)
         {
-            var downloadTasks = new List<Task<SubData>>(degreeOfParallelism);
+            var downloadTasks = new List<Task<Sub>>(degreeOfParallelism);
 
             foreach (var subId in subIds)
             {
@@ -107,7 +107,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
             await subWriteRepository.UpdateSubsAsync(subData);
         }
 
-        private async Task<SubData> GetSubDataAsync(long subId)
+        private async Task<Sub> GetSubDataAsync(long subId)
         {
             try
             {
@@ -125,7 +125,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
                     isActive = false;
                 }
 
-                return new SubData(page.SubId, page.FriendlyName, isActive);
+                return new Sub(page.SubId, page.FriendlyName, isActive);
             }
             catch (SteamPageRemovedException e)
             {
@@ -137,7 +137,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
                     e.StatusCode);
 
                 // Return an "unknown" record, because if the database record is not marked as processed, then it'd be kept being retried (after the Redis reservation expires).
-                return new SubData(subId, SubPage.UnknownSubName, false);
+                return new Sub(subId, SubPage.UnknownSubName, false);
             }
         }
     }

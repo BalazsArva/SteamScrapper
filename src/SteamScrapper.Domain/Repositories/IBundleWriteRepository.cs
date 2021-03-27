@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.Domain.Repositories.Models;
 
 namespace SteamScrapper.Domain.Repositories
 {
@@ -8,6 +8,6 @@ namespace SteamScrapper.Domain.Repositories
     {
         Task<int> RegisterUnknownBundlesAsync(IEnumerable<long> bundleIds);
 
-        Task UpdateBundlesAsync(IEnumerable<BundleData> bundleData);
+        Task UpdateBundlesAsync(IEnumerable<Bundle> bundleData);
     }
 }

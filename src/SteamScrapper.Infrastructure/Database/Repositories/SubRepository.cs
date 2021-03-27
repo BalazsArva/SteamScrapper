@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
-using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.Domain.Repositories.Models;
 using SteamScrapper.Infrastructure.Database.Context;
 
 namespace SteamScrapper.Infrastructure.Database.Repositories
@@ -50,8 +50,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
         }
 
-        // TODO: SubData is no longer a "service contract" (namespace!). Use some aggregate instead.
-        public async Task UpdateSubsAsync(IEnumerable<SubData> subData)
+        public async Task UpdateSubsAsync(IEnumerable<Sub> subData)
         {
             if (subData is null)
             {
@@ -120,7 +119,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             return await filteredResults.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
         }
 
-        private static string AddSubDetailsToUpdateCommand(DbCommand command, SubData subData)
+        private static string AddSubDetailsToUpdateCommand(DbCommand command, Sub subData)
         {
             var subId = subData.SubId;
 

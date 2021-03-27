@@ -12,8 +12,8 @@ using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Repositories;
+using SteamScrapper.Domain.Repositories.Models;
 using SteamScrapper.Domain.Services.Abstractions;
-using SteamScrapper.Domain.Services.Contracts;
 using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
@@ -95,7 +95,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
 
         private async Task ProcessAppIdsAsync(IEnumerable<long> appIds)
         {
-            var downloadTasks = new List<Task<AppData>>(degreeOfParallelism);
+            var downloadTasks = new List<Task<App>>(degreeOfParallelism);
 
             foreach (var appId in appIds)
             {
@@ -107,7 +107,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
             await appWriteRepository.UpdateAppsAsync(appData);
         }
 
-        private async Task<AppData> GetAppDataAsync(long appId)
+        private async Task<App> GetAppDataAsync(long appId)
         {
             try
             {
@@ -134,7 +134,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                         bannerUrl);
                 }
 
-                return new AppData(appId, friendlyName, bannerUrl, isActive);
+                return new App(appId, friendlyName, bannerUrl, isActive);
             }
             catch (SteamPageRemovedException e)
             {
@@ -146,7 +146,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                     e.StatusCode);
 
                 // Return an "unknown" record, because if the database record is not marked as processed, then it'd be kept being retried (after the Redis reservation expires).
-                return new AppData(appId, AppPage.UnknownAppName, null, false);
+                return new App(appId, AppPage.UnknownAppName, null, false);
             }
         }
     }

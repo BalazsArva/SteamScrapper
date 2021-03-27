@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
-using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.Domain.Repositories.Models;
 using SteamScrapper.Infrastructure.Database.Context;
 using SteamScrapper.Infrastructure.Database.Entities;
 
@@ -51,7 +51,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
         }
 
-        public async Task UpdateAppsAsync(IEnumerable<AppData> appData)
+        public async Task UpdateAppsAsync(IEnumerable<Domain.Repositories.Models.App> appData)
         {
             if (appData is null)
             {
@@ -64,7 +64,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             }
 
             using var context = dbContextFactory.CreateDbContext();
-            using var patchBatch = new EntityPatchBatch<App, long>(context);
+            using var patchBatch = new EntityPatchBatch<Entities.App, long>(context);
 
             foreach (var app in appData)
             {

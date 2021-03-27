@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
-using SteamScrapper.Domain.Services.Contracts;
+using SteamScrapper.Domain.Repositories.Models;
 using SteamScrapper.Infrastructure.Database.Context;
 
 namespace SteamScrapper.Infrastructure.Database.Repositories
@@ -23,8 +23,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
 
-        // TODO: BundleData is no longer a "service contract" (namespace!). Use some aggregate instead.
-        public async Task UpdateBundlesAsync(IEnumerable<BundleData> bundleData)
+        public async Task UpdateBundlesAsync(IEnumerable<Bundle> bundleData)
         {
             if (bundleData is null)
             {
@@ -154,7 +153,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             return command;
         }
 
-        private static string AddBundleDetailsToUpdateCommand(DbCommand command, BundleData bundleData)
+        private static string AddBundleDetailsToUpdateCommand(DbCommand command, Bundle bundleData)
         {
             var bundleId = bundleData.BundleId;
 
