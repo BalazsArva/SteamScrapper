@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlClient;
+using System.Linq;
 using System.Threading.Tasks;
 using StackExchange.Redis;
+using SteamScrapper.Common.Providers;
+using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.Redis;
 
@@ -11,10 +12,11 @@ namespace SteamScrapper.Infrastructure.Services
 {
     public class BundleScanningService : IBundleScanningService
     {
-        private readonly SqlConnection sqlConnection;
+        private readonly IBundleQueryRepository bundleQueryRepository;
         private readonly IDatabase redisDatabase;
+        private readonly IDateTimeProvider dateTimeProvider;
 
-        public BundleScanningService(IRedisConnectionWrapper redisConnectionWrapper, SqlConnection sqlConnection)
+        public BundleScanningService(IRedisConnectionWrapper redisConnectionWrapper, IDateTimeProvider dateTimeProvider, IBundleQueryRepository bundleQueryRepository)
         {
             if (redisConnectionWrapper is null)
             {
@@ -23,45 +25,24 @@ namespace SteamScrapper.Infrastructure.Services
 
             redisDatabase = redisConnectionWrapper.ConnectionMultiplexer.GetDatabase();
 
-            // TODO: Swap to a data access abstraction
-            this.sqlConnection = sqlConnection ?? throw new ArgumentNullException(nameof(sqlConnection));
+            this.bundleQueryRepository = bundleQueryRepository ?? throw new ArgumentNullException(nameof(bundleQueryRepository));
+            this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
 
         public async Task<IEnumerable<long>> GetNextBundleIdsForScanningAsync(DateTime executionDate)
         {
             const int batchSize = 50;
-            const string offsetSqlParamName = "offset";
-            const string batchSizeSqlParamName = "batchSize";
 
-            var attempt = 0;
-            var bundleIds = new List<long>(batchSize);
+            var attempt = 1;
             var results = new List<long>(batchSize);
 
             // Read bundleIds form the DB that are not scanned today and try to acquire reservation against concurrent processing.
             // If nothing is retrieved from the DB, then we are done for today.
             while (true)
             {
-                bundleIds.Clear();
-                results.Clear();
+                var bundleIds = await bundleQueryRepository.GetBundleIdsNotScannedFromAsync(dateTimeProvider.UtcNow.Date, attempt, batchSize, SortDirection.Descending);
 
-                using var sqlCommand = await CreateSqlCommandAsync();
-
-                sqlCommand.Parameters.AddWithValue(offsetSqlParamName, attempt * batchSize);
-                sqlCommand.Parameters.AddWithValue(batchSizeSqlParamName, batchSize);
-                sqlCommand.CommandText =
-                    $"SELECT [Id] FROM [SteamScrapper].[dbo].[Bundles] " +
-                    $"WHERE [UtcDateTimeLastModified] < CONVERT(date, SYSUTCDATETIME()) " +
-                    $"ORDER BY [ID] DESC " +
-                    $"OFFSET @{offsetSqlParamName} ROWS " +
-                    $"FETCH NEXT @{batchSizeSqlParamName} ROWS ONLY";
-
-                using var sqlDataReader = await sqlCommand.ExecuteReaderAsync();
-                while (await sqlDataReader.ReadAsync())
-                {
-                    bundleIds.Add(sqlDataReader.GetInt64(0));
-                }
-
-                if (bundleIds.Count == 0)
+                if (!bundleIds.Any())
                 {
                     // Could not find anything in the database waiting for scanning today.
                     return Array.Empty<long>();
@@ -70,9 +51,8 @@ namespace SteamScrapper.Infrastructure.Services
                 var reservationTransaction = redisDatabase.CreateTransaction();
                 var reservationTasks = new Dictionary<long, Task<bool>>(batchSize);
 
-                for (var i = 0; i < bundleIds.Count; ++i)
+                foreach (var bundleId in bundleIds)
                 {
-                    var bundleId = bundleIds[i];
                     var redisKey = $"BundleScanner:{executionDate:yyyyMMdd}:{bundleId}";
 
                     reservationTasks[bundleId] = reservationTransaction.StringSetAsync(redisKey, string.Empty, TimeSpan.FromMinutes(1), When.NotExists);
@@ -96,16 +76,6 @@ namespace SteamScrapper.Infrastructure.Services
 
                 ++attempt;
             }
-        }
-
-        private async Task<SqlCommand> CreateSqlCommandAsync()
-        {
-            if (sqlConnection.State == ConnectionState.Closed || sqlConnection.State == ConnectionState.Broken)
-            {
-                await sqlConnection.OpenAsync();
-            }
-
-            return sqlConnection.CreateCommand();
         }
     }
 }
