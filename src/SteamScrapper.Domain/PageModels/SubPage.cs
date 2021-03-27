@@ -23,12 +23,12 @@ namespace SteamScrapper.Domain.PageModels
             }
 
             SubId = SteamLinkHelper.ExtractSubId(address);
-            Price = ExtractPrice();
+            PriceInEuros = ExtractPriceInEuros();
         }
 
         public long SubId { get; }
 
-        public decimal Price { get; }
+        public decimal PriceInEuros { get; }
 
         protected override string ExtractFriendlyName()
         {
@@ -37,25 +37,45 @@ namespace SteamScrapper.Domain.PageModels
             return appNameDiv is null ? UnknownSubName : appNameDiv.InnerText;
         }
 
-        private decimal ExtractPrice()
+        private decimal ExtractPriceInEuros()
         {
-            var addToCartForm = PrefetchedHtmlNodes[HtmlElements.Form].FirstOrDefault(x => x.HasAttribute(HtmlAttributes.Name, $"add_to_cart_{SubId}"));
-
-            if (addToCartForm is not null)
+            var price = ExtractPrice("€");
+            if (price != -1)
             {
-                // Note: this currently assumes €, unaware of currencies.
-                var finalPriceCents = addToCartForm
-                    .ParentNode
-                    .GetDescendantsByNames(HtmlElements.Div)[HtmlElements.Div]
-                    .Select(div => div.GetAttributeValue("data-price-final", -1))
-                    .Where(finalPriceValue => finalPriceValue != -1)
-                    .DefaultIfEmpty(-1)
-                    .FirstOrDefault();
-
-                return finalPriceCents == -1 ? -1 : finalPriceCents / 100m;
+                // Euro price is represented as (Euros * 100 + Cents), e.g. 49.99 => 4999, so we need to divide it by 100 to get the real one.
+                return price / 100m;
             }
 
             return -1;
+        }
+
+        private decimal ExtractPrice(string currencySymbols)
+        {
+            var addToCartForm = PrefetchedHtmlNodes[HtmlElements.Form].FirstOrDefault(x => x.HasAttribute(HtmlAttributes.Name, $"add_to_cart_{SubId}"));
+
+            if (addToCartForm is null)
+            {
+                return -1;
+            }
+
+            return addToCartForm
+                .ParentNode
+                .GetDescendantsByNames(HtmlElements.Div)[HtmlElements.Div]
+                .Select(div =>
+                {
+                    var price = div.GetAttributeValue("data-price-final", -1);
+                    var innerText = div.InnerText?.Trim() ?? string.Empty;
+
+                    if (innerText.EndsWith(currencySymbols))
+                    {
+                        return price;
+                    }
+
+                    return -1;
+                })
+                .Where(finalPriceValue => finalPriceValue != -1)
+                .DefaultIfEmpty(-1)
+                .FirstOrDefault();
         }
     }
 }
