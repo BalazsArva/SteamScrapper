@@ -69,7 +69,12 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
 
             foreach (var sub in subData)
             {
-                commandTexts.Add(AddSubDetailsToUpdateCommand(sqlCommand, sub));
+                commandTexts.Add(AddSubDetailsToCommand(sqlCommand, sub));
+
+                if (sub.Price is not null)
+                {
+                    commandTexts.Add(AddSubPriceToCommand(sqlCommand, sub));
+                }
             }
 
             var completeCommandText = string.Join('\n', commandTexts);
@@ -119,7 +124,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             return await filteredResults.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
         }
 
-        private static string AddSubDetailsToUpdateCommand(DbCommand command, Sub subData)
+        private static string AddSubDetailsToCommand(DbCommand command, Sub subData)
         {
             var subId = subData.SubId;
 
@@ -127,9 +132,9 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             var titleParameter = command.CreateParameter();
             var isActiveParameter = command.CreateParameter();
 
-            var idParameterName = $"subId_{subId}";
-            var titleParameterName = $"subTitle_{subId}";
-            var isActiveParameterName = $"subIsActive_{subId}";
+            var idParameterName = $"sub_Id_{subId}";
+            var titleParameterName = $"sub_Title_{subId}";
+            var isActiveParameterName = $"sub_IsActive_{subId}";
 
             idParameter.ParameterName = idParameterName;
             idParameter.Value = subId;
@@ -156,6 +161,47 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
                 $"WHERE [Id] = @{idParameterName}");
         }
 
+        private static string AddSubPriceToCommand(DbCommand command, Sub subData)
+        {
+            if (subData.Price is null)
+            {
+                return string.Empty;
+            }
+
+            var subId = subData.SubId;
+
+            var idParameter = command.CreateParameter();
+            var priceParameter = command.CreateParameter();
+            var currencyParameter = command.CreateParameter();
+
+            var idParameterName = $"subPrice_SubId_{subId}";
+            var priceParameterName = $"subPrice_Price_{subId}";
+            var currencyParameterName = $"subPrice_Currency_{subId}";
+
+            idParameter.ParameterName = idParameterName;
+            idParameter.Value = subId;
+            idParameter.DbType = DbType.Int64;
+            idParameter.Direction = ParameterDirection.Input;
+
+            priceParameter.ParameterName = priceParameterName;
+            priceParameter.Value = subData.Price.Value;
+            priceParameter.DbType = DbType.Decimal;
+            priceParameter.Direction = ParameterDirection.Input;
+
+            currencyParameter.ParameterName = currencyParameterName;
+            currencyParameter.Value = subData.Price.Currency;
+            currencyParameter.DbType = DbType.String;
+            currencyParameter.Direction = ParameterDirection.Input;
+
+            command.Parameters.Add(idParameter);
+            command.Parameters.Add(priceParameter);
+            command.Parameters.Add(currencyParameter);
+
+            return string.Concat(
+                $"INSERT INTO [dbo].[SubPrices] ([SubId], [UtcDateTimeRecorded], [Price], [Currency]) ",
+                $"VALUES (@{idParameterName}, SYSUTCDATETIME(), @{priceParameter}, @{currencyParameterName})");
+        }
+
         private static string IncludeInsertUnknownSub(DbCommand command, long subId)
         {
             var parameter = command.CreateParameter();
@@ -173,7 +219,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
                 $"INSERT INTO [dbo].[Subs] ([Id]) VALUES (@{parameterName})";
         }
 
-        private async Task<DbCommand> CreateSqlCommandAsync(SteamContext context)
+        private static async Task<DbCommand> CreateSqlCommandAsync(SteamContext context)
         {
             var command = context.Apps.CreateDbCommand();
 

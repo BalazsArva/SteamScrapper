@@ -113,7 +113,9 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
             {
                 var page = await steamPageFactory.CreateSubPageAsync(subId);
                 var friendlyName = page.FriendlyName;
+                var priceInEuros = page.PriceInEuros;
                 var isActive = true;
+                Price price = null;
 
                 if (friendlyName == SubPage.UnknownSubName || friendlyName == SteamPage.UnknownPageTitle)
                 {
@@ -125,7 +127,21 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
                     isActive = false;
                 }
 
-                return new Sub(page.SubId, page.FriendlyName, isActive);
+                if (priceInEuros == SubPage.UnknownPrice)
+                {
+                    logger.LogWarning(
+                        "Could not extract price for sub {@SubId} located at address {@Uri}. Marking this sub as inactive.",
+                        subId,
+                        page.NormalizedAddress.AbsoluteUri);
+
+                    isActive = false;
+                }
+                else
+                {
+                    price = new Price(page.PriceInEuros, "€");
+                }
+
+                return new Sub(page.SubId, page.FriendlyName, isActive, price);
             }
             catch (SteamPageRemovedException e)
             {

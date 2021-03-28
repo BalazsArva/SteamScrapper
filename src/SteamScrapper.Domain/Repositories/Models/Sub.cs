@@ -1,4 +1,4 @@
 ﻿namespace SteamScrapper.Domain.Repositories.Models
 {
-    public record Sub(long SubId, string Title, bool IsActive);
+    public record Sub(long SubId, string Title, bool IsActive, Price Price = null);
 }
