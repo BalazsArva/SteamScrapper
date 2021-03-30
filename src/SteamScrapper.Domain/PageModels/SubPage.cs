@@ -40,115 +40,99 @@ namespace SteamScrapper.Domain.PageModels
 
         private decimal ExtractPriceInEuros()
         {
-            if (TryExtractDiscountPrice("€", out var discountPrice))
+            if (TryExtractDiscountPrice("€", out var discountPrice, out var originalPrice))
             {
-                // Euro price is represented as (Euros * 100 + Cents), e.g. 49.99 => 4999, so we need to divide it by 100 to get the real one.
-                return discountPrice / 100m;
+                return discountPrice;
             }
 
-            if (TryExtractPrice("€", out var price))
+            if (TryExtractNormalPrice("€", out var normalPrice))
             {
-                // Euro price is represented as (Euros * 100 + Cents), e.g. 49.99 => 4999, so we need to divide it by 100 to get the real one.
-                return price / 100m;
+                return normalPrice;
             }
 
             return UnknownPrice;
         }
 
-        private bool TryExtractPrice(string currencySymbols, out decimal price)
+        private bool TryExtractDiscountPrice(string currencySymbols, out decimal discountPrice, out decimal originalPrice)
         {
             var addToCartForm = PrefetchedHtmlNodes[HtmlElements.Form].FirstOrDefault(x => x.HasAttribute(HtmlAttributes.Name, $"add_to_cart_{SubId}"));
 
             if (addToCartForm is null)
             {
-                price = default;
+                discountPrice = default;
+                originalPrice = default;
                 return false;
             }
 
-            var result = addToCartForm
+            var divDescendants = addToCartForm
                 .ParentNode
-                .GetDescendantsByNames(HtmlElements.Div)[HtmlElements.Div]
-                .Select(div =>
-                {
-                    var priceString = div.GetAttributeValue("data-price-final", string.Empty);
-                    var price = UnknownPrice;
+                .GetDescendantsByNames(HtmlElements.Div)[HtmlElements.Div];
 
-                    if (!decimal.TryParse(priceString, out price))
-                    {
-                        return UnknownPrice;
-                    }
+            var originalPriceText = divDescendants.FirstOrDefault(x => x.HasClass("discount_original_price"))?.InnerText ?? string.Empty;
+            var discountPriceText = divDescendants.FirstOrDefault(x => x.HasClass("discount_final_price"))?.InnerText ?? string.Empty;
 
-                    var innerText = div.InnerText?.Trim() ?? string.Empty;
-                    if (innerText.EndsWith(currencySymbols))
-                    {
-                        return price;
-                    }
-
-                    return UnknownPrice;
-                })
-                .Where(finalPriceValue => finalPriceValue != UnknownPrice)
-                .DefaultIfEmpty(UnknownPrice)
-                .FirstOrDefault();
-
-            if (result == UnknownPrice)
+            var couldExtractOriginalPrice = TryGetPrice(originalPriceText, currencySymbols, out var originalPriceResult);
+            var couldExtractDiscountPrice = TryGetPrice(discountPriceText, currencySymbols, out var discountPriceResult);
+            if (couldExtractOriginalPrice && couldExtractDiscountPrice)
             {
-                price = default;
-                return false;
+                discountPrice = discountPriceResult;
+                originalPrice = originalPriceResult;
+                return true;
             }
 
-            price = result;
-            return true;
+            discountPrice = default;
+            originalPrice = default;
+            return false;
         }
 
-        private bool TryExtractDiscountPrice(string currencySymbols, out decimal discountPrice)
+        private bool TryExtractNormalPrice(string currencySymbols, out decimal originalPrice)
         {
             var addToCartForm = PrefetchedHtmlNodes[HtmlElements.Form].FirstOrDefault(x => x.HasAttribute(HtmlAttributes.Name, $"add_to_cart_{SubId}"));
 
             if (addToCartForm is null)
             {
-                discountPrice = default;
+                originalPrice = default;
                 return false;
             }
 
-            var result = addToCartForm
+            var originalPriceText = addToCartForm
                 .ParentNode
                 .GetDescendantsByNames(HtmlElements.Div)[HtmlElements.Div]
-                .Select(div =>
-                {
-                    var priceString = div.GetAttributeValue("data-price-final", string.Empty);
-                    var price = UnknownPrice;
+                .FirstOrDefault(x => x.HasClass("game_purchase_price"))?.InnerText ?? string.Empty;
 
-                    if (!decimal.TryParse(priceString, out price))
-                    {
-                        return UnknownPrice;
-                    }
-
-                    var discountPriceText = div
-                        .Descendants()
-                        .Where(x => x.HasAttribute(HtmlAttributes.Class, "discount_final_price"))
-                        .Select(x => x.InnerText.Trim())
-                        .DefaultIfEmpty(string.Empty)
-                        .First();
-
-                    if (discountPriceText.EndsWith(currencySymbols))
-                    {
-                        return price;
-                    }
-
-                    return UnknownPrice;
-                })
-                .Where(finalPriceValue => finalPriceValue != UnknownPrice)
-                .DefaultIfEmpty(UnknownPrice)
-                .First();
-
-            if (result == UnknownPrice)
+            var couldExtractOriginalPrice = TryGetPrice(originalPriceText, currencySymbols, out var originalPriceResult);
+            if (couldExtractOriginalPrice)
             {
-                discountPrice = default;
-                return false;
+                originalPrice = originalPriceResult;
+                return true;
             }
 
-            discountPrice = result;
-            return true;
+            originalPrice = default;
+            return false;
+        }
+
+        private static bool TryGetPrice(string htmlText, string currencySymbol, out decimal price)
+        {
+            htmlText = htmlText.Trim();
+
+            if (htmlText.EndsWith(currencySymbol))
+            {
+                var priceStringWithoutCurrency = htmlText.Substring(0, htmlText.Length - currencySymbol.Length).Trim();
+
+                // Remove any decimals and separators. The result will be 100 times the actual value.
+                // Note: what happens for currencies that don't have fractionals, e.g. HUF?
+                priceStringWithoutCurrency = priceStringWithoutCurrency.Replace(".", "").Replace(",", "");
+
+                if (decimal.TryParse(priceStringWithoutCurrency, out var priceResult))
+                {
+                    // Euro price is represented as (Euros * 100 + Cents), e.g. 49.99 => 4999, so we need to divide it by 100 to get the real one.
+                    price = priceResult / 100m;
+                    return true;
+                }
+            }
+
+            price = default;
+            return false;
         }
     }
 }
