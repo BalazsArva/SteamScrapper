@@ -5,6 +5,7 @@ using SteamScrapper.Common.Extensions;
 using SteamScrapper.Common.Html;
 using SteamScrapper.Common.Urls;
 using SteamScrapper.Common.Utilities.Links;
+using SteamScrapper.Domain.Models;
 
 namespace SteamScrapper.Domain.PageModels
 {
@@ -24,12 +25,14 @@ namespace SteamScrapper.Domain.PageModels
             }
 
             SubId = SteamLinkHelper.ExtractSubId(address);
-            PriceInEuros = ExtractPriceInEuros();
+
+            // Currently, we assume it's always €
+            Price = ExtractPriceInEuros();
         }
 
         public long SubId { get; }
 
-        public decimal PriceInEuros { get; }
+        public Price Price { get; }
 
         protected override string ExtractFriendlyName()
         {
@@ -38,19 +41,21 @@ namespace SteamScrapper.Domain.PageModels
             return appNameDiv is null ? UnknownSubName : appNameDiv.InnerText;
         }
 
-        private decimal ExtractPriceInEuros()
+        private Price ExtractPriceInEuros()
         {
-            if (TryExtractDiscountPrice("€", out var discountPrice, out var originalPrice))
+            const string EuroCurrencySymbol = "€";
+
+            if (TryExtractDiscountPrice(EuroCurrencySymbol, out var discountPrice, out var originalPrice))
             {
-                return discountPrice;
+                return new(originalPrice, discountPrice, EuroCurrencySymbol);
             }
 
-            if (TryExtractNormalPrice("€", out var normalPrice))
+            if (TryExtractNormalPrice(EuroCurrencySymbol, out var normalPrice))
             {
-                return normalPrice;
+                return new(normalPrice, null, EuroCurrencySymbol);
             }
 
-            return UnknownPrice;
+            return Price.Unknown;
         }
 
         private bool TryExtractDiscountPrice(string currencySymbols, out decimal discountPrice, out decimal originalPrice)

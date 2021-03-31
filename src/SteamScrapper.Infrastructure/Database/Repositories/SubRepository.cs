@@ -172,10 +172,12 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
 
             var idParameter = command.CreateParameter();
             var priceParameter = command.CreateParameter();
+            var discountPriceParameter = command.CreateParameter();
             var currencyParameter = command.CreateParameter();
 
             var idParameterName = $"subPrice_SubId_{subId}";
             var priceParameterName = $"subPrice_Price_{subId}";
+            var discountPriceParameterName = $"subPrice_DiscountPrice_{subId}";
             var currencyParameterName = $"subPrice_Currency_{subId}";
 
             idParameter.ParameterName = idParameterName;
@@ -188,6 +190,11 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             priceParameter.DbType = DbType.Decimal;
             priceParameter.Direction = ParameterDirection.Input;
 
+            discountPriceParameter.ParameterName = discountPriceParameterName;
+            discountPriceParameter.Value = subData.Price.DiscountValue ?? (object)DBNull.Value;
+            discountPriceParameter.DbType = DbType.Decimal;
+            discountPriceParameter.Direction = ParameterDirection.Input;
+
             currencyParameter.ParameterName = currencyParameterName;
             currencyParameter.Value = subData.Price.Currency;
             currencyParameter.DbType = DbType.String;
@@ -195,11 +202,12 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
 
             command.Parameters.Add(idParameter);
             command.Parameters.Add(priceParameter);
+            command.Parameters.Add(discountPriceParameter);
             command.Parameters.Add(currencyParameter);
 
             return string.Concat(
-                $"INSERT INTO [dbo].[SubPrices] ([SubId], [UtcDateTimeRecorded], [Price], [Currency]) ",
-                $"VALUES (@{idParameterName}, SYSUTCDATETIME(), @{priceParameter}, @{currencyParameterName})");
+                $"INSERT INTO [dbo].[SubPrices] ([SubId], [UtcDateTimeRecorded], [Price], [DiscountPrice], [Currency]) ",
+                $"VALUES (@{idParameterName}, SYSUTCDATETIME(), @{priceParameter}, @{discountPriceParameter}, @{currencyParameterName})");
         }
 
         private static string IncludeInsertUnknownSub(DbCommand command, long subId)
