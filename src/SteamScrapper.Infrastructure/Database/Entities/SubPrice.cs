@@ -14,6 +14,8 @@ namespace SteamScrapper.Infrastructure.Database.Entities
 
         public decimal Price { get; set; }
 
+        public decimal? DiscountPrice { get; set; }
+
         public string Currency { get; set; }
     }
 }

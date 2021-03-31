@@ -259,6 +259,11 @@ namespace SteamScrapper.Infrastructure.Database.Context
 
             modelBuilder
                 .Entity<SubPrice>()
+                .Property(x => x.DiscountPrice)
+                .IsRequired(false);
+
+            modelBuilder
+                .Entity<SubPrice>()
                 .Property(x => x.Currency)
                 .IsRequired(true)
                 .HasMaxLength(CurrencyMaxLength);
