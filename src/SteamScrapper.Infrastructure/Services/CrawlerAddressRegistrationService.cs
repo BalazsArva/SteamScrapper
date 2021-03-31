@@ -135,7 +135,7 @@ namespace SteamScrapper.Infrastructure.Services
 
             if (uris.Any(x => string.IsNullOrWhiteSpace(x.AbsoluteUri)))
             {
-                throw new ArgumentException($"All providede URIs must have their {nameof(Uri.AbsoluteUri)} values set.", nameof(uris));
+                throw new ArgumentException($"All provided URIs must have their {nameof(Uri.AbsoluteUri)} values set.", nameof(uris));
             }
 
             var redisKeyDateStamp = executionDate.ToString(RedisDateStampFormat);
