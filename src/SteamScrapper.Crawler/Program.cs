@@ -7,6 +7,7 @@ using SteamScrapper.Common.Providers;
 using SteamScrapper.Crawler.BackgroundServices;
 using SteamScrapper.Crawler.Commands.CancelReservations;
 using SteamScrapper.Crawler.Commands.ExplorePage;
+using SteamScrapper.Crawler.Commands.FinalizeExploration;
 using SteamScrapper.Crawler.Commands.RegisterStartingAddresses;
 using SteamScrapper.Crawler.Options;
 using SteamScrapper.Domain.Factories;
@@ -58,6 +59,7 @@ namespace SteamScrapper.Crawler
                     services.AddSingleton<IRegisterStartingAddressesCommandHandler, RegisterStartingAddressesCommandHandler>();
                     services.AddSingleton<IExplorePageCommandHandler, ExplorePageCommandHandler>();
                     services.AddSingleton<ICancelReservationsCommandHandler, CancelReservationsCommandHandler>();
+                    services.AddSingleton<IFinalizeExplorationCommandHandler, FinalizeExplorationCommandHandler>();
 
                     services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
 

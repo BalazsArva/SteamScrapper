@@ -12,6 +12,8 @@ namespace SteamScrapper.Domain.Services.Abstractions
 
         Task<Uri> GetNextAddressAsync(DateTime executionDate, CancellationToken cancellationToken);
 
+        Task FinalizeExplorationForDateAsync(DateTime executionDate);
+
         Task CancelReservationsAsync(DateTime executionDate, IEnumerable<Uri> uris);
 
         Task<ISet<string>> RegisterNonExploredLinksForExplorationAsync(DateTime executionDate, IEnumerable<Uri> foundLinks);

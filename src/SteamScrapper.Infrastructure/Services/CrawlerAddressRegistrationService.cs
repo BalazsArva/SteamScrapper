@@ -120,6 +120,25 @@ namespace SteamScrapper.Infrastructure.Services
             return null;
         }
 
+        public async Task FinalizeExplorationForDateAsync(DateTime executionDate)
+        {
+            var redisKeyDateStamp = executionDate.ToString(RedisDateStampFormat);
+            var expiry = TimeSpan.FromDays(1) + TimeSpan.FromHours(1);
+
+            var exploredSetName = GetExploredSetName(redisKeyDateStamp);
+            var toBeExploredSetName = GetToBeExploredSetName(redisKeyDateStamp);
+
+            var redisTransaction = redisDatabase.CreateTransaction();
+
+            // The exploration sets should expire on a different day. If we expired/deleted these sets immediately,
+            // then an app restart after completion would restart the whole crawling process, which is not what we want,
+            // that's why we need to keep these sets for a bit longer.
+            _ = redisTransaction.KeyExpireAsync(exploredSetName, expiry);
+            _ = redisTransaction.KeyExpireAsync(toBeExploredSetName, expiry);
+
+            await redisTransaction.ExecuteAsync();
+        }
+
         public async Task CancelReservationsAsync(DateTime executionDate, IEnumerable<Uri> uris)
         {
             if (uris is null)
