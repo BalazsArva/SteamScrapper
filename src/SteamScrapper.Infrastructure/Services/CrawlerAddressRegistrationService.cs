@@ -81,6 +81,13 @@ namespace SteamScrapper.Infrastructure.Services
             logger.LogInformation("Recording ignored links is {@EnableRecordingIgnoredLinksInfoText}.", EnableRecordingIgnoredLinks ? "enabled" : "disabled");
         }
 
+        public async Task<long> CountRemainingItemsAsync(DateTime executionDate)
+        {
+            var redisKeyDateStamp = executionDate.ToString(RedisDateStampFormat);
+
+            return await redisDatabase.SetLengthAsync(GetToBeExploredSetName(redisKeyDateStamp));
+        }
+
         public async Task<Uri> GetNextAddressAsync(DateTime executionDate, CancellationToken cancellationToken)
         {
             var redisKeyDateStamp = executionDate.ToString(RedisDateStampFormat);

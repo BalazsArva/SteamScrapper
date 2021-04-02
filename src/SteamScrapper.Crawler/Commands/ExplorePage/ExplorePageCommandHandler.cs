@@ -60,12 +60,18 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
                 var unknownBundles = await RegisterFoundBundlesAsync(steamPage, notYetExploredLinks);
                 var unknownSubs = await RegisterFoundSubsAsync(steamPage, notYetExploredLinks);
 
+                // Note: this is not accurate, as it does not account for items that are already prefetched but not yet processed.
+                // An approximate value is sufficient for this though.
+                var remainingItemCount = await crawlerAddressRegistrationService.CountRemainingItemsAsync(utcNow);
+
                 stopwatch.Stop();
 
                 logger.LogInformation(
-                    "Processed URI '{@Uri}'. Elapsed millis: {@ElapsedMillis}, Found {@NotExploredAppCount} not explored apps, {@NotKnownAppCount} not known apps, " +
+                    "Processed URI '{@Uri}'. Elapsed millis: {@ElapsedMillis}, " +
+                    "Found {@NotExploredAppCount} not explored apps, {@NotKnownAppCount} not known apps, " +
                     "{@NotExploredSubCount} not explored subs, {@NotKnownSubCount} not known subs and " +
-                    "{@NotExploredBundleCount} not explored bundles, {@NotKnownBundleCount} not known bundles.",
+                    "{@NotExploredBundleCount} not explored bundles, {@NotKnownBundleCount} not known bundles. " +
+                    "About {@RemainingItemCount} links still need to be explored.",
                     steamPage.NormalizedAddress.AbsoluteUri,
                     stopwatch.ElapsedMilliseconds,
                     unknownApps.NotYetExploredCount,
@@ -73,7 +79,8 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
                     unknownSubs.NotYetExploredCount,
                     unknownSubs.NotYetKnownCount,
                     unknownBundles.NotYetExploredCount,
-                    unknownBundles.NotYetKnownCount);
+                    unknownBundles.NotYetKnownCount,
+                    remainingItemCount);
 
                 return ExplorePageCommandResult.Success;
             }
