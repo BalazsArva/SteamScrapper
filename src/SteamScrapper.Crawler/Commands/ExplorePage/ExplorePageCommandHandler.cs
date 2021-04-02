@@ -62,7 +62,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
 
                 // Note: this is not accurate, as it does not account for items that are already prefetched but not yet processed.
                 // An approximate value is sufficient for this though.
-                var remainingItemCount = await crawlerAddressRegistrationService.CountRemainingItemsAsync(utcNow);
+                var explorationStats = await crawlerAddressRegistrationService.GetExplorationStatisticsAsync(utcNow);
 
                 stopwatch.Stop();
 
@@ -71,7 +71,7 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
                     "Found {@NotExploredAppCount} not explored apps, {@NotKnownAppCount} not known apps, " +
                     "{@NotExploredSubCount} not explored subs, {@NotKnownSubCount} not known subs and " +
                     "{@NotExploredBundleCount} not explored bundles, {@NotKnownBundleCount} not known bundles. " +
-                    "About {@RemainingItemCount} links still need to be explored.",
+                    "About {@ExploredItemCount} links are explored and {@RemainingItemCount} links remain.",
                     steamPage.NormalizedAddress.AbsoluteUri,
                     stopwatch.ElapsedMilliseconds,
                     unknownApps.NotYetExploredCount,
@@ -80,7 +80,8 @@ namespace SteamScrapper.Crawler.Commands.ExplorePage
                     unknownSubs.NotYetKnownCount,
                     unknownBundles.NotYetExploredCount,
                     unknownBundles.NotYetKnownCount,
-                    remainingItemCount);
+                    explorationStats.ApproximateExploredCount,
+                    explorationStats.ApproximateToBeExploredCount);
 
                 return ExplorePageCommandResult.Success;
             }

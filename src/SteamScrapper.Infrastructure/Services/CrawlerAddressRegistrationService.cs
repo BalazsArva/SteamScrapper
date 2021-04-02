@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 using SteamScrapper.Common.Urls;
+using SteamScrapper.Domain.Models;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.Options;
 using SteamScrapper.Infrastructure.Redis;
@@ -81,11 +82,17 @@ namespace SteamScrapper.Infrastructure.Services
             logger.LogInformation("Recording ignored links is {@EnableRecordingIgnoredLinksInfoText}.", EnableRecordingIgnoredLinks ? "enabled" : "disabled");
         }
 
-        public async Task<long> CountRemainingItemsAsync(DateTime executionDate)
+        public async Task<CrawlerExplorationStatistics> GetExplorationStatisticsAsync(DateTime executionDate)
         {
             var redisKeyDateStamp = executionDate.ToString(RedisDateStampFormat);
+            var redisTransaction = redisDatabase.CreateTransaction();
 
-            return await redisDatabase.SetLengthAsync(GetToBeExploredSetName(redisKeyDateStamp));
+            var toBeExploredCountTask = redisTransaction.SetLengthAsync(GetToBeExploredSetName(redisKeyDateStamp));
+            var exploredCountTask = redisTransaction.SetLengthAsync(GetExploredSetName(redisKeyDateStamp));
+
+            await redisTransaction.ExecuteAsync();
+
+            return new CrawlerExplorationStatistics(await exploredCountTask, await toBeExploredCountTask);
         }
 
         public async Task<Uri> GetNextAddressAsync(DateTime executionDate, CancellationToken cancellationToken)

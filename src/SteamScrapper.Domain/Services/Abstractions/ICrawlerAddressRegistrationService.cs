@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using SteamScrapper.Domain.Models;
 
 namespace SteamScrapper.Domain.Services.Abstractions
 {
     public interface ICrawlerAddressRegistrationService
     {
-        Task<long> CountRemainingItemsAsync(DateTime executionDate);
+        Task<CrawlerExplorationStatistics> GetExplorationStatisticsAsync(DateTime executionDate);
 
         Task<Uri> GetNextAddressAsync(DateTime executionDate, CancellationToken cancellationToken);
 
