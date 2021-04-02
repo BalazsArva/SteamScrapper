@@ -7,9 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
-using SteamScrapper.Common.DataStructures;
 using SteamScrapper.Common.Urls;
-using SteamScrapper.Common.Utilities.Links;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.Options;
 using SteamScrapper.Infrastructure.Redis;
@@ -19,9 +17,6 @@ namespace SteamScrapper.Infrastructure.Services
     public class CrawlerAddressRegistrationService : ICrawlerAddressRegistrationService
     {
         private const string RedisDateStampFormat = "yyyyMMdd";
-
-        // It's sure there are Ids > 2 million, so 3 * 1000 * 1000 should be okay.
-        private const int DefaultBitmapSize = 3 * 1000 * 1000;
 
         private static readonly IEnumerable<string> LinksAllowedForExploration = new HashSet<string>
         {
@@ -50,9 +45,6 @@ namespace SteamScrapper.Infrastructure.Services
             PageUrlPrefixes.Tags,
         };
 
-        private readonly Bitmap exploredAppIds;
-        private readonly Bitmap exploredSubIds;
-        private readonly Bitmap exploredBundleIds;
         private readonly IDatabase redisDatabase;
         private readonly bool EnableRecordingIgnoredLinks;
 
@@ -83,38 +75,31 @@ namespace SteamScrapper.Infrastructure.Services
                     nameof(options));
             }
 
-            exploredBundleIds = new Bitmap(DefaultBitmapSize);
             EnableRecordingIgnoredLinks = options.Value.EnableRecordingIgnoredLinks;
             redisDatabase = redisConnectionWrapper.ConnectionMultiplexer.GetDatabase();
 
-            // TODO: Sub and bundle ids may not need as large bitmap as apps do.
-            exploredAppIds = new Bitmap(DefaultBitmapSize);
-            exploredSubIds = new Bitmap(DefaultBitmapSize);
-
-            var enableRecordingIgnoredLinksInfoText = EnableRecordingIgnoredLinks ? "enabled" : "disabled";
-            logger.LogInformation($"Recording ignored links is {enableRecordingIgnoredLinksInfoText}.");
+            logger.LogInformation("Recording ignored links is {@EnableRecordingIgnoredLinksInfoText}.", EnableRecordingIgnoredLinks ? "enabled" : "disabled");
         }
 
         public async Task<Uri> GetNextAddressAsync(DateTime executionDate, CancellationToken cancellationToken)
         {
             var redisKeyDateStamp = executionDate.ToString(RedisDateStampFormat);
+            var toBeExploredSetName = GetToBeExploredSetName(redisKeyDateStamp);
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                var addressToProcessAbsUris = await redisDatabase.SetPopAsync($"Crawler:{redisKeyDateStamp}:ToBeExplored", 1);
+                var addressToProcessAbsUris = await redisDatabase.SetPopAsync(toBeExploredSetName, 1);
+                var addressToProcessAbsUri = addressToProcessAbsUris.Select(x => (string)x).ElementAtOrDefault(0)?.Trim();
 
-                string addressToProcessAbsUri = addressToProcessAbsUris.ElementAtOrDefault(0);
-
-                // Ran out of items to process
                 if (string.IsNullOrWhiteSpace(addressToProcessAbsUri))
                 {
+                    // Ran out of items to process
                     return null;
                 }
 
-                var result = new Uri(addressToProcessAbsUri.Trim(), UriKind.Absolute);
-                if (await TryRegisterLinkAsExploredAsync(redisKeyDateStamp, result))
+                if (await TryRegisterLinkAsExploredAsync(redisKeyDateStamp, addressToProcessAbsUri))
                 {
-                    return result;
+                    return new Uri(addressToProcessAbsUri, UriKind.Absolute);
                 }
             }
 
@@ -139,6 +124,8 @@ namespace SteamScrapper.Infrastructure.Services
             }
 
             var redisKeyDateStamp = executionDate.ToString(RedisDateStampFormat);
+            var exploredSetName = GetExploredSetName(redisKeyDateStamp);
+            var toBeExploredSetName = GetToBeExploredSetName(redisKeyDateStamp);
 
             var transaction = redisDatabase.CreateTransaction();
 
@@ -146,16 +133,8 @@ namespace SteamScrapper.Infrastructure.Services
             {
                 var absoluteUri = uri.AbsoluteUri;
 
-                // Remove from "explored" sets.
-                _ = transaction.SetRemoveAsync($"Crawler:{redisKeyDateStamp}:Explored", absoluteUri);
-                _ = transaction.SetRemoveAsync($"Crawler:{redisKeyDateStamp}:Explored:Apps", absoluteUri);
-                _ = transaction.SetRemoveAsync($"Crawler:{redisKeyDateStamp}:Explored:Subs", absoluteUri);
-                _ = transaction.SetRemoveAsync($"Crawler:{redisKeyDateStamp}:Explored:Bundles", absoluteUri);
-                _ = transaction.SetRemoveAsync($"Crawler:{redisKeyDateStamp}:Explored:Developer", absoluteUri);
-                _ = transaction.SetRemoveAsync($"Crawler:{redisKeyDateStamp}:Explored:Publisher", absoluteUri);
-
-                // Add back to "to be explored" set.
-                _ = transaction.SetAddAsync($"Crawler:{redisKeyDateStamp}:ToBeExplored", absoluteUri);
+                _ = transaction.SetRemoveAsync(exploredSetName, absoluteUri);
+                _ = transaction.SetAddAsync(toBeExploredSetName, absoluteUri);
             }
 
             await transaction.ExecuteAsync();
@@ -175,120 +154,32 @@ namespace SteamScrapper.Infrastructure.Services
 
             var redisKeyDateStamp = executionDate.ToString(RedisDateStampFormat);
             var toBeExploredLinks = foundLinks.Where(uri => IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
-            var helperSetId = $"Crawler:{redisKeyDateStamp}:HelperSets:{Guid.NewGuid():n}";
+            var helperSetName = GetHelperSetName(redisKeyDateStamp, Guid.NewGuid().ToString("n"));
 
             var updateExplorationStatusTransaction = redisDatabase.CreateTransaction();
 
-            var addToBeExploredToHelperSetTask = updateExplorationStatusTransaction.SetAddAsync(helperSetId, toBeExploredLinks);
+            var addToBeExploredToHelperSetTask = updateExplorationStatusTransaction.SetAddAsync(helperSetName, toBeExploredLinks);
             if (EnableRecordingIgnoredLinks)
             {
                 var ignoredLinks = foundLinks.Where(uri => !IsLinkAllowedForExploration(uri)).Select(uri => new RedisValue(uri.AbsoluteUri)).ToArray();
-                var addIgnoredLinksTask = updateExplorationStatusTransaction.SetAddAsync($"Crawler:{redisKeyDateStamp}:Ignored", ignoredLinks);
+                var addIgnoredLinksTask = updateExplorationStatusTransaction.SetAddAsync(GetIgnoredSetName(redisKeyDateStamp), ignoredLinks);
             }
 
-            var t1 = updateExplorationStatusTransaction.SetCombineAndStoreAsync(SetOperation.Difference, helperSetId, helperSetId, $"Crawler:{redisKeyDateStamp}:Explored");
-            var t2 = updateExplorationStatusTransaction.SetCombineAndStoreAsync(SetOperation.Difference, helperSetId, helperSetId, $"Crawler:{redisKeyDateStamp}:Explored:Apps");
-            var t3 = updateExplorationStatusTransaction.SetCombineAndStoreAsync(SetOperation.Difference, helperSetId, helperSetId, $"Crawler:{redisKeyDateStamp}:Explored:Subs");
-            var t4 = updateExplorationStatusTransaction.SetCombineAndStoreAsync(SetOperation.Difference, helperSetId, helperSetId, $"Crawler:{redisKeyDateStamp}:Explored:Bundles");
-            var t5 = updateExplorationStatusTransaction.SetCombineAndStoreAsync(SetOperation.Difference, helperSetId, helperSetId, $"Crawler:{redisKeyDateStamp}:Explored:Developer");
-            var t6 = updateExplorationStatusTransaction.SetCombineAndStoreAsync(SetOperation.Difference, helperSetId, helperSetId, $"Crawler:{redisKeyDateStamp}:Explored:Publisher");
+            var computeNonexploredLinks = updateExplorationStatusTransaction.SetCombineAndStoreAsync(SetOperation.Difference, helperSetName, helperSetName, GetExploredSetName(redisKeyDateStamp));
 
-            var notYetExploredRedisValsTask = updateExplorationStatusTransaction.SetMembersAsync(helperSetId);
+            var notYetExploredRedisValsTask = updateExplorationStatusTransaction.SetMembersAsync(helperSetName);
 
-            var deleteHelperSetTask = updateExplorationStatusTransaction.KeyDeleteAsync(helperSetId);
+            var deleteHelperSetTask = updateExplorationStatusTransaction.KeyDeleteAsync(helperSetName);
 
             await updateExplorationStatusTransaction.ExecuteAsync();
 
             var notYetExploredLinks = notYetExploredRedisValsTask.Result.Select(x => (string)x).ToHashSet();
             if (notYetExploredLinks.Count != 0)
             {
-                await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:ToBeExplored", notYetExploredRedisValsTask.Result);
+                await redisDatabase.SetAddAsync(GetToBeExploredSetName(redisKeyDateStamp), notYetExploredRedisValsTask.Result);
             }
 
             return notYetExploredLinks;
-        }
-
-        private async Task<bool> TryRegisterLinkAsExploredAsync(string redisKeyDateStamp, Uri addressToProcessUri)
-        {
-            var absoluteUri = addressToProcessUri.AbsoluteUri;
-
-            if (absoluteUri.StartsWith(PageUrlPrefixes.App, StringComparison.OrdinalIgnoreCase))
-            {
-                var appId = SteamLinkHelper.ExtractAppId(addressToProcessUri);
-
-                if (exploredAppIds.Get(appId))
-                {
-                    // We know from local data that it's already explored. Don't even check Redis.
-                    return false;
-                }
-
-                // If local data says that it's not yet explored, then remote data may disagree, other instances may have explored it.
-                // So go out to Redis to check it.
-                var couldRegisterForExploration = await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored:Apps", addressToProcessUri.AbsoluteUri);
-
-                // Always true. If we could register it against remote data, then we have just reserved it successfully,
-                // and if we could not reserve it, then another instance has already reserved it, so by setting it to true,
-                // we sync the local data.
-                exploredAppIds.Set(appId, true);
-
-                return couldRegisterForExploration;
-            }
-
-            if (absoluteUri.StartsWith(PageUrlPrefixes.Sub, StringComparison.OrdinalIgnoreCase))
-            {
-                var subId = SteamLinkHelper.ExtractSubId(addressToProcessUri);
-
-                if (exploredSubIds.Get(subId))
-                {
-                    // We know from local data that it's already explored. Don't even check Redis.
-                    return false;
-                }
-
-                // If local data says that it's not yet explored, then remote data may disagree, other instances may have explored it.
-                // So go out to Redis to check it.
-                var couldRegisterForExploration = await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored:Subs", addressToProcessUri.AbsoluteUri);
-
-                // Always true. If we could register it against remote data, then we have just reserved it successfully,
-                // and if we could not reserve it, then another instance has already reserved it, so by setting it to true,
-                // we sync the local data.
-                exploredSubIds.Set(subId, true);
-
-                return couldRegisterForExploration;
-            }
-
-            if (absoluteUri.StartsWith(PageUrlPrefixes.Bundle, StringComparison.OrdinalIgnoreCase))
-            {
-                var bundleId = SteamLinkHelper.ExtractBundleId(addressToProcessUri);
-
-                if (exploredBundleIds.Get(bundleId))
-                {
-                    // We know from local data that it's already explored. Don't even check Redis.
-                    return false;
-                }
-
-                // If local data says that it's not yet explored, then remote data may disagree, other instances may have explored it.
-                // So go out to Redis to check it.
-                var couldRegisterForExploration = await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored:Bundles", addressToProcessUri.AbsoluteUri);
-
-                // Always true. If we could register it against remote data, then we have just reserved it successfully,
-                // and if we could not reserve it, then another instance has already reserved it, so by setting it to true,
-                // we sync the local data.
-                exploredBundleIds.Set(bundleId, true);
-
-                return couldRegisterForExploration;
-            }
-
-            if (absoluteUri.StartsWith(PageUrlPrefixes.Developer, StringComparison.OrdinalIgnoreCase))
-            {
-                return await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored:Developer", addressToProcessUri.AbsoluteUri);
-            }
-
-            if (absoluteUri.StartsWith(PageUrlPrefixes.Publisher, StringComparison.OrdinalIgnoreCase))
-            {
-                return await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored:Publisher", addressToProcessUri.AbsoluteUri);
-            }
-
-            return await redisDatabase.SetAddAsync($"Crawler:{redisKeyDateStamp}:Explored", addressToProcessUri.AbsoluteUri);
         }
 
         private static bool IsLinkAllowedForExploration(Uri uri)
@@ -307,5 +198,18 @@ namespace SteamScrapper.Infrastructure.Services
                 LinksAllowedForExploration.Contains(absoluteUri) ||
                 LinkPrefixesAllowedForExploration.Any(x => absoluteUri.StartsWith(x));
         }
+
+        private async Task<bool> TryRegisterLinkAsExploredAsync(string redisKeyDateStamp, string addressToProcessAbsoluteUri)
+        {
+            return await redisDatabase.SetAddAsync(GetExploredSetName(redisKeyDateStamp), addressToProcessAbsoluteUri);
+        }
+
+        private static string GetExploredSetName(string redisKeyDateStamp) => $"Crawler:{redisKeyDateStamp}:Explored";
+
+        private static string GetToBeExploredSetName(string redisKeyDateStamp) => $"Crawler:{redisKeyDateStamp}:ToBeExplored";
+
+        private static string GetIgnoredSetName(string redisKeyDateStamp) => $"Crawler:{redisKeyDateStamp}:Ignored";
+
+        private static string GetHelperSetName(string redisKeyDateStamp, string helperSetId) => $"Crawler:{redisKeyDateStamp}:HelperSets:{helperSetId}";
     }
 }
