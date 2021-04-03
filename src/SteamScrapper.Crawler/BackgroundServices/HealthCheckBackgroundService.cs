@@ -57,13 +57,13 @@ namespace SteamScrapper.Crawler.BackgroundServices
             }
 
             var allHealthChecksTask = Task.WhenAll(healthCheckTasks);
-            var healthCheckTimeoutTask = Task.Delay(this.healthCheckTimeout, combinedCancellationToken);
+            var healthCheckTimeoutTask = Task.Delay(healthCheckTimeout, combinedCancellationToken);
 
             await Task.WhenAny(allHealthChecksTask, healthCheckTimeoutTask);
 
             if (healthCheckTimeoutTask.IsCompletedSuccessfully)
             {
-                // Timed out, at least one source failed to respond in time
+                // Timed out, at least one source failed to respond in time.
                 logger.LogCritical("Could not get health check responses from all sources in the allowed response time of {@Timeout}.", healthCheckTimeout);
 
                 isHealthy = false;
@@ -72,7 +72,7 @@ namespace SteamScrapper.Crawler.BackgroundServices
             if (allHealthChecksTask.IsCompletedSuccessfully)
             {
                 // All sources responded, but some of them may have reported unhealthy status.
-                // Calling the synchronous .Result is ok here because the Task.WhenAll is completed first if we hit this branch.
+                // Calling the synchronous .Result is ok here because the Task.WhenAll is completed successfully if we hit this branch.
                 // The tasks passed to Task.WhenAll(...) are safe wrappers, so it's also safe to assume that there's no exception,
                 // every item has an outcome (which wraps any exceptions).
                 foreach (var healthCheckResult in allHealthChecksTask.Result)
@@ -112,7 +112,9 @@ namespace SteamScrapper.Crawler.BackgroundServices
             }
             catch (Exception e)
             {
-                return new(false, source.GetType().FullName, "An unhandled exception occurred while attempting to retrieve health check response from source.", e);
+                var sourceName = source.GetType().FullName;
+
+                return new(false, sourceName, "An unhandled exception occurred while attempting to retrieve health check response from source.", e);
             }
         }
     }
