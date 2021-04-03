@@ -61,14 +61,15 @@ namespace SteamScrapper.Crawler.BackgroundServices
 
             await Task.WhenAny(allHealthChecksTask, healthCheckTimeoutTask);
 
-            if (healthCheckTimeoutTask.IsCompleted)
+            if (healthCheckTimeoutTask.IsCompletedSuccessfully)
             {
                 // Timed out, at least one source failed to respond in time
                 logger.LogCritical("Could not get health check responses from all sources in the allowed response time of {@Timeout}.", healthCheckTimeout);
 
                 isHealthy = false;
             }
-            else
+
+            if (allHealthChecksTask.IsCompletedSuccessfully)
             {
                 // All sources responded, but some of them may have reported unhealthy status.
                 // Calling the synchronous .Result is ok here because the Task.WhenAll is completed first if we hit this branch.
@@ -107,9 +108,7 @@ namespace SteamScrapper.Crawler.BackgroundServices
         {
             try
             {
-                var t = await source.GetHealthAsync(cancellationToken);
-
-                return t;
+                return await source.GetHealthAsync(cancellationToken);
             }
             catch (Exception e)
             {
