@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using SteamScrapper.Common.HealthCheck;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Crawler.BackgroundServices;
 using SteamScrapper.Crawler.Commands.CancelReservations;
@@ -63,7 +64,10 @@ namespace SteamScrapper.Crawler
 
                     services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
 
+                    services.AddSingleton<IHealthCheckable>(services => services.GetRequiredService<IRedisConnectionWrapper>());
+
                     services.AddHostedService<CrawlerBackgroundService>();
+                    services.AddHostedService<HealthCheckBackgroundService>();
                 });
         }
     }
