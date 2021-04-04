@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using SteamScrapper.Common.HealthCheck;
+using SteamScrapper.Common.Hosting;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Crawler.BackgroundServices;
 using SteamScrapper.Crawler.Commands.CancelReservations;

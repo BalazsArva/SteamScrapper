@@ -6,7 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SteamScrapper.Common.HealthCheck;
 
-namespace SteamScrapper.Crawler.BackgroundServices
+namespace SteamScrapper.Common.Hosting
 {
     public class HealthCheckBackgroundService : BackgroundService
     {
@@ -101,15 +101,15 @@ namespace SteamScrapper.Crawler.BackgroundServices
 
             if (isHealthy)
             {
-                logger.LogInformation("Overall health status is healthy.");
-
                 unhealthyCount = 0;
+
+                logger.LogInformation("Overall health status is healthy.");
             }
             else
             {
-                logger.LogCritical("Overall health status is unhealthy.");
-
                 ++unhealthyCount;
+
+                logger.LogCritical("Overall health status is unhealthy. Unhealthy status count: {@UnhealthyCount}", unhealthyCount);
 
                 if (unhealthyCount >= MaxUnhealthyCount)
                 {
