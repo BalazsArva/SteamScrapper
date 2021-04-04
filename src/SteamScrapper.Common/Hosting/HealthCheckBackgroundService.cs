@@ -20,8 +20,6 @@ namespace SteamScrapper.Common.Hosting
         private readonly IEnumerable<IHealthCheckable> healthCheckSources;
         private readonly ILogger logger;
 
-        private int unhealthyCount = 0;
-
         public HealthCheckBackgroundService(
             IHostApplicationLifetime hostApplicationLifetime,
             IEnumerable<IHealthCheckable> healthCheckSources,
@@ -39,6 +37,7 @@ namespace SteamScrapper.Common.Hosting
                 logger.LogWarning("No health check sources found. Periodic health check service will not be started.");
             }
 
+            var unhealthyCount = 0;
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -50,11 +49,31 @@ namespace SteamScrapper.Common.Hosting
                     return;
                 }
 
-                await CheckHealthAsync(healthCheckSources, stoppingToken);
+                var isHealthyOverall = await CheckHealthAsync(healthCheckSources, stoppingToken);
+                if (isHealthyOverall)
+                {
+                    unhealthyCount = 0;
+
+                    logger.LogInformation("Overall health status is healthy.");
+                }
+                else
+                {
+                    ++unhealthyCount;
+
+                    logger.LogCritical("Overall health status is unhealthy. Unhealthy status count: {@UnhealthyCount}", unhealthyCount);
+
+                    if (unhealthyCount >= MaxUnhealthyCount)
+                    {
+                        logger.LogCritical("Unhealthy threshold exceeded, terminating application.");
+
+                        // TODO: Later this could be implemented using Docker healthchecks.
+                        hostApplicationLifetime.StopApplication();
+                    }
+                }
             }
         }
 
-        private async Task CheckHealthAsync(IEnumerable<IHealthCheckable> sources, CancellationToken cancellationToken)
+        private async Task<bool> CheckHealthAsync(IEnumerable<IHealthCheckable> sources, CancellationToken cancellationToken)
         {
             logger.LogInformation("Checking health status...");
 
@@ -89,28 +108,9 @@ namespace SteamScrapper.Common.Hosting
                 isHealthy = allHealthChecksTask.Result.All(x => x);
             }
 
-            if (isHealthy)
-            {
-                unhealthyCount = 0;
-
-                logger.LogInformation("Overall health status is healthy.");
-            }
-            else
-            {
-                ++unhealthyCount;
-
-                logger.LogCritical("Overall health status is unhealthy. Unhealthy status count: {@UnhealthyCount}", unhealthyCount);
-
-                if (unhealthyCount >= MaxUnhealthyCount)
-                {
-                    logger.LogCritical("Unhealthy threshold exceeded, terminating application.");
-
-                    // TODO: Later this could be implemented using Docker healthchecks.
-                    hostApplicationLifetime.StopApplication();
-                }
-            }
-
             cts.Cancel();
+
+            return isHealthy;
         }
 
         private async Task<bool> SafeCheckIsHealthyAsync(IHealthCheckable source, CancellationToken cancellationToken)
