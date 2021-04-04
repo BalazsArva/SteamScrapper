@@ -10,16 +10,23 @@ namespace SteamScrapper.Crawler.BackgroundServices
 {
     public class HealthCheckBackgroundService : BackgroundService
     {
+        private const int MaxUnhealthyCount = 3;
+
         private readonly TimeSpan healthCheckPeriod = TimeSpan.FromMinutes(1);
         private readonly TimeSpan healthCheckTimeout = TimeSpan.FromSeconds(15);
 
+        private readonly IHostApplicationLifetime hostApplicationLifetime;
         private readonly IEnumerable<IHealthCheckable> healthCheckSources;
         private readonly ILogger logger;
 
+        private int unhealthyCount = 0;
+
         public HealthCheckBackgroundService(
+            IHostApplicationLifetime hostApplicationLifetime,
             IEnumerable<IHealthCheckable> healthCheckSources,
             ILogger<HealthCheckBackgroundService> logger)
         {
+            this.hostApplicationLifetime = hostApplicationLifetime ?? throw new ArgumentNullException(nameof(hostApplicationLifetime));
             this.healthCheckSources = healthCheckSources ?? throw new ArgumentNullException(nameof(healthCheckSources));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -95,10 +102,22 @@ namespace SteamScrapper.Crawler.BackgroundServices
             if (isHealthy)
             {
                 logger.LogInformation("Overall health status is healthy.");
+
+                unhealthyCount = 0;
             }
             else
             {
                 logger.LogCritical("Overall health status is unhealthy.");
+
+                ++unhealthyCount;
+
+                if (unhealthyCount >= MaxUnhealthyCount)
+                {
+                    logger.LogCritical("Unhealthy threshold exceeded, terminating application.");
+
+                    // TODO: Later this could be implemented using Docker healthchecks.
+                    hostApplicationLifetime.StopApplication();
+                }
             }
 
             cts.Cancel();
