@@ -66,6 +66,7 @@ namespace SteamScrapper.Crawler
                     services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
 
                     services.AddSingleton<IHealthCheckable>(services => services.GetRequiredService<IRedisConnectionWrapper>());
+                    services.AddSingleton<IHealthCheckable, SteamContextHealthChecker>();
 
                     services.AddHostedService<CrawlerBackgroundService>();
                     services.AddHostedService<HealthCheckBackgroundService>();

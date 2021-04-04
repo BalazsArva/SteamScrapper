@@ -86,6 +86,8 @@ namespace SteamScrapper.Common.Hosting
                 {
                     if (healthCheckResult.IsHealthy)
                     {
+                        logger.LogInformation("Health check source {@ReporterName} reported health status as healthy.", healthCheckResult.ReporterName);
+
                         continue;
                     }
 
