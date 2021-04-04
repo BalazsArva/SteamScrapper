@@ -62,7 +62,7 @@ namespace SteamScrapper.Common.Hosting
             var combinedCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token).Token;
 
             var isHealthy = true;
-            var healthCheckTasks = new List<Task<HealthCheckResult>>();
+            var healthCheckTasks = new List<Task<bool>>();
 
             foreach (var source in sources)
             {
@@ -86,25 +86,7 @@ namespace SteamScrapper.Common.Hosting
             {
                 // All sources responded, but some of them may have reported unhealthy status.
                 // Calling the synchronous .Result is ok here because the Task.WhenAll is completed successfully if we hit this branch.
-                // The tasks passed to Task.WhenAll(...) are safe wrappers, so it's also safe to assume that there's no exception,
-                // every item has an outcome (which wraps any exceptions).
-                foreach (var healthCheckResult in allHealthChecksTask.Result)
-                {
-                    if (healthCheckResult.IsHealthy)
-                    {
-                        logger.LogInformation("Health check source {@ReporterName} reported health status as healthy.", healthCheckResult.ReporterName);
-
-                        continue;
-                    }
-
-                    isHealthy = false;
-
-                    logger.LogCritical(
-                        healthCheckResult.Exception,
-                        "Health check source {@ReporterName} reported health status as unhealthy. Reason given: {@Reason}",
-                        healthCheckResult.ReporterName,
-                        healthCheckResult.Reason);
-                }
+                isHealthy = allHealthChecksTask.Result.All(x => x);
             }
 
             if (isHealthy)
@@ -131,17 +113,42 @@ namespace SteamScrapper.Common.Hosting
             cts.Cancel();
         }
 
-        private static async Task<HealthCheckResult> SafeGetHealthCheckResultAsync(IHealthCheckable source, CancellationToken cancellationToken)
+        private async Task<bool> SafeGetHealthCheckResultAsync(IHealthCheckable source, CancellationToken cancellationToken)
         {
             try
             {
-                return await source.GetHealthAsync(cancellationToken);
+                var healthCheckResult = await source.GetHealthAsync(cancellationToken);
+
+                if (healthCheckResult.IsHealthy)
+                {
+                    // {@HealthStatus} is a parameter to make logs searchable based on this property.
+                    logger.LogInformation(
+                        "Health check source {@ReporterName} reported health status as {@HealthStatus}.",
+                        healthCheckResult.ReporterName,
+                        "healthy");
+                }
+                else
+                {
+                    logger.LogCritical(
+                        healthCheckResult.Exception,
+                        "Health check source {@ReporterName} reported health status as {@HealthStatus}. Reason given: {@Reason}",
+                        healthCheckResult.ReporterName,
+                        "unhealthy",
+                        healthCheckResult.Reason);
+                }
+
+                return healthCheckResult.IsHealthy;
             }
             catch (Exception e)
             {
                 var sourceName = source.GetType().FullName;
 
-                return new(false, sourceName, "An unhandled exception occurred while attempting to retrieve health check response from source.", e);
+                logger.LogCritical(
+                    e,
+                    "An unhandled exception occurred while attempting to retrieve health check response from source {@ReporterName}.",
+                    sourceName);
+
+                return false;
             }
         }
     }
