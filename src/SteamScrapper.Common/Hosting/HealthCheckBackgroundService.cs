@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
@@ -33,6 +34,11 @@ namespace SteamScrapper.Common.Hosting
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            if (!healthCheckSources.Any())
+            {
+                logger.LogWarning("No health check sources found. Periodic health check service will not be started.");
+            }
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
