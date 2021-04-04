@@ -66,7 +66,7 @@ namespace SteamScrapper.Common.Hosting
 
             foreach (var source in sources)
             {
-                healthCheckTasks.Add(SafeGetHealthCheckResultAsync(source, combinedCancellationToken));
+                healthCheckTasks.Add(SafeCheckIsHealthyAsync(source, combinedCancellationToken));
             }
 
             var allHealthChecksTask = Task.WhenAll(healthCheckTasks);
@@ -113,7 +113,7 @@ namespace SteamScrapper.Common.Hosting
             cts.Cancel();
         }
 
-        private async Task<bool> SafeGetHealthCheckResultAsync(IHealthCheckable source, CancellationToken cancellationToken)
+        private async Task<bool> SafeCheckIsHealthyAsync(IHealthCheckable source, CancellationToken cancellationToken)
         {
             try
             {
