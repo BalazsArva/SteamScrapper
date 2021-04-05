@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using SteamScrapper.Common.HealthCheck;
+using SteamScrapper.Common.Hosting;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.Repositories;
@@ -38,8 +40,6 @@ namespace SteamScrapper.SubScanner
                     services.Configure<RedisOptions>(hostContext.Configuration.GetSection(RedisOptions.SectionName));
                     services.Configure<ScanSubBatchOptions>(hostContext.Configuration.GetSection(ScanSubBatchOptions.SectionName));
 
-                    services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
-
                     services.AddPooledDbContextFactory<SteamContext>(
                         (services, opts) => opts.UseSqlServer(services.GetRequiredService<IOptions<SqlServerOptions>>().Value.ConnectionString), SqlConnectionPoolSize);
 
@@ -53,7 +53,14 @@ namespace SteamScrapper.SubScanner
                     services.AddSingleton<ISubScanningService, SubScanningService>();
 
                     services.AddSingleton<IScanSubBatchCommandHandler, ScanSubBatchCommandHandler>();
+
+                    services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
+
+                    services.AddSingleton<IHealthCheckable>(services => services.GetRequiredService<IRedisConnectionWrapper>());
+                    services.AddSingleton<IHealthCheckable, SteamContextHealthChecker>();
+
                     services.AddHostedService<ScanSubsBackgroundService>();
+                    services.AddHostedService<HealthCheckBackgroundService>();
                 });
         }
     }
