@@ -5,26 +5,26 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SteamScrapper.Common.HealthCheck;
+using SteamScrapper.Common.Options;
 
 namespace SteamScrapper.Common.Hosting
 {
     public class HealthCheckBackgroundService : BackgroundService
     {
-        private const int MaxUnhealthyCount = 3;
-
-        private readonly TimeSpan healthCheckPeriod = TimeSpan.FromMinutes(1);
-        private readonly TimeSpan healthCheckTimeout = TimeSpan.FromSeconds(15);
-
+        private readonly HealthCheckOptions healthCheckOptions;
         private readonly IHostApplicationLifetime hostApplicationLifetime;
         private readonly IEnumerable<IHealthCheckable> healthCheckSources;
         private readonly ILogger logger;
 
         public HealthCheckBackgroundService(
+            IOptions<HealthCheckOptions> healthCheckOptions,
             IHostApplicationLifetime hostApplicationLifetime,
             IEnumerable<IHealthCheckable> healthCheckSources,
             ILogger<HealthCheckBackgroundService> logger)
         {
+            this.healthCheckOptions = healthCheckOptions?.Value ?? throw new ArgumentNullException(nameof(healthCheckOptions));
             this.hostApplicationLifetime = hostApplicationLifetime ?? throw new ArgumentNullException(nameof(hostApplicationLifetime));
             this.healthCheckSources = healthCheckSources ?? throw new ArgumentNullException(nameof(healthCheckSources));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -42,7 +42,7 @@ namespace SteamScrapper.Common.Hosting
             {
                 try
                 {
-                    await Task.Delay(healthCheckPeriod, stoppingToken);
+                    await Task.Delay(healthCheckOptions.HealthCheckPeriod, stoppingToken);
                 }
                 catch (TaskCanceledException)
                 {
@@ -62,7 +62,7 @@ namespace SteamScrapper.Common.Hosting
 
                     logger.LogCritical("Overall health status is unhealthy. Unhealthy status count: {@UnhealthyCount}", unhealthyCount);
 
-                    if (unhealthyCount >= MaxUnhealthyCount)
+                    if (unhealthyCount >= healthCheckOptions.MaxUnhealthyCount)
                     {
                         logger.LogCritical("Unhealthy threshold exceeded, terminating application.");
 
@@ -82,6 +82,7 @@ namespace SteamScrapper.Common.Hosting
 
             var isHealthy = true;
             var healthCheckTasks = new List<Task<bool>>();
+            var healthCheckTimeout = healthCheckOptions.HealthCheckTimeout;
 
             foreach (var source in sources)
             {
