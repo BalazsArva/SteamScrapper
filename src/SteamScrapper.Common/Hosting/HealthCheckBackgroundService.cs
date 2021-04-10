@@ -35,6 +35,7 @@ namespace SteamScrapper.Common.Hosting
             if (!healthCheckSources.Any())
             {
                 logger.LogWarning("No health check sources found. Periodic health check service will not be started.");
+                return;
             }
 
             var unhealthyCount = 0;
