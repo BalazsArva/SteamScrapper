@@ -1,9 +1,9 @@
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using SteamScrapper.Common.HealthCheck;
 using SteamScrapper.Common.Hosting;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Crawler.BackgroundServices;
@@ -65,8 +65,10 @@ namespace SteamScrapper.Crawler
 
                     services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
 
-                    services.AddSingleton<IHealthCheckable>(services => services.GetRequiredService<IRedisConnectionWrapper>());
-                    services.AddSingleton<IHealthCheckable, SteamContextHealthChecker>();
+                    services
+                        .AddHealthChecks()
+                        .AddCheck<SteamContextHealthChecker>("SQL Server", HealthStatus.Unhealthy, new[] { "SQL Server", "Database" })
+                        .AddCheck<RedisHealthCheck>("Redis", HealthStatus.Unhealthy, new[] { "Redis" });
 
                     services.AddHostedService<CrawlerBackgroundService>();
                     services.AddHostedService<HealthCheckBackgroundService>();

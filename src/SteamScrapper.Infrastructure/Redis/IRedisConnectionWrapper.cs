@@ -1,9 +1,8 @@
 ﻿using StackExchange.Redis;
-using SteamScrapper.Common.HealthCheck;
 
 namespace SteamScrapper.Infrastructure.Redis
 {
-    public interface IRedisConnectionWrapper : IHealthCheckable
+    public interface IRedisConnectionWrapper
     {
         IConnectionMultiplexer ConnectionMultiplexer { get; }
     }

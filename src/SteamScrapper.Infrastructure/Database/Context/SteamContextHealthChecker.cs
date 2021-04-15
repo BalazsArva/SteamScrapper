@@ -2,14 +2,12 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using SteamScrapper.Common.HealthCheck;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace SteamScrapper.Infrastructure.Database.Context
 {
-    public class SteamContextHealthChecker : IHealthCheckable
+    public class SteamContextHealthChecker : IHealthCheck
     {
-        private static readonly string ReporterName = typeof(SteamContextHealthChecker).FullName;
-
         private readonly IDbContextFactory<SteamContext> dbContextFactory;
 
         public SteamContextHealthChecker(IDbContextFactory<SteamContext> dbContextFactory)
@@ -17,19 +15,19 @@ namespace SteamScrapper.Infrastructure.Database.Context
             this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
         }
 
-        public async Task<HealthCheckResult> GetHealthAsync(CancellationToken cancellationToken)
+        public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
             try
             {
-                using var context = dbContextFactory.CreateDbContext();
+                using var dbContext = dbContextFactory.CreateDbContext();
 
-                _ = await context.Database.ExecuteSqlRawAsync("SELECT 1", cancellationToken);
+                _ = await dbContext.Database.ExecuteSqlRawAsync("SELECT 1", cancellationToken);
 
-                return new(true, ReporterName);
+                return HealthCheckResult.Healthy("Successfully checked SQL Server health.");
             }
             catch (Exception e)
             {
-                return new(false, ReporterName, "Failed to get query response from SQL Server.", e);
+                return HealthCheckResult.Unhealthy("Failed to get query response from SQL Server.", e);
             }
         }
     }
