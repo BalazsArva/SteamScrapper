@@ -8,7 +8,7 @@ namespace SteamScrapper.Common.Options
 
         public const int DefaultMaxUnhealthyCount = 3;
 
-        public static readonly TimeSpan DefaultHealthCheckPeriod = TimeSpan.FromMinutes(1);
+        public static readonly TimeSpan DefaultHealthCheckPeriod = TimeSpan.FromSeconds(30);
 
         public int MaxUnhealthyCount { get; set; } = DefaultMaxUnhealthyCount;
 
