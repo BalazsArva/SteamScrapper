@@ -66,29 +66,25 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
                 foreach (var priceHistoryByCurrency in priceHistoriesByCurrency)
                 {
                     var currency = priceHistoryByCurrency.Key;
-
-                    // TODO: Sort by date (field is missing)
-                    // priceHistoryByCurrency.OrderBy(x => x.utc)
-
                     var temp = new List<SubPriceHistoryEntry>();
+
                     doc.PriceHistoryByCurrency[currency] = temp;
 
-                    /*
-                    foreach (var price in priceHistoryByCurrency)
+                    foreach (var price in priceHistoryByCurrency.OrderBy(x => x.UtcDateTimeRecorded))
                     {
                         var prev = temp.LastOrDefault();
+
+                        // Don't include those price records that contain the same price as the previous.
                         if (prev is null || prev.DiscountPrice != price.DiscountValue || prev.NormalPrice != price.Value)
                         {
-                            // Price is changed, add new entry.
                             temp.Add(new SubPriceHistoryEntry
                             {
                                 NormalPrice = price.Value,
                                 DiscountPrice = price.DiscountValue,
-                                // UtcDateTimeRecorded = price.
-                            })
+                                UtcDateTimeRecorded = price.UtcDateTimeRecorded,
+                            });
                         }
                     }
-                    */
                 }
 
                 await session.StoreAsync(doc, subId.ToString(CultureInfo.InvariantCulture));
