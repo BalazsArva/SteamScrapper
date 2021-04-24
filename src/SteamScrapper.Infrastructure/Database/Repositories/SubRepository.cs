@@ -86,11 +86,22 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
 
         public async Task<int> CountUnscannedSubsAsync()
         {
+            // TODO: Date should come as parameter
             var today = dateTimeProvider.UtcNow.Date;
 
             using var context = dbContextFactory.CreateDbContext();
 
             return await context.Subs.CountAsync(x => x.UtcDateTimeLastModified < today);
+        }
+
+        public async Task<int> CountUnscannedSubsFromAsync(DateTime from)
+        {
+            using var context = dbContextFactory.CreateDbContext();
+
+            return await context
+                .Subs
+                .Where(x => x.Aggregations.Count == 0 || !x.Aggregations.Any(a => a.UtcDateTimeRecorded >= from))
+                .CountAsync();
         }
 
         public async Task<IEnumerable<long>> GetSubIdsNotScannedFromAsync(DateTime from, int page, int pageSize, SortDirection sortDirection)
@@ -110,6 +121,37 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             var filteredResults = context
                 .Subs
                 .Where(x => x.UtcDateTimeLastModified < from)
+                .Select(x => x.Id);
+
+            if (sortDirection == SortDirection.Ascending)
+            {
+                filteredResults = filteredResults.OrderBy(x => x);
+            }
+            else
+            {
+                filteredResults = filteredResults.OrderByDescending(x => x);
+            }
+
+            return await filteredResults.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        }
+
+        public async Task<IEnumerable<long>> GetSubIdsNotAggregatedFromAsync(DateTime from, int page, int pageSize, SortDirection sortDirection)
+        {
+            if (page < 1)
+            {
+                throw new ArgumentException($"The value of the '{nameof(page)}' must be at least 1.", nameof(page));
+            }
+
+            if (pageSize < 1)
+            {
+                throw new ArgumentException($"The value of the '{nameof(pageSize)}' must be at least 1.", nameof(pageSize));
+            }
+
+            using var context = dbContextFactory.CreateDbContext();
+
+            var filteredResults = context
+                .Subs
+                .Where(x => x.Aggregations.Count == 0 || !x.Aggregations.Any(a => a.UtcDateTimeRecorded >= from))
                 .Select(x => x.Id);
 
             if (sortDirection == SortDirection.Ascending)
