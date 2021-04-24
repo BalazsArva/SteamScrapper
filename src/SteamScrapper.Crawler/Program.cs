@@ -67,7 +67,7 @@ namespace SteamScrapper.Crawler
 
                     services
                         .AddHealthChecks()
-                        .AddCheck<SteamContextHealthChecker>("SQL Server", HealthStatus.Unhealthy, new[] { "SQL Server", "Database" })
+                        .AddCheck<SteamContextHealthCheck>("SQL Server", HealthStatus.Unhealthy, new[] { "SQL Server", "Database" })
                         .AddCheck<RedisHealthCheck>("Redis", HealthStatus.Unhealthy, new[] { "Redis" });
 
                     services.AddHostedService<CrawlerBackgroundService>();

@@ -6,11 +6,11 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace SteamScrapper.Infrastructure.Database.Context
 {
-    public class SteamContextHealthChecker : IHealthCheck
+    public class SteamContextHealthCheck : IHealthCheck
     {
         private readonly IDbContextFactory<SteamContext> dbContextFactory;
 
-        public SteamContextHealthChecker(IDbContextFactory<SteamContext> dbContextFactory)
+        public SteamContextHealthCheck(IDbContextFactory<SteamContext> dbContextFactory)
         {
             this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
         }
