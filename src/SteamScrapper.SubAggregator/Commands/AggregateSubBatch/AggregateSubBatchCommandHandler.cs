@@ -6,10 +6,10 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Raven.Client.Documents;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Services.Abstractions;
+using SteamScrapper.Infrastructure.RavenDb;
 
 namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
 {
@@ -17,27 +17,22 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
     {
         private readonly ILogger logger;
         private readonly IDateTimeProvider dateTimeProvider;
+        private readonly IDocumentStoreWrapper documentStoreWrapper;
         private readonly ISubAggregationService subAggregationService;
         private readonly ISubQueryRepository queryRepository;
-
-        private readonly IDocumentStore documentStore;
 
         public AggregateSubBatchCommandHandler(
             ILogger<AggregateSubBatchCommandHandler> logger,
             IDateTimeProvider dateTimeProvider,
+            IDocumentStoreWrapper documentStoreWrapper,
             ISubAggregationService subAggregationService,
             ISubQueryRepository queryRepository)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
+            this.documentStoreWrapper = documentStoreWrapper ?? throw new ArgumentNullException(nameof(documentStoreWrapper));
             this.subAggregationService = subAggregationService ?? throw new ArgumentNullException(nameof(subAggregationService));
             this.queryRepository = queryRepository ?? throw new ArgumentNullException(nameof(queryRepository));
-
-            documentStore = new DocumentStore
-            {
-                Database = "SteamScrapper",
-                Urls = new[] { "http://localhost:8080" },
-            }.Initialize();
         }
 
         public async Task<AggregateSubBatchCommandResult> AggregateSubBatchAsync(CancellationToken cancellationToken)
@@ -53,7 +48,7 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
             }
 
             // TODO: Use a repo
-            using var session = documentStore.OpenAsyncSession();
+            using var session = documentStoreWrapper.DocumentStore.OpenAsyncSession();
 
             foreach (var subId in subIdsToAggregate)
             {

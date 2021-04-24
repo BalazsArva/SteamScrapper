@@ -6,7 +6,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using SteamScrapper.Common.Hosting;
 using SteamScrapper.Common.Providers;
-using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.Database.Context;
@@ -38,6 +37,7 @@ namespace SteamScrapper.SubAggregator
                 {
                     services.Configure<SqlServerOptions>(hostContext.Configuration.GetSection(SqlServerOptions.SectionName));
                     services.Configure<RedisOptions>(hostContext.Configuration.GetSection(RedisOptions.SectionName));
+                    services.Configure<RavenDbOptions>(hostContext.Configuration.GetSection(RavenDbOptions.SectionName));
 
                     services.AddPooledDbContextFactory<SteamContext>(
                         (services, opts) => opts.UseSqlServer(services.GetRequiredService<IOptions<SqlServerOptions>>().Value.ConnectionString), SqlConnectionPoolSize);
@@ -52,6 +52,7 @@ namespace SteamScrapper.SubAggregator
                     services.AddSingleton<IAggregateSubBatchCommandHandler, AggregateSubBatchCommandHandler>();
 
                     services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
+                    services.AddSingleton<IDocumentStoreWrapper, DocumentStoreWrapper>();
 
                     services
                         .AddHealthChecks()

@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Raven.Client.Documents;
 using Raven.Client.Documents.Operations;
 
 namespace SteamScrapper.Infrastructure.RavenDb
@@ -11,18 +10,18 @@ namespace SteamScrapper.Infrastructure.RavenDb
     {
         private static readonly GetStatisticsOperation GetStatisticsOperation = new GetStatisticsOperation();
 
-        private readonly IDocumentStore documentStore;
+        private readonly IDocumentStoreWrapper documentStoreWrapper;
 
-        public RavenDbHealthCheck(IDocumentStore documentStore)
+        public RavenDbHealthCheck(IDocumentStoreWrapper documentStoreWrapper)
         {
-            this.documentStore = documentStore ?? throw new ArgumentNullException(nameof(documentStore));
+            this.documentStoreWrapper = documentStoreWrapper ?? throw new ArgumentNullException(nameof(documentStoreWrapper));
         }
 
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {
             try
             {
-                _ = await documentStore.Maintenance.SendAsync(GetStatisticsOperation, cancellationToken);
+                _ = await documentStoreWrapper.DocumentStore.Maintenance.SendAsync(GetStatisticsOperation, cancellationToken);
 
                 return HealthCheckResult.Healthy("Successfully checked RavenDB health.");
             }
