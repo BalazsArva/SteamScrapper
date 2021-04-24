@@ -21,6 +21,7 @@ namespace SteamScrapper.Infrastructure.Database.Context
         private const string BundlesTableName = "Bundles";
         private const string SubsTableName = "Subs";
         private const string SubPricesTableName = "SubPrices";
+        private const string SubAggregationsTableName = "SubAggregations";
 
         public SteamContext(DbContextOptions<SteamContext> dbContextOptions)
             : base(dbContextOptions)
@@ -41,6 +42,7 @@ namespace SteamScrapper.Infrastructure.Database.Context
             SetupBundlesTable(modelBuilder);
             SetupSubsTable(modelBuilder);
             SetupSubPricesTable(modelBuilder);
+            SetupSubAggregationsTable(modelBuilder);
         }
 
         private static void SetupAppsTable(ModelBuilder modelBuilder)
@@ -271,6 +273,41 @@ namespace SteamScrapper.Infrastructure.Database.Context
             // Index setup
             modelBuilder
                 .Entity<SubPrice>()
+                .HasIndex(x => x.UtcDateTimeRecorded);
+        }
+
+        private static void SetupSubAggregationsTable(ModelBuilder modelBuilder)
+        {
+            // Table setup
+            modelBuilder
+                .Entity<SubAggregation>()
+                .ToTable(SubAggregationsTableName);
+
+            // Key setup
+            modelBuilder
+                .Entity<SubAggregation>()
+                .HasKey(x => x.Id);
+
+            // FK setup
+            modelBuilder
+                .Entity<SubAggregation>()
+                .HasOne(x => x.Sub)
+                .WithMany(x => x.Aggregations);
+
+            // Column setup
+            modelBuilder
+                .Entity<SubAggregation>()
+                .Property(x => x.Id)
+                .UseIdentityColumn();
+
+            modelBuilder
+                .Entity<SubAggregation>()
+                .Property(x => x.UtcDateTimeRecorded)
+                .HasDefaultValueSql(SystemUtcDateTimeValueSql);
+
+            // Index setup
+            modelBuilder
+                .Entity<SubAggregation>()
                 .HasIndex(x => x.UtcDateTimeRecorded);
         }
     }

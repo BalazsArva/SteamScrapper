@@ -16,5 +16,7 @@ namespace SteamScrapper.Infrastructure.Database.Entities
         public string Title { get; set; }
 
         public virtual ICollection<SubPrice> Prices { get; } = new List<SubPrice>();
+
+        public virtual ICollection<SubAggregation> Aggregations { get; } = new List<SubAggregation>();
     }
 }
