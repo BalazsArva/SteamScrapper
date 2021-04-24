@@ -187,7 +187,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
 
             var results = await context.SubPrices.AsNoTracking().Where(x => x.SubId == subId).OrderBy(x => x.UtcDateTimeRecorded).ToListAsync();
 
-            return results.Select(x => new Price(x.Price, x.DiscountPrice, x.Currency)).ToList();
+            return results.Select(x => new Price(x.Price, x.DiscountPrice, x.Currency, x.UtcDateTimeRecorded)).ToList();
         }
 
         public async Task AddSubAggregationsAsync(IEnumerable<long> subIds, DateTime performedAt)
@@ -260,11 +260,13 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             var subId = subData.SubId;
 
             var idParameter = command.CreateParameter();
+            var utcDateTimeRecordedParameter = command.CreateParameter();
             var priceParameter = command.CreateParameter();
             var discountPriceParameter = command.CreateParameter();
             var currencyParameter = command.CreateParameter();
 
             var idParameterName = $"subPrice_SubId_{subId}";
+            var utcDateTimeRecordedParameterName = $"subPrice_UtcDateTimeRecorded_{subId}";
             var priceParameterName = $"subPrice_Price_{subId}";
             var discountPriceParameterName = $"subPrice_DiscountPrice_{subId}";
             var currencyParameterName = $"subPrice_Currency_{subId}";
@@ -273,6 +275,11 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             idParameter.Value = subId;
             idParameter.DbType = DbType.Int64;
             idParameter.Direction = ParameterDirection.Input;
+
+            utcDateTimeRecordedParameter.ParameterName = utcDateTimeRecordedParameterName;
+            utcDateTimeRecordedParameter.Value = subData.Price.UtcDateTimeRecorded;
+            utcDateTimeRecordedParameter.DbType = DbType.DateTime2;
+            utcDateTimeRecordedParameter.Direction = ParameterDirection.Input;
 
             priceParameter.ParameterName = priceParameterName;
             priceParameter.Value = subData.Price.Value;
@@ -290,13 +297,14 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             currencyParameter.Direction = ParameterDirection.Input;
 
             command.Parameters.Add(idParameter);
+            command.Parameters.Add(utcDateTimeRecordedParameter);
             command.Parameters.Add(priceParameter);
             command.Parameters.Add(discountPriceParameter);
             command.Parameters.Add(currencyParameter);
 
             return string.Concat(
                 $"INSERT INTO [dbo].[SubPrices] ([SubId], [UtcDateTimeRecorded], [Price], [DiscountPrice], [Currency]) ",
-                $"VALUES (@{idParameterName}, SYSUTCDATETIME(), @{priceParameter}, @{discountPriceParameter}, @{currencyParameterName})");
+                $"VALUES (@{idParameterName}, @{utcDateTimeRecordedParameterName}, @{priceParameterName}, @{discountPriceParameterName}, @{currencyParameterName})");
         }
 
         private static string IncludeInsertUnknownSub(DbCommand command, long subId)

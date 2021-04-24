@@ -1,4 +1,6 @@
-﻿namespace SteamScrapper.Domain.Repositories.Models
+﻿using System;
+
+namespace SteamScrapper.Domain.Repositories.Models
 {
-    public record Price(decimal Value, decimal? DiscountValue, string Currency);
+    public record Price(decimal Value, decimal? DiscountValue, string Currency, DateTime UtcDateTimeRecorded);
 }

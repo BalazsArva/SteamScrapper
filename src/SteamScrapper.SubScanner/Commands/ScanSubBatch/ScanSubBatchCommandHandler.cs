@@ -138,7 +138,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
                 }
                 else
                 {
-                    dbPrice = new Price(subPrice.NormalPrice, subPrice.DiscountPrice, subPrice.Currency);
+                    dbPrice = new Price(subPrice.NormalPrice, subPrice.DiscountPrice, subPrice.Currency, dateTimeProvider.UtcNow);
                 }
 
                 return new Sub(page.SubId, page.FriendlyName, isActive, dbPrice);
