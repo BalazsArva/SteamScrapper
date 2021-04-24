@@ -12,11 +12,16 @@ namespace SteamScrapper.Infrastructure.Services
 {
     public class SubAggregationService : ISubAggregationService
     {
-        private readonly ISubQueryRepository subQueryRepository;
         private readonly IDatabase redisDatabase;
         private readonly IDateTimeProvider dateTimeProvider;
+        private readonly ISubQueryRepository subQueryRepository;
+        private readonly ISubWriteRepository subWriteRepository;
 
-        public SubAggregationService(IRedisConnectionWrapper redisConnectionWrapper, IDateTimeProvider dateTimeProvider, ISubQueryRepository subQueryRepository)
+        public SubAggregationService(
+            IDateTimeProvider dateTimeProvider,
+            IRedisConnectionWrapper redisConnectionWrapper,
+            ISubQueryRepository subQueryRepository,
+            ISubWriteRepository subWriteRepository)
         {
             if (redisConnectionWrapper is null)
             {
@@ -27,11 +32,27 @@ namespace SteamScrapper.Infrastructure.Services
 
             this.subQueryRepository = subQueryRepository ?? throw new ArgumentNullException(nameof(subQueryRepository));
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
+            this.subWriteRepository = subWriteRepository ?? throw new ArgumentNullException(nameof(subWriteRepository));
         }
 
-        public async Task<int> CountUnscannedSubsAsync()
+        public async Task<int> CountUnaggregatedSubsAsync()
         {
-            return await subQueryRepository.CountUnscannedSubsFromAsync(dateTimeProvider.UtcNow);
+            return await subQueryRepository.CountUnaggregatedSubsFromAsync(dateTimeProvider.UtcNow.Date);
+        }
+
+        public async Task ConfirmAggregationAsync(IEnumerable<long> subIds)
+        {
+            if (subIds is null)
+            {
+                throw new ArgumentNullException(nameof(subIds));
+            }
+
+            if (!subIds.Any())
+            {
+                return;
+            }
+
+            await subWriteRepository.AddSubAggregationsAsync(subIds, dateTimeProvider.UtcNow);
         }
 
         // TODO: Consolidate date usage (parameter or provider?)

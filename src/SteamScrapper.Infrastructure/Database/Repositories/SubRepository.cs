@@ -94,7 +94,7 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             return await context.Subs.CountAsync(x => x.UtcDateTimeLastModified < today);
         }
 
-        public async Task<int> CountUnscannedSubsFromAsync(DateTime from)
+        public async Task<int> CountUnaggregatedSubsFromAsync(DateTime from)
         {
             using var context = dbContextFactory.CreateDbContext();
 
@@ -164,6 +164,53 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             }
 
             return await filteredResults.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        }
+
+        public async Task<Sub> GetSubBasicDetailsByIdAsync(long subId)
+        {
+            using var context = dbContextFactory.CreateDbContext();
+
+            var entity = await context.Subs.FindAsync(subId);
+
+            if (entity is null)
+            {
+                return null;
+            }
+
+            // TODO: Consider using a better DTO for this (without price)
+            return new Sub(entity.Id, entity.Title, entity.IsActive);
+        }
+
+        public async Task<IEnumerable<Price>> GetSubPriceHistoryByIdAsync(long subId)
+        {
+            using var context = dbContextFactory.CreateDbContext();
+
+            var results = await context.SubPrices.AsNoTracking().Where(x => x.SubId == subId).OrderBy(x => x.UtcDateTimeRecorded).ToListAsync();
+
+            return results.Select(x => new Price(x.Price, x.DiscountPrice, x.Currency)).ToList();
+        }
+
+        public async Task AddSubAggregationsAsync(IEnumerable<long> subIds, DateTime performedAt)
+        {
+            if (subIds is null)
+            {
+                throw new ArgumentNullException(nameof(subIds));
+            }
+
+            if (!subIds.Any())
+            {
+                return;
+            }
+
+            using var context = dbContextFactory.CreateDbContext();
+
+            context.SubAggregations.AddRange(subIds.Select(x => new Entities.SubAggregation
+            {
+                SubId = x,
+                UtcDateTimeRecorded = performedAt,
+            }));
+
+            await context.SaveChangesAsync();
         }
 
         private static string AddSubDetailsToCommand(DbCommand command, Sub subData)

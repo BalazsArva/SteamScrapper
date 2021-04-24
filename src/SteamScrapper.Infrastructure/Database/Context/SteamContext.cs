@@ -34,6 +34,10 @@ namespace SteamScrapper.Infrastructure.Database.Context
 
         public DbSet<Sub> Subs => Set<Sub>();
 
+        public DbSet<SubPrice> SubPrices => Set<SubPrice>();
+
+        public DbSet<SubAggregation> SubAggregations => Set<SubAggregation>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

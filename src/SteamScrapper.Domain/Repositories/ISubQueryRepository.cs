@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using SteamScrapper.Domain.Repositories.Models;
 
 namespace SteamScrapper.Domain.Repositories
 {
@@ -9,7 +10,11 @@ namespace SteamScrapper.Domain.Repositories
         // TODO: Add service pass-through
         Task<int> CountUnscannedSubsAsync();
 
-        Task<int> CountUnscannedSubsFromAsync(DateTime from);
+        Task<int> CountUnaggregatedSubsFromAsync(DateTime from);
+
+        Task<Sub> GetSubBasicDetailsByIdAsync(long subId);
+
+        Task<IEnumerable<Price>> GetSubPriceHistoryByIdAsync(long subId);
 
         Task<IEnumerable<long>> GetSubIdsNotScannedFromAsync(DateTime from, int page, int pageSize, SortDirection sortDirection);
 

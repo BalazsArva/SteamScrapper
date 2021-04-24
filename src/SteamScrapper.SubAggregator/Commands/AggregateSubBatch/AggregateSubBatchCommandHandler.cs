@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Raven.Client.Documents;
 using SteamScrapper.Common.Providers;
+using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Services.Abstractions;
 
 namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
@@ -14,15 +18,26 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
         private readonly ILogger logger;
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly ISubAggregationService subAggregationService;
+        private readonly ISubQueryRepository queryRepository;
+
+        private readonly IDocumentStore documentStore;
 
         public AggregateSubBatchCommandHandler(
             ILogger<AggregateSubBatchCommandHandler> logger,
             IDateTimeProvider dateTimeProvider,
-            ISubAggregationService subAggregationService)
+            ISubAggregationService subAggregationService,
+            ISubQueryRepository queryRepository)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.subAggregationService = subAggregationService ?? throw new ArgumentNullException(nameof(subAggregationService));
+            this.queryRepository = queryRepository ?? throw new ArgumentNullException(nameof(queryRepository));
+
+            documentStore = new DocumentStore
+            {
+                Database = "SteamScrapper",
+                Urls = new[] { "http://localhost:8080" },
+            }.Initialize();
         }
 
         public async Task<AggregateSubBatchCommandResult> AggregateSubBatchAsync(CancellationToken cancellationToken)
@@ -37,7 +52,57 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
                 return AggregateSubBatchCommandResult.NoMoreItems;
             }
 
-            var remainingCount = await subAggregationService.CountUnscannedSubsAsync();
+            // TODO: Use a repo
+            using var session = documentStore.OpenAsyncSession();
+
+            foreach (var subId in subIdsToAggregate)
+            {
+                var sub = await queryRepository.GetSubBasicDetailsByIdAsync(subId);
+                var subPriceHistory = await queryRepository.GetSubPriceHistoryByIdAsync(subId);
+
+                var doc = new SubDocument
+                {
+                    Title = sub.Title,
+                    Id = sub.SubId.ToString(CultureInfo.InvariantCulture),
+                };
+
+                var priceHistoriesByCurrency = subPriceHistory.GroupBy(x => x.Currency);
+
+                foreach (var priceHistoryByCurrency in priceHistoriesByCurrency)
+                {
+                    var currency = priceHistoryByCurrency.Key;
+
+                    // TODO: Sort by date (field is missing)
+                    // priceHistoryByCurrency.OrderBy(x => x.utc)
+
+                    var temp = new List<SubPriceHistoryEntry>();
+                    doc.PriceHistoryByCurrency[currency] = temp;
+
+                    /*
+                    foreach (var price in priceHistoryByCurrency)
+                    {
+                        var prev = temp.LastOrDefault();
+                        if (prev is null || prev.DiscountPrice != price.DiscountValue || prev.NormalPrice != price.Value)
+                        {
+                            // Price is changed, add new entry.
+                            temp.Add(new SubPriceHistoryEntry
+                            {
+                                NormalPrice = price.Value,
+                                DiscountPrice = price.DiscountValue,
+                                // UtcDateTimeRecorded = price.
+                            })
+                        }
+                    }
+                    */
+                }
+
+                await session.StoreAsync(doc, subId.ToString(CultureInfo.InvariantCulture));
+            }
+
+            await session.SaveChangesAsync();
+            await subAggregationService.ConfirmAggregationAsync(subIdsToAggregate);
+
+            var remainingCount = await subAggregationService.CountUnaggregatedSubsAsync();
 
             stopwatch.Stop();
 
@@ -48,6 +113,24 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
                 remainingCount);
 
             return AggregateSubBatchCommandResult.Success;
+        }
+
+        private class SubDocument
+        {
+            public string Id { get; set; }
+
+            public string Title { get; set; }
+
+            public Dictionary<string, List<SubPriceHistoryEntry>> PriceHistoryByCurrency { get; } = new Dictionary<string, List<SubPriceHistoryEntry>>();
+        }
+
+        private class SubPriceHistoryEntry
+        {
+            public decimal NormalPrice { get; set; }
+
+            public decimal? DiscountPrice { get; set; }
+
+            public DateTime UtcDateTimeRecorded { get; set; }
         }
     }
 }
