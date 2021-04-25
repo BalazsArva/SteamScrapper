@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace SteamScrapper.Domain.Services.Abstractions
+namespace SteamScrapper.BundleScanner.Services
 {
     public interface IBundleScanningService
     {

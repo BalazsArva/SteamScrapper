@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using SteamScrapper.BundleScanner.BackgroundServices;
 using SteamScrapper.BundleScanner.Commands.ScanBundleBatch;
 using SteamScrapper.BundleScanner.Options;
+using SteamScrapper.BundleScanner.Services;
 using SteamScrapper.Common.Hosting;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;

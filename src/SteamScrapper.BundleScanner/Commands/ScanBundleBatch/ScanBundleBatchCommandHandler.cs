@@ -7,20 +7,18 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SteamScrapper.BundleScanner.Options;
+using SteamScrapper.BundleScanner.Services;
 using SteamScrapper.Common.Extensions;
-using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Repositories.Models;
-using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
 {
     public class ScanBundleBatchCommandHandler : IScanBundleBatchCommandHandler
     {
-        private readonly IDateTimeProvider dateTimeProvider;
         private readonly IBundleScanningService bundleScanningService;
         private readonly IBundleWriteRepository bundleWriteRepository;
         private readonly ISteamPageFactory steamPageFactory;
@@ -29,7 +27,6 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
         private readonly int degreeOfParallelism = 8;
 
         public ScanBundleBatchCommandHandler(
-            IDateTimeProvider dateTimeProvider,
             IBundleScanningService bundleScanningService,
             IBundleWriteRepository bundleWriteRepository,
             IOptions<ScanBundleBatchOptions> options,
@@ -48,7 +45,6 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                     nameof(options));
             }
 
-            this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.bundleScanningService = bundleScanningService ?? throw new ArgumentNullException(nameof(bundleScanningService));
             this.bundleWriteRepository = bundleWriteRepository ?? throw new ArgumentNullException(nameof(bundleWriteRepository));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
