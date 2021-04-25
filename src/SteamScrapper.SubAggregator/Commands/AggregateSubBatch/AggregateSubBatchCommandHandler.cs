@@ -6,8 +6,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using SteamScrapper.Domain.Models.Aggregates;
 using SteamScrapper.Domain.Repositories;
-using SteamScrapper.Infrastructure.RavenDb;
 using SteamScrapper.SubAggregator.Services;
 
 namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
@@ -15,18 +15,18 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
     public class AggregateSubBatchCommandHandler : IAggregateSubBatchCommandHandler
     {
         private readonly ILogger logger;
-        private readonly IDocumentStoreWrapper documentStoreWrapper;
+        private readonly ISubAggregateRepository subAggregateRepository;
         private readonly ISubAggregationService subAggregationService;
         private readonly ISubQueryRepository queryRepository;
 
         public AggregateSubBatchCommandHandler(
             ILogger<AggregateSubBatchCommandHandler> logger,
-            IDocumentStoreWrapper documentStoreWrapper,
+            ISubAggregateRepository subAggregateRepository,
             ISubAggregationService subAggregationService,
             ISubQueryRepository queryRepository)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this.documentStoreWrapper = documentStoreWrapper ?? throw new ArgumentNullException(nameof(documentStoreWrapper));
+            this.subAggregateRepository = subAggregateRepository ?? throw new ArgumentNullException(nameof(subAggregateRepository));
             this.subAggregationService = subAggregationService ?? throw new ArgumentNullException(nameof(subAggregationService));
             this.queryRepository = queryRepository ?? throw new ArgumentNullException(nameof(queryRepository));
         }
@@ -42,18 +42,18 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
                 return AggregateSubBatchCommandResult.NoMoreItems;
             }
 
-            // TODO: Use a repo
-            using var session = documentStoreWrapper.DocumentStore.OpenAsyncSession();
+            var subAggregates = new List<Sub>();
 
             foreach (var subId in subIdsToAggregate)
             {
                 var sub = await queryRepository.GetSubBasicDetailsByIdAsync(subId);
                 var subPriceHistory = await queryRepository.GetSubPriceHistoryByIdAsync(subId);
 
-                var doc = new SubDocument
+                var doc = new Sub
                 {
                     Title = sub.Title,
                     Id = sub.SubId.ToString(CultureInfo.InvariantCulture),
+                    IsActive = sub.IsActive,
                 };
 
                 var priceHistoriesByCurrency = subPriceHistory.GroupBy(x => x.Currency);
@@ -61,7 +61,7 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
                 foreach (var priceHistoryByCurrency in priceHistoriesByCurrency)
                 {
                     var currency = priceHistoryByCurrency.Key;
-                    var temp = new List<SubPriceHistoryEntry>();
+                    var temp = new List<PriceHistoryEntry>();
 
                     doc.PriceHistoryByCurrency[currency] = temp;
 
@@ -72,7 +72,7 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
                         // Don't include those price records that contain the same price as the previous.
                         if (prev is null || prev.DiscountPrice != price.DiscountValue || prev.NormalPrice != price.Value)
                         {
-                            temp.Add(new SubPriceHistoryEntry
+                            temp.Add(new PriceHistoryEntry
                             {
                                 NormalPrice = price.Value,
                                 DiscountPrice = price.DiscountValue,
@@ -82,10 +82,10 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
                     }
                 }
 
-                await session.StoreAsync(doc, subId.ToString(CultureInfo.InvariantCulture));
+                subAggregates.Add(doc);
             }
 
-            await session.SaveChangesAsync();
+            await subAggregateRepository.StoreSubAggregatesAsync(subAggregates);
             await subAggregationService.ConfirmAggregationAsync(subIdsToAggregate);
 
             var remainingCount = await subAggregationService.CountUnaggregatedSubsAsync();
@@ -99,24 +99,6 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
                 remainingCount);
 
             return AggregateSubBatchCommandResult.Success;
-        }
-
-        private class SubDocument
-        {
-            public string Id { get; set; }
-
-            public string Title { get; set; }
-
-            public Dictionary<string, List<SubPriceHistoryEntry>> PriceHistoryByCurrency { get; } = new Dictionary<string, List<SubPriceHistoryEntry>>();
-        }
-
-        private class SubPriceHistoryEntry
-        {
-            public decimal NormalPrice { get; set; }
-
-            public decimal? DiscountPrice { get; set; }
-
-            public DateTime UtcDateTimeRecorded { get; set; }
         }
     }
 }

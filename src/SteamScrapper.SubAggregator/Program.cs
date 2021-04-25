@@ -11,6 +11,7 @@ using SteamScrapper.Infrastructure.Database.Context;
 using SteamScrapper.Infrastructure.Database.Repositories;
 using SteamScrapper.Infrastructure.Options;
 using SteamScrapper.Infrastructure.RavenDb;
+using SteamScrapper.Infrastructure.RavenDb.Repositories;
 using SteamScrapper.Infrastructure.Redis;
 using SteamScrapper.SubAggregator.BackgroundServices;
 using SteamScrapper.SubAggregator.Commands.AggregateSubBatch;
@@ -42,6 +43,7 @@ namespace SteamScrapper.SubAggregator
                         (services, opts) => opts.UseSqlServer(services.GetRequiredService<IOptions<SqlServerOptions>>().Value.ConnectionString), SqlConnectionPoolSize);
 
                     services.AddSingleton<SubRepository>();
+                    services.AddSingleton<ISubAggregateRepository, SubAggregateRepository>();
                     services.AddSingleton<ISubQueryRepository>(services => services.GetRequiredService<SubRepository>());
                     services.AddSingleton<ISubWriteRepository>(services => services.GetRequiredService<SubRepository>());
 
