@@ -12,9 +12,9 @@ using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Repositories.Models;
-using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Exceptions;
 using SteamScrapper.SubScanner.Options;
+using SteamScrapper.SubScanner.Services;
 
 namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
 {

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace SteamScrapper.Domain.Services.Abstractions
+namespace SteamScrapper.SubScanner.Services
 {
     public interface ISubScanningService
     {

@@ -17,6 +17,7 @@ using SteamScrapper.Infrastructure.Services;
 using SteamScrapper.SubScanner.BackgroundServices;
 using SteamScrapper.SubScanner.Commands.ScanSubBatch;
 using SteamScrapper.SubScanner.Options;
+using SteamScrapper.SubScanner.Services;
 
 namespace SteamScrapper.SubScanner
 {
