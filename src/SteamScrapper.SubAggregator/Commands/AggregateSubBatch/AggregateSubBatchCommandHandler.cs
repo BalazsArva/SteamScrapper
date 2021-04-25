@@ -83,9 +83,24 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
 
             foreach (var priceHistory in priceHistoriesByCurrency)
             {
-                var currency = priceHistory.Key;
+                var currencySymbol = priceHistory.Key;
+                var currencyName = currencySymbol == "€" ? "EUR" : null;
 
-                result.PriceHistoryByCurrency[currency].AddRange(GetPriceHistoryByCurrency(priceHistory));
+                if (currencyName is null)
+                {
+                    logger.LogWarning("Could not resolve currency name for currency symbol '{@CurrencySymbol} for sub {@SubId}.", currencySymbol, subId);
+                    continue;
+                }
+
+                var priceHistoryForCurrency = new PriceHistory
+                {
+                    CurrencyName = currencyName,
+                    CurrencySymbol = currencySymbol,
+                };
+
+                priceHistoryForCurrency.HistoryEntries.AddRange(GetPriceHistoryByCurrency(priceHistory));
+
+                result.PriceHistoryByCurrency.Add(priceHistoryForCurrency);
             }
 
             return result;

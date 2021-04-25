@@ -10,6 +10,6 @@ namespace SteamScrapper.Domain.Models.Aggregates
 
         public bool IsActive { get; set; }
 
-        public Dictionary<string, List<PriceHistoryEntry>> PriceHistoryByCurrency { get; } = new Dictionary<string, List<PriceHistoryEntry>>();
+        public List<PriceHistory> PriceHistoryByCurrency { get; } = new List<PriceHistory>();
     }
 }
