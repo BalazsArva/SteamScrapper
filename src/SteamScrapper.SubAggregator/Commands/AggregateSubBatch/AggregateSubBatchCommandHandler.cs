@@ -7,8 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using SteamScrapper.Domain.Repositories;
-using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.RavenDb;
+using SteamScrapper.SubAggregator.Services;
 
 namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
 {

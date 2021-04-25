@@ -5,10 +5,9 @@ using System.Threading.Tasks;
 using StackExchange.Redis;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
-using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.Redis;
 
-namespace SteamScrapper.Infrastructure.Services
+namespace SteamScrapper.SubAggregator.Services
 {
     public class SubAggregationService : ISubAggregationService
     {
@@ -55,7 +54,7 @@ namespace SteamScrapper.Infrastructure.Services
             await subWriteRepository.AddSubAggregationsAsync(subIds, dateTimeProvider.UtcNow);
         }
 
-        public async Task<IEnumerable<long>> GetNextSubIdsForAggregationAsync( )
+        public async Task<IEnumerable<long>> GetNextSubIdsForAggregationAsync()
         {
             const int batchSize = 50;
 

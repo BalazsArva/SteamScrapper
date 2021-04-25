@@ -7,15 +7,14 @@ using Microsoft.Extensions.Options;
 using SteamScrapper.Common.Hosting;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
-using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.Database.Context;
 using SteamScrapper.Infrastructure.Database.Repositories;
 using SteamScrapper.Infrastructure.Options;
 using SteamScrapper.Infrastructure.RavenDb;
 using SteamScrapper.Infrastructure.Redis;
-using SteamScrapper.Infrastructure.Services;
 using SteamScrapper.SubAggregator.BackgroundServices;
 using SteamScrapper.SubAggregator.Commands.AggregateSubBatch;
+using SteamScrapper.SubAggregator.Services;
 
 namespace SteamScrapper.SubAggregator
 {
