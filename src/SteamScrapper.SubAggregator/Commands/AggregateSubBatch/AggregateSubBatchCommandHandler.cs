@@ -46,41 +46,7 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
 
             foreach (var subId in subIdsToAggregate)
             {
-                var sub = await queryRepository.GetSubBasicDetailsByIdAsync(subId);
-                var subPriceHistory = await queryRepository.GetSubPriceHistoryByIdAsync(subId);
-
-                var doc = new Sub
-                {
-                    Title = sub.Title,
-                    Id = sub.SubId.ToString(CultureInfo.InvariantCulture),
-                    IsActive = sub.IsActive,
-                };
-
-                var priceHistoriesByCurrency = subPriceHistory.GroupBy(x => x.Currency);
-
-                foreach (var priceHistoryByCurrency in priceHistoriesByCurrency)
-                {
-                    var currency = priceHistoryByCurrency.Key;
-                    var temp = new List<PriceHistoryEntry>();
-
-                    doc.PriceHistoryByCurrency[currency] = temp;
-
-                    foreach (var price in priceHistoryByCurrency.OrderBy(x => x.UtcDateTimeRecorded))
-                    {
-                        var prev = temp.LastOrDefault();
-
-                        // Don't include those price records that contain the same price as the previous.
-                        if (prev is null || prev.DiscountPrice != price.DiscountValue || prev.NormalPrice != price.Value)
-                        {
-                            temp.Add(new PriceHistoryEntry
-                            {
-                                NormalPrice = price.Value,
-                                DiscountPrice = price.DiscountValue,
-                                UtcDateTimeRecorded = price.UtcDateTimeRecorded,
-                            });
-                        }
-                    }
-                }
+                var doc = await CreateSubAggregateAsync(subId);
 
                 subAggregates.Add(doc);
             }
@@ -99,6 +65,53 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
                 remainingCount);
 
             return AggregateSubBatchCommandResult.Success;
+        }
+
+        private async Task<Sub> CreateSubAggregateAsync(long subId)
+        {
+            var sub = await queryRepository.GetSubBasicDetailsByIdAsync(subId);
+            var subPriceHistory = await queryRepository.GetSubPriceHistoryByIdAsync(subId);
+
+            var result = new Sub
+            {
+                Title = sub.Title,
+                Id = sub.SubId.ToString(CultureInfo.InvariantCulture),
+                IsActive = sub.IsActive,
+            };
+
+            var priceHistoriesByCurrency = subPriceHistory.GroupBy(x => x.Currency);
+
+            foreach (var priceHistory in priceHistoriesByCurrency)
+            {
+                var currency = priceHistory.Key;
+
+                result.PriceHistoryByCurrency[currency].AddRange(GetPriceHistoryByCurrency(priceHistory));
+            }
+
+            return result;
+        }
+
+        private static IEnumerable<PriceHistoryEntry> GetPriceHistoryByCurrency(IEnumerable<Domain.Repositories.Models.Price> priceHistoryByCurrency)
+        {
+            var result = new List<PriceHistoryEntry>();
+
+            foreach (var price in priceHistoryByCurrency.OrderBy(x => x.UtcDateTimeRecorded))
+            {
+                var prev = result.LastOrDefault();
+
+                // Don't include those price records that contain the same price as the previous.
+                if (prev is null || prev.DiscountPrice != price.DiscountValue || prev.NormalPrice != price.Value)
+                {
+                    result.Add(new PriceHistoryEntry
+                    {
+                        NormalPrice = price.Value,
+                        DiscountPrice = price.DiscountValue,
+                        UtcDateTimeRecorded = price.UtcDateTimeRecorded,
+                    });
+                }
+            }
+
+            return result;
         }
     }
 }
