@@ -20,7 +20,6 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
 {
     public class ScanAppBatchCommandHandler : IScanAppBatchCommandHandler
     {
-        private readonly IAppQueryRepository appQueryRepository;
         private readonly IAppWriteRepository appWriteRepository;
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly IAppScanningService appScanningService;
@@ -30,7 +29,6 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
         private readonly int degreeOfParallelism;
 
         public ScanAppBatchCommandHandler(
-            IAppQueryRepository appQueryRepository,
             IAppWriteRepository appWriteRepository,
             IDateTimeProvider dateTimeProvider,
             IAppScanningService appScanningService,
@@ -50,7 +48,6 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                     nameof(options));
             }
 
-            this.appQueryRepository = appQueryRepository ?? throw new ArgumentNullException(nameof(appQueryRepository));
             this.appWriteRepository = appWriteRepository ?? throw new ArgumentNullException(nameof(appWriteRepository));
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.appScanningService = appScanningService ?? throw new ArgumentNullException(nameof(appScanningService));
@@ -65,9 +62,8 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
         public async Task<ScanAppBatchCommandResult> ScanAppBatchAsync(CancellationToken cancellationToken)
         {
             var stopwatch = Stopwatch.StartNew();
-            var utcNow = dateTimeProvider.UtcNow;
 
-            var appIdsToScan = await appScanningService.GetNextAppIdsForScanningAsync(utcNow);
+            var appIdsToScan = await appScanningService.GetNextAppIdsForScanningAsync();
             if (!appIdsToScan.Any())
             {
                 logger.LogInformation("Could not find more apps to scan.");
@@ -80,7 +76,7 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
                 await ProcessAppIdsAsync(appIdsSegment);
             }
 
-            var remainingCount = await appQueryRepository.CountUnscannedAppsAsync();
+            var remainingCount = await appScanningService.CountUnscannedAppsAsync();
 
             stopwatch.Stop();
 

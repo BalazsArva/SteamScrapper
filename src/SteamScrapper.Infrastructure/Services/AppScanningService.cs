@@ -29,18 +29,24 @@ namespace SteamScrapper.Infrastructure.Services
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
 
-        public async Task<IEnumerable<long>> GetNextAppIdsForScanningAsync(DateTime executionDate)
+        public async Task<int> CountUnscannedAppsAsync()
+        {
+            return await appQueryRepository.CountUnscannedAppsAsync(dateTimeProvider.UtcNow.Date);
+        }
+
+        public async Task<IEnumerable<long>> GetNextAppIdsForScanningAsync()
         {
             const int batchSize = 50;
 
             var attempt = 1;
             var results = new List<long>(batchSize);
+            var utcDate = dateTimeProvider.UtcNow.Date;
 
             // Read appIds form the DB that are not scanned today and try to acquire reservation against concurrent processing.
             // If nothing is retrieved from the DB, then we are done for today.
             while (true)
             {
-                var appIds = await appQueryRepository.GetAppIdsNotScannedFromAsync(dateTimeProvider.UtcNow.Date, attempt, batchSize, SortDirection.Descending);
+                var appIds = await appQueryRepository.GetAppIdsNotScannedFromAsync(utcDate, attempt, batchSize, SortDirection.Descending);
 
                 if (!appIds.Any())
                 {
@@ -53,7 +59,7 @@ namespace SteamScrapper.Infrastructure.Services
 
                 foreach (var appId in appIds)
                 {
-                    var redisKey = $"AppScanner:{executionDate:yyyyMMdd}:{appId}";
+                    var redisKey = $"AppScanner:{utcDate:yyyyMMdd}:{appId}";
 
                     reservationTasks[appId] = reservationTransaction.StringSetAsync(redisKey, string.Empty, TimeSpan.FromMinutes(1), When.NotExists);
                 }

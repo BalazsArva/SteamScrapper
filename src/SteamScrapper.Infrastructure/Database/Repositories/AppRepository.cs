@@ -77,13 +77,11 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             await patchBatch.ExecuteAsync();
         }
 
-        public async Task<int> CountUnscannedAppsAsync()
+        public async Task<int> CountUnscannedAppsAsync(DateTime from)
         {
-            var today = dateTimeProvider.UtcNow.Date;
-
             using var context = dbContextFactory.CreateDbContext();
 
-            return await context.Apps.CountAsync(x => x.UtcDateTimeLastModified < today);
+            return await context.Apps.CountAsync(x => x.UtcDateTimeLastModified < from);
         }
 
         public async Task<IEnumerable<long>> GetAppIdsNotScannedFromAsync(DateTime from, int page, int pageSize, SortDirection sortDirection)

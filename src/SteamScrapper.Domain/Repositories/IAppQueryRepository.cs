@@ -6,7 +6,7 @@ namespace SteamScrapper.Domain.Repositories
 {
     public interface IAppQueryRepository
     {
-        Task<int> CountUnscannedAppsAsync();
+        Task<int> CountUnscannedAppsAsync(DateTime from);
 
         Task<IEnumerable<long>> GetAppIdsNotScannedFromAsync(DateTime from, int page, int pageSize, SortDirection sortDirection);
     }
