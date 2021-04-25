@@ -14,6 +14,7 @@ namespace SteamScrapper.Domain.PageModels
         public const string UnknownSubName = "Unknown product";
         public const decimal UnknownPrice = -1;
 
+        // TODO: Implement other stuff (which apps it contains, etc.)
         public SubPage(Uri address, HtmlDocument pageHtml)
             : base(address, pageHtml, HtmlElements.HeaderLevel2)
         {

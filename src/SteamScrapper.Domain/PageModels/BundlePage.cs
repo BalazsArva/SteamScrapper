@@ -12,6 +12,7 @@ namespace SteamScrapper.Domain.PageModels
     {
         public const string UnknownBundleName = "Unknown bundle";
 
+        // TODO: Implement other stuff (which apps it contains, etc.)
         public BundlePage(Uri address, HtmlDocument pageHtml)
             : base(address, pageHtml, HtmlElements.Link, HtmlElements.Div, HtmlElements.HeaderLevel2)
         {
