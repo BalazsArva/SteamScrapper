@@ -22,7 +22,6 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
     {
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly IBundleScanningService bundleScanningService;
-        private readonly IBundleQueryRepository bundleQueryRepository;
         private readonly IBundleWriteRepository bundleWriteRepository;
         private readonly ISteamPageFactory steamPageFactory;
         private readonly ILogger logger;
@@ -32,7 +31,6 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
         public ScanBundleBatchCommandHandler(
             IDateTimeProvider dateTimeProvider,
             IBundleScanningService bundleScanningService,
-            IBundleQueryRepository bundleQueryRepository,
             IBundleWriteRepository bundleWriteRepository,
             IOptions<ScanBundleBatchOptions> options,
             ISteamPageFactory steamPageFactory,
@@ -52,7 +50,6 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
 
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.bundleScanningService = bundleScanningService ?? throw new ArgumentNullException(nameof(bundleScanningService));
-            this.bundleQueryRepository = bundleQueryRepository ?? throw new ArgumentNullException(nameof(bundleQueryRepository));
             this.bundleWriteRepository = bundleWriteRepository ?? throw new ArgumentNullException(nameof(bundleWriteRepository));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -65,9 +62,8 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
         public async Task<ScanBundleBatchCommandResult> ScanBundleBatchAsync(CancellationToken cancellationToken)
         {
             var stopwatch = Stopwatch.StartNew();
-            var utcNow = dateTimeProvider.UtcNow;
 
-            var bundleIdsToScan = await bundleScanningService.GetNextBundleIdsForScanningAsync(utcNow);
+            var bundleIdsToScan = await bundleScanningService.GetNextBundleIdsForScanningAsync();
             if (!bundleIdsToScan.Any())
             {
                 logger.LogInformation("Could not find more bundles to scan.");
@@ -80,7 +76,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                 await ProcessBundleIdsAsync(bundleIdsSegment);
             }
 
-            var remainingCount = await bundleQueryRepository.CountUnscannedBundlesAsync();
+            var remainingCount = await bundleScanningService.CountUnscannedBundlesAsync();
 
             stopwatch.Stop();
 

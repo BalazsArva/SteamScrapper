@@ -29,18 +29,24 @@ namespace SteamScrapper.Infrastructure.Services
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
 
-        public async Task<IEnumerable<long>> GetNextBundleIdsForScanningAsync(DateTime executionDate)
+        public async Task<int> CountUnscannedBundlesAsync()
+        {
+            return await bundleQueryRepository.CountUnscannedBundlesFromAsync(dateTimeProvider.UtcNow.Date);
+        }
+
+        public async Task<IEnumerable<long>> GetNextBundleIdsForScanningAsync()
         {
             const int batchSize = 50;
 
             var attempt = 1;
             var results = new List<long>(batchSize);
+            var utcDate = dateTimeProvider.UtcNow.Date;
 
             // Read bundleIds form the DB that are not scanned today and try to acquire reservation against concurrent processing.
             // If nothing is retrieved from the DB, then we are done for today.
             while (true)
             {
-                var bundleIds = await bundleQueryRepository.GetBundleIdsNotScannedFromAsync(dateTimeProvider.UtcNow.Date, attempt, batchSize, SortDirection.Descending);
+                var bundleIds = await bundleQueryRepository.GetBundleIdsNotScannedFromAsync(utcDate, attempt, batchSize, SortDirection.Descending);
 
                 if (!bundleIds.Any())
                 {
@@ -53,7 +59,7 @@ namespace SteamScrapper.Infrastructure.Services
 
                 foreach (var bundleId in bundleIds)
                 {
-                    var redisKey = $"BundleScanner:{executionDate:yyyyMMdd}:{bundleId}";
+                    var redisKey = $"BundleScanner:{utcDate:yyyyMMdd}:{bundleId}";
 
                     reservationTasks[bundleId] = reservationTransaction.StringSetAsync(redisKey, string.Empty, TimeSpan.FromMinutes(1), When.NotExists);
                 }

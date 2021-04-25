@@ -84,13 +84,11 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             return Math.Max(0, await sqlCommand.ExecuteNonQueryAsync());
         }
 
-        public async Task<int> CountUnscannedBundlesAsync()
+        public async Task<int> CountUnscannedBundlesFromAsync(DateTime from)
         {
-            var today = dateTimeProvider.UtcNow.Date;
-
             using var context = dbContextFactory.CreateDbContext();
 
-            return await context.Bundles.CountAsync(x => x.UtcDateTimeLastModified < today);
+            return await context.Bundles.CountAsync(x => x.UtcDateTimeLastModified < from);
         }
 
         public async Task<IEnumerable<long>> GetBundleIdsNotScannedFromAsync(DateTime from, int page, int pageSize, SortDirection sortDirection)

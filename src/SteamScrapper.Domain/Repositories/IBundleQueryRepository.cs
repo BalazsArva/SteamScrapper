@@ -6,7 +6,7 @@ namespace SteamScrapper.Domain.Repositories
 {
     public interface IBundleQueryRepository
     {
-        Task<int> CountUnscannedBundlesAsync();
+        Task<int> CountUnscannedBundlesFromAsync(DateTime from);
 
         Task<IEnumerable<long>> GetBundleIdsNotScannedFromAsync(DateTime from, int page, int pageSize, SortDirection sortDirection);
     }
