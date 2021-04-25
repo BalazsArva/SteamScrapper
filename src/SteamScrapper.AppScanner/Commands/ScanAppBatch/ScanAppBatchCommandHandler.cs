@@ -7,13 +7,12 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SteamScrapper.AppScanner.Options;
+using SteamScrapper.AppScanner.Services;
 using SteamScrapper.Common.Extensions;
-using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Repositories.Models;
-using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Domain.Services.Exceptions;
 
 namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
@@ -21,7 +20,6 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
     public class ScanAppBatchCommandHandler : IScanAppBatchCommandHandler
     {
         private readonly IAppWriteRepository appWriteRepository;
-        private readonly IDateTimeProvider dateTimeProvider;
         private readonly IAppScanningService appScanningService;
         private readonly ISteamPageFactory steamPageFactory;
         private readonly ILogger logger;
@@ -30,7 +28,6 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
 
         public ScanAppBatchCommandHandler(
             IAppWriteRepository appWriteRepository,
-            IDateTimeProvider dateTimeProvider,
             IAppScanningService appScanningService,
             ISteamPageFactory steamPageFactory,
             IOptions<ScanAppBatchOptions> options,
@@ -49,7 +46,6 @@ namespace SteamScrapper.AppScanner.Commands.ScanAppBatch
             }
 
             this.appWriteRepository = appWriteRepository ?? throw new ArgumentNullException(nameof(appWriteRepository));
-            this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.appScanningService = appScanningService ?? throw new ArgumentNullException(nameof(appScanningService));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));

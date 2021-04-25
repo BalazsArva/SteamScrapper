@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using SteamScrapper.AppScanner.BackgroundServices;
 using SteamScrapper.AppScanner.Commands.ScanAppBatch;
 using SteamScrapper.AppScanner.Options;
+using SteamScrapper.AppScanner.Services;
 using SteamScrapper.Common.Hosting;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
