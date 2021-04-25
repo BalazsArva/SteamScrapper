@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Services.Abstractions;
 using SteamScrapper.Infrastructure.RavenDb;
@@ -16,20 +15,17 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
     public class AggregateSubBatchCommandHandler : IAggregateSubBatchCommandHandler
     {
         private readonly ILogger logger;
-        private readonly IDateTimeProvider dateTimeProvider;
         private readonly IDocumentStoreWrapper documentStoreWrapper;
         private readonly ISubAggregationService subAggregationService;
         private readonly ISubQueryRepository queryRepository;
 
         public AggregateSubBatchCommandHandler(
             ILogger<AggregateSubBatchCommandHandler> logger,
-            IDateTimeProvider dateTimeProvider,
             IDocumentStoreWrapper documentStoreWrapper,
             ISubAggregationService subAggregationService,
             ISubQueryRepository queryRepository)
         {
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.documentStoreWrapper = documentStoreWrapper ?? throw new ArgumentNullException(nameof(documentStoreWrapper));
             this.subAggregationService = subAggregationService ?? throw new ArgumentNullException(nameof(subAggregationService));
             this.queryRepository = queryRepository ?? throw new ArgumentNullException(nameof(queryRepository));
@@ -38,9 +34,8 @@ namespace SteamScrapper.SubAggregator.Commands.AggregateSubBatch
         public async Task<AggregateSubBatchCommandResult> AggregateSubBatchAsync(CancellationToken cancellationToken)
         {
             var stopwatch = Stopwatch.StartNew();
-            var utcNow = dateTimeProvider.UtcNow;
 
-            var subIdsToAggregate = await subAggregationService.GetNextSubIdsForAggregationAsync(utcNow);
+            var subIdsToAggregate = await subAggregationService.GetNextSubIdsForAggregationAsync();
             if (!subIdsToAggregate.Any())
             {
                 logger.LogInformation("Could not find more subs to aggregate.");

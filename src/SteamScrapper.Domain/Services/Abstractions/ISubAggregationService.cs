@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SteamScrapper.Domain.Services.Abstractions
@@ -10,6 +9,6 @@ namespace SteamScrapper.Domain.Services.Abstractions
 
         Task<int> CountUnaggregatedSubsAsync();
 
-        Task<IEnumerable<long>> GetNextSubIdsForAggregationAsync(DateTime executionDate);
+        Task<IEnumerable<long>> GetNextSubIdsForAggregationAsync();
     }
 }

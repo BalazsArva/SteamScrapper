@@ -55,19 +55,19 @@ namespace SteamScrapper.Infrastructure.Services
             await subWriteRepository.AddSubAggregationsAsync(subIds, dateTimeProvider.UtcNow);
         }
 
-        // TODO: Consolidate date usage (parameter or provider?)
-        public async Task<IEnumerable<long>> GetNextSubIdsForAggregationAsync(DateTime executionDate)
+        public async Task<IEnumerable<long>> GetNextSubIdsForAggregationAsync( )
         {
             const int batchSize = 50;
 
             var attempt = 1;
             var results = new List<long>(batchSize);
+            var utcDate = dateTimeProvider.UtcNow.Date;
 
             // Read subIds form the DB that are not aggregated today and try to acquire reservation against concurrent processing.
             // If nothing is retrieved from the DB, then we are done for today.
             while (true)
             {
-                var subIds = await subQueryRepository.GetSubIdsNotAggregatedFromAsync(dateTimeProvider.UtcNow.Date, attempt, batchSize, SortDirection.Descending);
+                var subIds = await subQueryRepository.GetSubIdsNotAggregatedFromAsync(utcDate, attempt, batchSize, SortDirection.Descending);
 
                 if (!subIds.Any())
                 {
@@ -80,7 +80,7 @@ namespace SteamScrapper.Infrastructure.Services
 
                 foreach (var subId in subIds)
                 {
-                    var redisKey = $"SubAggregator:{executionDate:yyyyMMdd}:{subId}";
+                    var redisKey = $"SubAggregator:{utcDate:yyyyMMdd}:{subId}";
 
                     reservationTasks[subId] = reservationTransaction.StringSetAsync(redisKey, string.Empty, TimeSpan.FromMinutes(1), When.NotExists);
                 }
