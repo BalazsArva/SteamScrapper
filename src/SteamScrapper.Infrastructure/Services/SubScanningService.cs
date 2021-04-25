@@ -29,18 +29,24 @@ namespace SteamScrapper.Infrastructure.Services
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
 
-        public async Task<IEnumerable<long>> GetNextSubIdsForScanningAsync(DateTime executionDate)
+        public async Task<int> CountUnscannedSubsAsync()
+        {
+            return await subQueryRepository.CountUnscannedSubsFromAsync(dateTimeProvider.UtcNow.Date);
+        }
+
+        public async Task<IEnumerable<long>> GetNextSubIdsForScanningAsync()
         {
             const int batchSize = 50;
 
             var attempt = 1;
             var results = new List<long>(batchSize);
+            var utcDate = dateTimeProvider.UtcNow.Date;
 
             // Read subIds form the DB that are not scanned today and try to acquire reservation against concurrent processing.
             // If nothing is retrieved from the DB, then we are done for today.
             while (true)
             {
-                var subIds = await subQueryRepository.GetSubIdsNotScannedFromAsync(dateTimeProvider.UtcNow.Date, attempt, batchSize, SortDirection.Descending);
+                var subIds = await subQueryRepository.GetSubIdsNotScannedFromAsync(utcDate, attempt, batchSize, SortDirection.Descending);
 
                 if (!subIds.Any())
                 {
@@ -53,7 +59,7 @@ namespace SteamScrapper.Infrastructure.Services
 
                 foreach (var subId in subIds)
                 {
-                    var redisKey = $"SubScanner:{executionDate:yyyyMMdd}:{subId}";
+                    var redisKey = $"SubScanner:{utcDate:yyyyMMdd}:{subId}";
 
                     reservationTasks[subId] = reservationTransaction.StringSetAsync(redisKey, string.Empty, TimeSpan.FromMinutes(1), When.NotExists);
                 }

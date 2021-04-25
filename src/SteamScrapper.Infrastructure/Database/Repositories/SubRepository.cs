@@ -84,14 +84,11 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             await sqlCommand.ExecuteNonQueryAsync();
         }
 
-        public async Task<int> CountUnscannedSubsAsync()
+        public async Task<int> CountUnscannedSubsFromAsync(DateTime from)
         {
-            // TODO: Date should come as parameter
-            var today = dateTimeProvider.UtcNow.Date;
-
             using var context = dbContextFactory.CreateDbContext();
 
-            return await context.Subs.CountAsync(x => x.UtcDateTimeLastModified < today);
+            return await context.Subs.CountAsync(x => x.UtcDateTimeLastModified < from);
         }
 
         public async Task<int> CountUnaggregatedSubsFromAsync(DateTime from)

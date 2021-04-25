@@ -22,7 +22,6 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
     {
         private readonly IDateTimeProvider dateTimeProvider;
         private readonly ISubScanningService subScanningService;
-        private readonly ISubQueryRepository subQueryRepository;
         private readonly ISubWriteRepository subWriteRepository;
         private readonly ISteamPageFactory steamPageFactory;
         private readonly ILogger logger;
@@ -32,7 +31,6 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
         public ScanSubBatchCommandHandler(
             IDateTimeProvider dateTimeProvider,
             ISubScanningService subScanningService,
-            ISubQueryRepository subQueryRepository,
             ISubWriteRepository subWriteRepository,
             IOptions<ScanSubBatchOptions> options,
             ISteamPageFactory steamPageFactory,
@@ -52,7 +50,6 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
 
             this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.subScanningService = subScanningService ?? throw new ArgumentNullException(nameof(subScanningService));
-            this.subQueryRepository = subQueryRepository ?? throw new ArgumentNullException(nameof(subQueryRepository));
             this.subWriteRepository = subWriteRepository ?? throw new ArgumentNullException(nameof(subWriteRepository));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -65,9 +62,8 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
         public async Task<ScanSubBatchCommandResult> ScanSubBatchAsync(CancellationToken cancellationToken)
         {
             var stopwatch = Stopwatch.StartNew();
-            var utcNow = dateTimeProvider.UtcNow;
 
-            var subIdsToScan = await subScanningService.GetNextSubIdsForScanningAsync(utcNow);
+            var subIdsToScan = await subScanningService.GetNextSubIdsForScanningAsync();
             if (!subIdsToScan.Any())
             {
                 logger.LogInformation("Could not find more subs to scan.");
@@ -80,7 +76,7 @@ namespace SteamScrapper.SubScanner.Commands.ScanSubBatch
                 await ProcessSubIdsAsync(subIdsSegment);
             }
 
-            var remainingCount = await subQueryRepository.CountUnscannedSubsAsync();
+            var remainingCount = await subScanningService.CountUnscannedSubsAsync();
 
             stopwatch.Stop();
 
