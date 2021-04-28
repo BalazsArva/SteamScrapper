@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using HtmlAgilityPack;
 using SteamScrapper.Common.Extensions;
@@ -24,6 +25,8 @@ namespace SteamScrapper.Domain.PageModels
             }
 
             BundleId = SteamLinkHelper.ExtractBundleId(address);
+            IncludedAppIds = ExtractIncludedAppIds();
+
             Price = ExtractPrice();
             BannerUrl = ExtractBannerUrl();
         }
@@ -34,11 +37,24 @@ namespace SteamScrapper.Domain.PageModels
 
         public decimal Price { get; }
 
+        public IEnumerable<long> IncludedAppIds { get; }
+
         protected override string ExtractFriendlyName()
         {
             var appNameDiv = PrefetchedHtmlNodes[HtmlElements.HeaderLevel2].FirstOrDefault(x => x.HasAttribute(HtmlAttributes.Class, "pageheader"));
 
             return appNameDiv is null ? UnknownBundleName : appNameDiv.InnerText;
+        }
+
+        private IEnumerable<long> ExtractIncludedAppIds()
+        {
+            const string appIdAttributeName = "data-ds-appid";
+
+            return PrefetchedHtmlNodes[HtmlElements.Div]
+                .Where(div => div.HasClass("tab_item"))
+                .Where(div => div.HasAttribute(appIdAttributeName, HtmlAttributeValueTypes.Long))
+                .Select(div => long.Parse(div.GetAttributeValue(appIdAttributeName, "")))
+                .ToHashSet();
         }
 
         private Uri ExtractBannerUrl()
