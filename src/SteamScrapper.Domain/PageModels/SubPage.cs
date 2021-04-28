@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using HtmlAgilityPack;
 using SteamScrapper.Common.Extensions;
@@ -16,7 +17,7 @@ namespace SteamScrapper.Domain.PageModels
 
         // TODO: Implement other stuff (which apps it contains, etc.)
         public SubPage(Uri address, HtmlDocument pageHtml)
-            : base(address, pageHtml, HtmlElements.HeaderLevel2)
+            : base(address, pageHtml, HtmlElements.HeaderLevel2, HtmlElements.Div)
         {
             if (!(address.AbsoluteUri ?? string.Empty).StartsWith(PageUrlPrefixes.Sub, StringComparison.OrdinalIgnoreCase))
             {
@@ -26,6 +27,7 @@ namespace SteamScrapper.Domain.PageModels
             }
 
             SubId = SteamLinkHelper.ExtractSubId(address);
+            IncludedAppIds = ExtractIncludedAppIds();
 
             // Currently, we assume it's always €
             Price = ExtractPriceInEuros();
@@ -35,11 +37,24 @@ namespace SteamScrapper.Domain.PageModels
 
         public Price Price { get; }
 
+        public IEnumerable<long> IncludedAppIds { get; }
+
         protected override string ExtractFriendlyName()
         {
             var appNameDiv = PrefetchedHtmlNodes[HtmlElements.HeaderLevel2].FirstOrDefault(x => x.HasAttribute(HtmlAttributes.Class, "pageheader"));
 
             return appNameDiv is null ? UnknownSubName : appNameDiv.InnerText;
+        }
+
+        private IEnumerable<long> ExtractIncludedAppIds()
+        {
+            const string appIdAttributeName = "data-ds-appid";
+
+            return PrefetchedHtmlNodes[HtmlElements.Div]
+                .Where(div => div.HasClass("tab_item"))
+                .Where(div => div.HasAttribute(appIdAttributeName, HtmlAttributeValueTypes.Long))
+                .Select(div => long.Parse(div.GetAttributeValue(appIdAttributeName, "")))
+                .ToHashSet();
         }
 
         private Price ExtractPriceInEuros()

@@ -32,6 +32,11 @@ namespace SteamScrapper.Common.Extensions
                     return false;
                 }
 
+                if ((attributeValueType & HtmlAttributeValueTypes.Long) != 0 && !long.TryParse(x.Value, out var _))
+                {
+                    return false;
+                }
+
                 return true;
             });
         }

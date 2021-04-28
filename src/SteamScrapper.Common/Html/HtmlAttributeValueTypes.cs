@@ -8,5 +8,6 @@ namespace SteamScrapper.Common.Html
         None = 0,
         NotEmpty = 1,
         AbsoluteUri = 2,
+        Long = 4,
     }
 }
