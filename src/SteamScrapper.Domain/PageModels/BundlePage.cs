@@ -6,6 +6,7 @@ using SteamScrapper.Common.Extensions;
 using SteamScrapper.Common.Html;
 using SteamScrapper.Common.Urls;
 using SteamScrapper.Common.Utilities.Links;
+using SteamScrapper.Domain.Models;
 
 namespace SteamScrapper.Domain.PageModels
 {
@@ -26,16 +27,17 @@ namespace SteamScrapper.Domain.PageModels
 
             BundleId = SteamLinkHelper.ExtractBundleId(address);
             IncludedAppIds = ExtractIncludedAppIds();
-
-            Price = ExtractPrice();
             BannerUrl = ExtractBannerUrl();
+
+            // Currently, we assume it's always €
+            Price = ExtractPriceInEuros();
         }
 
         public long BundleId { get; }
 
         public Uri BannerUrl { get; }
 
-        public decimal Price { get; }
+        public Price Price { get; }
 
         public IEnumerable<long> IncludedAppIds { get; }
 
@@ -96,25 +98,125 @@ namespace SteamScrapper.Domain.PageModels
             return null;
         }
 
-        private decimal ExtractPrice()
+        private Price ExtractPriceInEuros()
         {
-            var addToCartForm = PrefetchedHtmlNodes[HtmlElements.Form].FirstOrDefault(x => x.HasAttribute(HtmlAttributes.Name, $"add_bundle_to_cart_{BundleId}"));
+            const string EuroCurrencySymbol = "€";
 
-            if (addToCartForm is not null)
+            if (TryExtractDiscountPrice(EuroCurrencySymbol, out var discountPrice, out var originalPrice))
             {
-                // Note: this currently assumes €, unaware of currencies.
-                var finalPriceCents = addToCartForm
-                    .ParentNode
-                    .GetDescendantsByNames(HtmlElements.Div)[HtmlElements.Div]
-                    .Select(div => div.GetAttributeValue("data-price-final", -1))
-                    .Where(finalPriceValue => finalPriceValue != -1)
-                    .DefaultIfEmpty(-1)
-                    .FirstOrDefault();
-
-                return finalPriceCents == -1 ? -1 : finalPriceCents / 100m;
+                return new(originalPrice, discountPrice, EuroCurrencySymbol);
             }
 
-            return -1;
+            if (TryExtractNormalPrice(EuroCurrencySymbol, out var normalPrice))
+            {
+                return new(normalPrice, null, EuroCurrencySymbol);
+            }
+
+            return Price.Unknown;
+        }
+
+        private bool TryExtractDiscountPrice(string currencySymbols, out decimal discountPrice, out decimal originalPrice)
+        {
+            var addToCartSection = PrefetchedHtmlNodes[HtmlElements.Div].FirstOrDefault(x => x.HasClass("game_purchase_action"));
+
+            if (addToCartSection is null)
+            {
+                discountPrice = default;
+                originalPrice = default;
+                return false;
+            }
+
+            var originalPriceHolder = addToCartSection
+                .Descendants(HtmlElements.Div)
+                .FirstOrDefault(x => x.HasClass("discount_original_price"));
+
+            var discountPriceHolder = addToCartSection
+                .Descendants(HtmlElements.Div)
+                .FirstOrDefault(x => x.HasClass("discount_final_price"));
+
+            if (originalPriceHolder is null || discountPriceHolder is null)
+            {
+                discountPrice = default;
+                originalPrice = default;
+                return false;
+            }
+
+            var couldExtractOriginalPrice = TryGetPrice(originalPriceHolder.InnerText, currencySymbols, out var originalPriceResult);
+            var couldExtractDiscountPrice = TryGetPrice(discountPriceHolder.InnerText, currencySymbols, out var discountPriceResult);
+            if (couldExtractOriginalPrice && couldExtractDiscountPrice)
+            {
+                discountPrice = discountPriceResult;
+                originalPrice = originalPriceResult;
+                return true;
+            }
+
+            discountPrice = default;
+            originalPrice = default;
+            return false;
+        }
+
+        private bool TryExtractNormalPrice(string currencySymbols, out decimal originalPrice)
+        {
+            var addToCartSection = PrefetchedHtmlNodes[HtmlElements.Div].FirstOrDefault(x => x.HasClass("game_purchase_action"));
+
+            if (addToCartSection is null)
+            {
+                originalPrice = default;
+                return false;
+            }
+
+            var discountPricesDiv = addToCartSection
+                .Descendants(HtmlElements.Div)
+                .FirstOrDefault(x => x.HasClass("discount_final_price"));
+
+            if (discountPricesDiv is null)
+            {
+                originalPrice = default;
+                return false;
+            }
+
+            var priceHolder = discountPricesDiv
+                .Descendants()
+                .FirstOrDefault(x => x.InnerText.Trim().EndsWith(currencySymbols));
+
+            if (priceHolder is null)
+            {
+                originalPrice = default;
+                return false;
+            }
+
+            if (TryGetPrice(priceHolder.InnerText, currencySymbols, out var originalPriceResult))
+            {
+                originalPrice = originalPriceResult;
+                return true;
+            }
+
+            originalPrice = default;
+            return false;
+        }
+
+        private static bool TryGetPrice(string htmlText, string currencySymbol, out decimal price)
+        {
+            htmlText = htmlText.Trim();
+
+            if (htmlText.EndsWith(currencySymbol))
+            {
+                var priceStringWithoutCurrency = htmlText.Substring(0, htmlText.Length - currencySymbol.Length).Trim();
+
+                // Remove any decimals and separators. The result will be 100 times the actual value.
+                // Note: what happens for currencies that don't have fractionals, e.g. HUF?
+                priceStringWithoutCurrency = priceStringWithoutCurrency.Replace(".", "").Replace(",", "");
+
+                if (decimal.TryParse(priceStringWithoutCurrency, out var priceResult))
+                {
+                    // Euro price is represented as (Euros * 100 + Cents), e.g. 49.99 => 4999, so we need to divide it by 100 to get the real one.
+                    price = priceResult / 100m;
+                    return true;
+                }
+            }
+
+            price = default;
+            return false;
         }
     }
 }
