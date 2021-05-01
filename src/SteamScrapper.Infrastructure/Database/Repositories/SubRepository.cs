@@ -5,7 +5,6 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Repositories.Models;
 using SteamScrapper.Infrastructure.Database.Context;
@@ -15,12 +14,10 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
     public class SubRepository : ISubQueryRepository, ISubWriteRepository
     {
         private readonly IDbContextFactory<SteamContext> dbContextFactory;
-        private readonly IDateTimeProvider dateTimeProvider;
 
-        public SubRepository(IDbContextFactory<SteamContext> dbContextFactory, IDateTimeProvider dateTimeProvider)
+        public SubRepository(IDbContextFactory<SteamContext> dbContextFactory)
         {
             this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
-            this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
 
         public async Task<int> RegisterUnknownSubsAsync(IEnumerable<long> subIds)

@@ -5,7 +5,6 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Repositories;
 using SteamScrapper.Domain.Repositories.Models;
 using SteamScrapper.Infrastructure.Database.Context;
@@ -15,12 +14,10 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
     public class BundleRepository : IBundleQueryRepository, IBundleWriteRepository
     {
         private readonly IDbContextFactory<SteamContext> dbContextFactory;
-        private readonly IDateTimeProvider dateTimeProvider;
 
-        public BundleRepository(IDbContextFactory<SteamContext> dbContextFactory, IDateTimeProvider dateTimeProvider)
+        public BundleRepository(IDbContextFactory<SteamContext> dbContextFactory)
         {
             this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
-            this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
 
         public async Task UpdateBundlesAsync(IEnumerable<Bundle> bundleData)
@@ -47,7 +44,6 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
                 if (bundle.Price is not null)
                 {
                     commandTexts.Add(AddBundlePriceToCommand(sqlCommand, bundle));
-
                 }
             }
 
@@ -97,6 +93,16 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             return await context.Bundles.CountAsync(x => x.UtcDateTimeLastModified < from);
         }
 
+        public async Task<int> CountUnaggregatedBundlesFromAsync(DateTime from)
+        {
+            using var context = dbContextFactory.CreateDbContext();
+
+            return await context
+                .Bundles
+                .Where(x => x.Aggregations.Count == 0 || !x.Aggregations.Any(a => a.UtcDateTimeRecorded >= from))
+                .CountAsync();
+        }
+
         public async Task<IEnumerable<long>> GetBundleIdsNotScannedFromAsync(DateTime from, int page, int pageSize, SortDirection sortDirection)
         {
             if (page < 1)
@@ -126,6 +132,60 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             }
 
             return await filteredResults.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        }
+
+        public async Task<IEnumerable<long>> GetBundleIdsNotAggregatedFromAsync(DateTime from, int page, int pageSize, SortDirection sortDirection)
+        {
+            if (page < 1)
+            {
+                throw new ArgumentException($"The value of the '{nameof(page)}' must be at least 1.", nameof(page));
+            }
+
+            if (pageSize < 1)
+            {
+                throw new ArgumentException($"The value of the '{nameof(pageSize)}' must be at least 1.", nameof(pageSize));
+            }
+
+            using var context = dbContextFactory.CreateDbContext();
+
+            var filteredResults = context
+                .Bundles
+                .Where(x => x.Aggregations.Count == 0 || !x.Aggregations.Any(a => a.UtcDateTimeRecorded >= from))
+                .Select(x => x.Id);
+
+            if (sortDirection == SortDirection.Ascending)
+            {
+                filteredResults = filteredResults.OrderBy(x => x);
+            }
+            else
+            {
+                filteredResults = filteredResults.OrderByDescending(x => x);
+            }
+
+            return await filteredResults.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        }
+
+        public async Task AddBundleAggregationsAsync(IEnumerable<long> bundleIds, DateTime performedAt)
+        {
+            if (bundleIds is null)
+            {
+                throw new ArgumentNullException(nameof(bundleIds));
+            }
+
+            if (!bundleIds.Any())
+            {
+                return;
+            }
+
+            using var context = dbContextFactory.CreateDbContext();
+
+            context.BundleAggregations.AddRange(bundleIds.Select(x => new Entities.BundleAggregation
+            {
+                BundleId = x,
+                UtcDateTimeRecorded = performedAt,
+            }));
+
+            await context.SaveChangesAsync();
         }
 
         private static string IncludeInsertUnknownBundle(DbCommand command, long bundleId)
