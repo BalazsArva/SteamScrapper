@@ -18,5 +18,7 @@ namespace SteamScrapper.Infrastructure.Database.Entities
         public string BannerUrl { get; set; }
 
         public virtual ICollection<BundlePrice> Prices { get; } = new List<BundlePrice>();
+
+        public virtual ICollection<BundleAggregation> Aggregations { get; } = new List<BundleAggregation>();
     }
 }

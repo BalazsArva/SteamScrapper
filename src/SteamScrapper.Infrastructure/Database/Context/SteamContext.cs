@@ -18,8 +18,11 @@ namespace SteamScrapper.Infrastructure.Database.Context
         private const string UtcDateTimeLastModifiedDefaultValueSql = "CONVERT(datetime2(7), N'2000-01-01T00:00:00+00:00')";
 
         private const string AppsTableName = "Apps";
+
         private const string BundlesTableName = "Bundles";
         private const string BundlePricesTableName = "BundlePrices";
+        private const string BundleAggregationsTableName = "BundleAggregations";
+
         private const string SubsTableName = "Subs";
         private const string SubPricesTableName = "SubPrices";
         private const string SubAggregationsTableName = "SubAggregations";
@@ -35,6 +38,8 @@ namespace SteamScrapper.Infrastructure.Database.Context
 
         public DbSet<BundlePrice> BundlePrices => Set<BundlePrice>();
 
+        public DbSet<BundleAggregation> BundleAggregations => Set<BundleAggregation>();
+
         public DbSet<Sub> Subs => Set<Sub>();
 
         public DbSet<SubPrice> SubPrices => Set<SubPrice>();
@@ -49,6 +54,7 @@ namespace SteamScrapper.Infrastructure.Database.Context
 
             SetupBundlesTable(modelBuilder);
             SetupBundlePricesTable(modelBuilder);
+            SetupBundleAggregationsTable(modelBuilder);
 
             SetupSubsTable(modelBuilder);
             SetupSubPricesTable(modelBuilder);
@@ -227,6 +233,41 @@ namespace SteamScrapper.Infrastructure.Database.Context
             // Index setup
             modelBuilder
                 .Entity<BundlePrice>()
+                .HasIndex(x => x.UtcDateTimeRecorded);
+        }
+
+        private static void SetupBundleAggregationsTable(ModelBuilder modelBuilder)
+        {
+            // Table setup
+            modelBuilder
+                .Entity<BundleAggregation>()
+                .ToTable(BundleAggregationsTableName);
+
+            // Key setup
+            modelBuilder
+                .Entity<BundleAggregation>()
+                .HasKey(x => x.Id);
+
+            // FK setup
+            modelBuilder
+                .Entity<BundleAggregation>()
+                .HasOne(x => x.Bundle)
+                .WithMany(x => x.Aggregations);
+
+            // Column setup
+            modelBuilder
+                .Entity<BundleAggregation>()
+                .Property(x => x.Id)
+                .UseIdentityColumn();
+
+            modelBuilder
+                .Entity<BundleAggregation>()
+                .Property(x => x.UtcDateTimeRecorded)
+                .HasDefaultValueSql(SystemUtcDateTimeValueSql);
+
+            // Index setup
+            modelBuilder
+                .Entity<BundleAggregation>()
                 .HasIndex(x => x.UtcDateTimeRecorded);
         }
 
