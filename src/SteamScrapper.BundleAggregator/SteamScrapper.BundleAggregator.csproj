@@ -12,10 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="BackgroundServices\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\SteamScrapper.Domain\SteamScrapper.Domain.csproj" />
     <ProjectReference Include="..\SteamScrapper.Infrastructure\SteamScrapper.Infrastructure.csproj" />
   </ItemGroup>

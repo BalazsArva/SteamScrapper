@@ -1,18 +1,69 @@
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+using SteamScrapper.BundleAggregator.BackgroundServices;
+using SteamScrapper.BundleAggregator.Commands.AggregateBundleBatch;
+using SteamScrapper.BundleAggregator.Services;
+using SteamScrapper.Common.Hosting;
+using SteamScrapper.Common.Providers;
+using SteamScrapper.Domain.Repositories;
+using SteamScrapper.Infrastructure.Database.Context;
+using SteamScrapper.Infrastructure.Database.Repositories;
+using SteamScrapper.Infrastructure.Options;
+using SteamScrapper.Infrastructure.RavenDb;
+using SteamScrapper.Infrastructure.RavenDb.Repositories;
+using SteamScrapper.Infrastructure.Redis;
 
 namespace SteamScrapper.BundleAggregator
 {
-    public class Program
+    public static class Program
     {
-        public static void Main(string[] args)
+        private const int SqlConnectionPoolSize = 32;
+
+        public static async Task Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            var hostBuilder = CreateHostBuilder(args);
+
+            await hostBuilder.Build().RunAsync();
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
+        private static IHostBuilder CreateHostBuilder(string[] args)
+        {
+            return Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.Configure<SqlServerOptions>(hostContext.Configuration.GetSection(SqlServerOptions.SectionName));
+                    services.Configure<RedisOptions>(hostContext.Configuration.GetSection(RedisOptions.SectionName));
+                    services.Configure<RavenDbOptions>(hostContext.Configuration.GetSection(RavenDbOptions.SectionName));
+
+                    services.AddPooledDbContextFactory<SteamContext>(
+                        (services, opts) => opts.UseSqlServer(services.GetRequiredService<IOptions<SqlServerOptions>>().Value.ConnectionString), SqlConnectionPoolSize);
+
+                    services.AddSingleton<BundleRepository>();
+                    services.AddSingleton<IBundleAggregateRepository, BundleAggregateRepository>();
+                    services.AddSingleton<IBundleQueryRepository>(services => services.GetRequiredService<BundleRepository>());
+                    services.AddSingleton<IBundleWriteRepository>(services => services.GetRequiredService<BundleRepository>());
+
+                    services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+                    services.AddSingleton<IBundleAggregationService, BundleAggregationService>();
+
+                    services.AddSingleton<IAggregateBundleBatchCommandHandler, AggregateBundleBatchCommandHandler>();
+
+                    services.AddSingleton<IRedisConnectionWrapper, RedisConnectionWrapper>();
+                    services.AddSingleton<IDocumentStoreWrapper, DocumentStoreWrapper>();
+
+                    services
+                        .AddHealthChecks()
+                        .AddCheck<RavenDbHealthCheck>("RavenDB", HealthStatus.Unhealthy, new[] { "RavenDB", "Database" })
+                        .AddCheck<SteamContextHealthCheck>("SQL Server", HealthStatus.Unhealthy, new[] { "SQL Server", "Database" })
+                        .AddCheck<RedisHealthCheck>("Redis", HealthStatus.Unhealthy, new[] { "Redis" });
+
+                    services.AddHostedService<AggregateBundlesBackgroundService>();
+                    services.AddHostedService<HealthCheckBackgroundService>();
                 });
+        }
     }
 }
