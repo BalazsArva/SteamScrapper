@@ -35,7 +35,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utils", "Utils", "{B7F9026D
 		update-database.ps1 = update-database.ps1
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamScrapper.SubAggregator", "SteamScrapper.SubAggregator\SteamScrapper.SubAggregator.csproj", "{CF177D28-8CB2-4DF3-8E82-2EEEF62FE738}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SteamScrapper.SubAggregator", "SteamScrapper.SubAggregator\SteamScrapper.SubAggregator.csproj", "{CF177D28-8CB2-4DF3-8E82-2EEEF62FE738}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamScrapper.BundleAggregator", "SteamScrapper.BundleAggregator\SteamScrapper.BundleAggregator.csproj", "{1123D7D4-92B8-4FA0-A542-BA114105C42A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -79,6 +81,10 @@ Global
 		{CF177D28-8CB2-4DF3-8E82-2EEEF62FE738}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF177D28-8CB2-4DF3-8E82-2EEEF62FE738}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CF177D28-8CB2-4DF3-8E82-2EEEF62FE738}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1123D7D4-92B8-4FA0-A542-BA114105C42A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1123D7D4-92B8-4FA0-A542-BA114105C42A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1123D7D4-92B8-4FA0-A542-BA114105C42A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1123D7D4-92B8-4FA0-A542-BA114105C42A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -93,6 +99,7 @@ Global
 		{A4EBFDB2-C23C-4C10-A0D8-7390125445A9} = {02ECBF1B-E251-4FAD-8B82-16E372DDC771}
 		{3EC13090-8EF3-46FF-A988-4DBAE2354388} = {02ECBF1B-E251-4FAD-8B82-16E372DDC771}
 		{CF177D28-8CB2-4DF3-8E82-2EEEF62FE738} = {02ECBF1B-E251-4FAD-8B82-16E372DDC771}
+		{1123D7D4-92B8-4FA0-A542-BA114105C42A} = {02ECBF1B-E251-4FAD-8B82-16E372DDC771}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A6C8CCDB-DF88-4992-9D2E-90FA0C352BD3}
