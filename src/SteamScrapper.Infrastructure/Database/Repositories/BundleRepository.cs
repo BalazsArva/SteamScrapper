@@ -43,6 +43,12 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             foreach (var bundle in bundleData)
             {
                 commandTexts.Add(AddBundleDetailsToUpdateCommand(sqlCommand, bundle));
+
+                if (bundle.Price is not null)
+                {
+                    commandTexts.Add(AddBundlePriceToCommand(sqlCommand, bundle));
+
+                }
             }
 
             var completeCommandText = string.Join('\n', commandTexts);
@@ -194,6 +200,63 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
                 $"UPDATE [dbo].[Bundles] ",
                 $"SET [Title] = @{titleParameterName}, [BannerUrl] = @{bannerUrlParameterName}, [UtcDateTimeLastModified] = SYSUTCDATETIME(), [IsActive] = @{isActiveParameterName} ",
                 $"WHERE [Id] = @{idParameterName}");
+        }
+
+        private static string AddBundlePriceToCommand(DbCommand command, Bundle bundleData)
+        {
+            if (bundleData.Price is null)
+            {
+                return string.Empty;
+            }
+
+            var bundleId = bundleData.BundleId;
+
+            var idParameter = command.CreateParameter();
+            var utcDateTimeRecordedParameter = command.CreateParameter();
+            var priceParameter = command.CreateParameter();
+            var discountPriceParameter = command.CreateParameter();
+            var currencyParameter = command.CreateParameter();
+
+            var idParameterName = $"bundlePrice_BundleId_{bundleId}";
+            var utcDateTimeRecordedParameterName = $"bundlePrice_UtcDateTimeRecorded_{bundleId}";
+            var priceParameterName = $"bundlePrice_Price_{bundleId}";
+            var discountPriceParameterName = $"bundlePrice_DiscountPrice_{bundleId}";
+            var currencyParameterName = $"bundlePrice_Currency_{bundleId}";
+
+            idParameter.ParameterName = idParameterName;
+            idParameter.Value = bundleId;
+            idParameter.DbType = DbType.Int64;
+            idParameter.Direction = ParameterDirection.Input;
+
+            utcDateTimeRecordedParameter.ParameterName = utcDateTimeRecordedParameterName;
+            utcDateTimeRecordedParameter.Value = bundleData.Price.UtcDateTimeRecorded;
+            utcDateTimeRecordedParameter.DbType = DbType.DateTime2;
+            utcDateTimeRecordedParameter.Direction = ParameterDirection.Input;
+
+            priceParameter.ParameterName = priceParameterName;
+            priceParameter.Value = bundleData.Price.Value;
+            priceParameter.DbType = DbType.Decimal;
+            priceParameter.Direction = ParameterDirection.Input;
+
+            discountPriceParameter.ParameterName = discountPriceParameterName;
+            discountPriceParameter.Value = bundleData.Price.DiscountValue ?? (object)DBNull.Value;
+            discountPriceParameter.DbType = DbType.Decimal;
+            discountPriceParameter.Direction = ParameterDirection.Input;
+
+            currencyParameter.ParameterName = currencyParameterName;
+            currencyParameter.Value = bundleData.Price.Currency;
+            currencyParameter.DbType = DbType.String;
+            currencyParameter.Direction = ParameterDirection.Input;
+
+            command.Parameters.Add(idParameter);
+            command.Parameters.Add(utcDateTimeRecordedParameter);
+            command.Parameters.Add(priceParameter);
+            command.Parameters.Add(discountPriceParameter);
+            command.Parameters.Add(currencyParameter);
+
+            return string.Concat(
+                $"INSERT INTO [dbo].[BundlePrices] ([BundleId], [UtcDateTimeRecorded], [Price], [DiscountPrice], [Currency]) ",
+                $"VALUES (@{idParameterName}, @{utcDateTimeRecordedParameterName}, @{priceParameterName}, @{discountPriceParameterName}, @{currencyParameterName})");
         }
     }
 }

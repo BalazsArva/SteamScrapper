@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using SteamScrapper.BundleScanner.Options;
 using SteamScrapper.BundleScanner.Services;
 using SteamScrapper.Common.Extensions;
+using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
 using SteamScrapper.Domain.PageModels;
 using SteamScrapper.Domain.Repositories;
@@ -19,6 +20,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
 {
     public class ScanBundleBatchCommandHandler : IScanBundleBatchCommandHandler
     {
+        private readonly IDateTimeProvider dateTimeProvider;
         private readonly IBundleScanningService bundleScanningService;
         private readonly IBundleWriteRepository bundleWriteRepository;
         private readonly ISteamPageFactory steamPageFactory;
@@ -27,6 +29,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
         private readonly int degreeOfParallelism = 8;
 
         public ScanBundleBatchCommandHandler(
+            IDateTimeProvider dateTimeProvider,
             IBundleScanningService bundleScanningService,
             IBundleWriteRepository bundleWriteRepository,
             IOptions<ScanBundleBatchOptions> options,
@@ -45,6 +48,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                     nameof(options));
             }
 
+            this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
             this.bundleScanningService = bundleScanningService ?? throw new ArgumentNullException(nameof(bundleScanningService));
             this.bundleWriteRepository = bundleWriteRepository ?? throw new ArgumentNullException(nameof(bundleWriteRepository));
             this.steamPageFactory = steamPageFactory ?? throw new ArgumentNullException(nameof(steamPageFactory));
@@ -105,8 +109,10 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
             {
                 var page = await steamPageFactory.CreateBundlePageAsync(bundleId);
                 var friendlyName = page.FriendlyName;
+                var bundlePrice = page.Price;
                 var bannerUrl = page.BannerUrl?.AbsoluteUri;
                 var isActive = true;
+                Price dbPrice = null;
 
                 if (friendlyName == BundlePage.UnknownBundleName || friendlyName == SteamPage.UnknownPageTitle)
                 {
@@ -118,6 +124,20 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                     isActive = false;
                 }
 
+                if (bundlePrice == Domain.Models.Price.Unknown)
+                {
+                    logger.LogWarning(
+                        "Could not extract price for bundle {@BundleId} located at address {@Uri}. Marking this bundle as inactive.",
+                        bundleId,
+                        page.NormalizedAddress.AbsoluteUri);
+
+                    isActive = false;
+                }
+                else
+                {
+                    dbPrice = new Price(bundlePrice.NormalPrice, bundlePrice.DiscountPrice, bundlePrice.Currency, dateTimeProvider.UtcNow);
+                }
+
                 if (string.IsNullOrWhiteSpace(bannerUrl))
                 {
                     logger.LogWarning(
@@ -126,7 +146,7 @@ namespace SteamScrapper.BundleScanner.Commands.ScanBundleBatch
                         page.NormalizedAddress.AbsoluteUri);
                 }
 
-                return new Bundle(bundleId, friendlyName, bannerUrl, isActive);
+                return new Bundle(bundleId, friendlyName, bannerUrl, isActive, dbPrice);
             }
             catch (SteamPageRemovedException e)
             {
