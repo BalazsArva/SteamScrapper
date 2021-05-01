@@ -1,0 +1,107 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using StackExchange.Redis;
+using SteamScrapper.Common.Providers;
+using SteamScrapper.Domain.Repositories;
+using SteamScrapper.Infrastructure.Redis;
+
+namespace SteamScrapper.BundleAggregator.Services
+{
+    public class BundleAggregationService : IBundleAggregationService
+    {
+        private readonly IDatabase redisDatabase;
+        private readonly IDateTimeProvider dateTimeProvider;
+        private readonly IBundleQueryRepository bundleQueryRepository;
+        private readonly IBundleWriteRepository bundleWriteRepository;
+
+        public BundleAggregationService(
+            IDateTimeProvider dateTimeProvider,
+            IRedisConnectionWrapper redisConnectionWrapper,
+            IBundleQueryRepository bundleQueryRepository,
+            IBundleWriteRepository bundleWriteRepository)
+        {
+            if (redisConnectionWrapper is null)
+            {
+                throw new ArgumentNullException(nameof(redisConnectionWrapper));
+            }
+
+            redisDatabase = redisConnectionWrapper.ConnectionMultiplexer.GetDatabase();
+
+            this.bundleQueryRepository = bundleQueryRepository ?? throw new ArgumentNullException(nameof(bundleQueryRepository));
+            this.dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
+            this.bundleWriteRepository = bundleWriteRepository ?? throw new ArgumentNullException(nameof(bundleWriteRepository));
+        }
+
+        public async Task<int> CountUnaggregatedBundlesAsync()
+        {
+            return await bundleQueryRepository.CountUnaggregatedBundlesFromAsync(dateTimeProvider.UtcNow.Date);
+        }
+
+        public async Task ConfirmAggregationAsync(IEnumerable<long> bundleIds)
+        {
+            if (bundleIds is null)
+            {
+                throw new ArgumentNullException(nameof(bundleIds));
+            }
+
+            if (!bundleIds.Any())
+            {
+                return;
+            }
+
+            await bundleWriteRepository.AddBundleAggregationsAsync(bundleIds, dateTimeProvider.UtcNow);
+        }
+
+        public async Task<IEnumerable<long>> GetNextBundleIdsForAggregationAsync()
+        {
+            const int batchSize = 50;
+
+            var attempt = 1;
+            var results = new List<long>(batchSize);
+            var utcDate = dateTimeProvider.UtcNow.Date;
+
+            // Read bundleIds form the DB that are not aggregated today and try to acquire reservation against concurrent processing.
+            // If nothing is retrieved from the DB, then we are done for today.
+            while (true)
+            {
+                var bundleIds = await bundleQueryRepository.GetBundleIdsNotAggregatedFromAsync(utcDate, attempt, batchSize, SortDirection.Descending);
+
+                if (!bundleIds.Any())
+                {
+                    // Could not find anything in the database waiting for aggregation today.
+                    return Array.Empty<long>();
+                }
+
+                var reservationTransaction = redisDatabase.CreateTransaction();
+                var reservationTasks = new Dictionary<long, Task<bool>>(batchSize);
+
+                foreach (var bundleId in bundleIds)
+                {
+                    var redisKey = $"BundleAggregator:{utcDate:yyyyMMdd}:{bundleId}";
+
+                    reservationTasks[bundleId] = reservationTransaction.StringSetAsync(redisKey, string.Empty, TimeSpan.FromMinutes(1), When.NotExists);
+                }
+
+                await reservationTransaction.ExecuteAsync();
+
+                foreach (var (bundleId, reserveBundleIdTask) in reservationTasks)
+                {
+                    if (await reserveBundleIdTask)
+                    {
+                        // Could reserve bundleId for processing - i.e. no other instance is trying to process this item concurrently.
+                        results.Add(bundleId);
+                    }
+                }
+
+                if (results.Count > 0)
+                {
+                    return results;
+                }
+
+                ++attempt;
+            }
+        }
+    }
+}
