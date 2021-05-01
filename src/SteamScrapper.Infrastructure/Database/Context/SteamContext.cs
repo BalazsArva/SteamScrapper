@@ -19,6 +19,7 @@ namespace SteamScrapper.Infrastructure.Database.Context
 
         private const string AppsTableName = "Apps";
         private const string BundlesTableName = "Bundles";
+        private const string BundlePricesTableName = "BundlePrices";
         private const string SubsTableName = "Subs";
         private const string SubPricesTableName = "SubPrices";
         private const string SubAggregationsTableName = "SubAggregations";
@@ -32,6 +33,8 @@ namespace SteamScrapper.Infrastructure.Database.Context
 
         public DbSet<Bundle> Bundles => Set<Bundle>();
 
+        public DbSet<BundlePrice> BundlePrices => Set<BundlePrice>();
+
         public DbSet<Sub> Subs => Set<Sub>();
 
         public DbSet<SubPrice> SubPrices => Set<SubPrice>();
@@ -43,7 +46,10 @@ namespace SteamScrapper.Infrastructure.Database.Context
             base.OnModelCreating(modelBuilder);
 
             SetupAppsTable(modelBuilder);
+
             SetupBundlesTable(modelBuilder);
+            SetupBundlePricesTable(modelBuilder);
+
             SetupSubsTable(modelBuilder);
             SetupSubPricesTable(modelBuilder);
             SetupSubAggregationsTable(modelBuilder);
@@ -171,6 +177,57 @@ namespace SteamScrapper.Infrastructure.Database.Context
             modelBuilder
                 .Entity<Bundle>()
                 .HasIndex(x => x.UtcDateTimeLastModified);
+        }
+
+        private static void SetupBundlePricesTable(ModelBuilder modelBuilder)
+        {
+            // Table setup
+            modelBuilder
+                .Entity<BundlePrice>()
+                .ToTable(BundlePricesTableName);
+
+            // Key setup
+            modelBuilder
+                .Entity<BundlePrice>()
+                .HasKey(x => x.Id);
+
+            // FK setup
+            modelBuilder
+                .Entity<BundlePrice>()
+                .HasOne(x => x.Bundle)
+                .WithMany(x => x.Prices);
+
+            // Column setup
+            modelBuilder
+                .Entity<BundlePrice>()
+                .Property(x => x.Id)
+                .UseIdentityColumn();
+
+            modelBuilder
+                .Entity<BundlePrice>()
+                .Property(x => x.UtcDateTimeRecorded)
+                .HasDefaultValueSql(SystemUtcDateTimeValueSql);
+
+            modelBuilder
+                .Entity<BundlePrice>()
+                .Property(x => x.Price)
+                .IsRequired(true);
+
+            modelBuilder
+                .Entity<BundlePrice>()
+                .Property(x => x.DiscountPrice)
+                .IsRequired(false);
+
+            modelBuilder
+                .Entity<BundlePrice>()
+                .Property(x => x.Currency)
+                .IsRequired(true)
+                .HasMaxLength(CurrencyMaxLength);
+
+            // Index setup
+            modelBuilder
+                .Entity<BundlePrice>()
+                .HasIndex(x => x.UtcDateTimeRecorded);
         }
 
         private static void SetupSubsTable(ModelBuilder modelBuilder)

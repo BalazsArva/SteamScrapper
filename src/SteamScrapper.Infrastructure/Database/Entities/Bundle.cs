@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace SteamScrapper.Infrastructure.Database.Entities
 {
@@ -15,5 +16,7 @@ namespace SteamScrapper.Infrastructure.Database.Entities
         public string Title { get; set; }
 
         public string BannerUrl { get; set; }
+
+        public virtual ICollection<BundlePrice> Prices { get; } = new List<BundlePrice>();
     }
 }
