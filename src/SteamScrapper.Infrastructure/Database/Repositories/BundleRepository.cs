@@ -165,6 +165,30 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
             return await filteredResults.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
         }
 
+        public async Task<Bundle> GetBundleBasicDetailsByIdAsync(long bundleId)
+        {
+            using var context = dbContextFactory.CreateDbContext();
+
+            var entity = await context.Bundles.FindAsync(bundleId);
+
+            if (entity is null)
+            {
+                return null;
+            }
+
+            // TODO: Consider using a better DTO for this (without price)
+            return new Bundle(entity.Id, entity.Title, entity.BannerUrl, entity.IsActive);
+        }
+
+        public async Task<IEnumerable<Price>> GetBundlePriceHistoryByIdAsync(long bundleId)
+        {
+            using var context = dbContextFactory.CreateDbContext();
+
+            var results = await context.BundlePrices.AsNoTracking().Where(x => x.BundleId == bundleId).OrderBy(x => x.UtcDateTimeRecorded).ToListAsync();
+
+            return results.Select(x => new Price(x.Price, x.DiscountPrice, x.Currency, x.UtcDateTimeRecorded)).ToList();
+        }
+
         public async Task AddBundleAggregationsAsync(IEnumerable<long> bundleIds, DateTime performedAt)
         {
             if (bundleIds is null)
