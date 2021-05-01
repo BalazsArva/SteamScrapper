@@ -10,10 +10,15 @@ namespace SteamScrapper.Infrastructure.RavenDb.Repositories
     public class SubAggregateRepository : ISubAggregateRepository
     {
         private readonly IDocumentStoreWrapper documentStoreWrapper;
+        private readonly string collectionPrefix;
 
         public SubAggregateRepository(IDocumentStoreWrapper documentStoreWrapper)
         {
             this.documentStoreWrapper = documentStoreWrapper ?? throw new ArgumentNullException(nameof(documentStoreWrapper));
+
+            collectionPrefix =
+                documentStoreWrapper.DocumentStore.Conventions.GetCollectionName(typeof(Sub)) +
+                documentStoreWrapper.DocumentStore.Conventions.IdentityPartsSeparator;
         }
 
         public async Task StoreSubAggregatesAsync(IEnumerable<Sub> subs)
@@ -32,7 +37,7 @@ namespace SteamScrapper.Infrastructure.RavenDb.Repositories
 
             foreach (var sub in subs)
             {
-                await session.StoreAsync(sub, sub.Id);
+                await session.StoreAsync(sub, collectionPrefix + sub.Id);
             }
 
             await session.SaveChangesAsync();

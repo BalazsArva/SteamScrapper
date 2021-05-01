@@ -10,10 +10,15 @@ namespace SteamScrapper.Infrastructure.RavenDb.Repositories
     public class BundleAggregateRepository : IBundleAggregateRepository
     {
         private readonly IDocumentStoreWrapper documentStoreWrapper;
+        private readonly string collectionPrefix;
 
         public BundleAggregateRepository(IDocumentStoreWrapper documentStoreWrapper)
         {
             this.documentStoreWrapper = documentStoreWrapper ?? throw new ArgumentNullException(nameof(documentStoreWrapper));
+
+            collectionPrefix =
+                documentStoreWrapper.DocumentStore.Conventions.GetCollectionName(typeof(Bundle)) +
+                documentStoreWrapper.DocumentStore.Conventions.IdentityPartsSeparator;
         }
 
         public async Task StoreBundleAggregatesAsync(IEnumerable<Bundle> bundles)
@@ -32,7 +37,7 @@ namespace SteamScrapper.Infrastructure.RavenDb.Repositories
 
             foreach (var bundle in bundles)
             {
-                await session.StoreAsync(bundle, bundle.Id);
+                await session.StoreAsync(bundle, collectionPrefix + bundle.Id);
             }
 
             await session.SaveChangesAsync();
