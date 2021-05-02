@@ -97,10 +97,10 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
         {
             using var context = dbContextFactory.CreateDbContext();
 
-            return await context
-                .Bundles
-                .Where(x => x.Aggregations.Count == 0 || !x.Aggregations.Any(a => a.UtcDateTimeRecorded >= from))
-                .CountAsync();
+            var bundleIds = context.Bundles.Select(x => x.Id);
+            var aggregatedBundleIds = context.BundleAggregations.Where(x => x.UtcDateTimeRecorded >= from).Select(x => x.BundleId);
+
+            return await bundleIds.Except(aggregatedBundleIds).CountAsync();
         }
 
         public async Task<IEnumerable<long>> GetBundleIdsNotScannedFromAsync(DateTime from, int page, int pageSize, SortDirection sortDirection)
@@ -148,10 +148,10 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
 
             using var context = dbContextFactory.CreateDbContext();
 
-            var filteredResults = context
-                .Bundles
-                .Where(x => x.Aggregations.Count == 0 || !x.Aggregations.Any(a => a.UtcDateTimeRecorded >= from))
-                .Select(x => x.Id);
+            var bundleIds = context.Bundles.Select(x => x.Id);
+            var aggregatedBundleIds = context.BundleAggregations.Where(x => x.UtcDateTimeRecorded >= from).Select(x => x.BundleId);
+
+            var filteredResults = bundleIds.Except(aggregatedBundleIds);
 
             if (sortDirection == SortDirection.Ascending)
             {
