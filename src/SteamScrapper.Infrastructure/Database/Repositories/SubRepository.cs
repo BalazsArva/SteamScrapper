@@ -143,8 +143,8 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
 
             using var context = dbContextFactory.CreateDbContext();
 
-            var subIds = context.Subs.Select(s => s.Id);
-            var aggregatedSubIds = context.SubAggregations.Where(a => a.UtcDateTimeRecorded >= from).Select(a => a.SubId).Distinct();
+            var subIds = context.Subs.Select(x => x.Id);
+            var aggregatedSubIds = context.SubAggregations.Where(x => x.UtcDateTimeRecorded >= from).Select(x => x.SubId);
 
             var filteredResults = subIds.Except(aggregatedSubIds);
 
