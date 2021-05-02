@@ -268,7 +268,8 @@ namespace SteamScrapper.Infrastructure.Database.Context
             // Index setup
             modelBuilder
                 .Entity<BundleAggregation>()
-                .HasIndex(x => x.UtcDateTimeRecorded);
+                .HasIndex(x => x.UtcDateTimeRecorded)
+                .IncludeProperties(x => x.BundleId);
         }
 
         private static void SetupSubsTable(ModelBuilder modelBuilder)
