@@ -92,10 +92,10 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
         {
             using var context = dbContextFactory.CreateDbContext();
 
-            return await context
-                .Subs
-                .Where(x => x.Aggregations.Count == 0 || !x.Aggregations.Any(a => a.UtcDateTimeRecorded >= from))
-                .CountAsync();
+            var subIds = context.Subs.Select(s => s.Id);
+            var aggregatedSubIds = context.SubAggregations.Where(a => a.UtcDateTimeRecorded >= from).Select(a => a.SubId).Distinct();
+
+            return await subIds.Except(aggregatedSubIds).CountAsync();
         }
 
         public async Task<IEnumerable<long>> GetSubIdsNotScannedFromAsync(DateTime from, int page, int pageSize, SortDirection sortDirection)
@@ -143,10 +143,10 @@ namespace SteamScrapper.Infrastructure.Database.Repositories
 
             using var context = dbContextFactory.CreateDbContext();
 
-            var filteredResults = context
-                .Subs
-                .Where(x => x.Aggregations.Count == 0 || !x.Aggregations.Any(a => a.UtcDateTimeRecorded >= from))
-                .Select(x => x.Id);
+            var subIds = context.Subs.Select(s => s.Id);
+            var aggregatedSubIds = context.SubAggregations.Where(a => a.UtcDateTimeRecorded >= from).Select(a => a.SubId).Distinct();
+
+            var filteredResults = subIds.Except(aggregatedSubIds);
 
             if (sortDirection == SortDirection.Ascending)
             {
