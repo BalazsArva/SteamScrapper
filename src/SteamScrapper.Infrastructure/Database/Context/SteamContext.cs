@@ -410,7 +410,8 @@ namespace SteamScrapper.Infrastructure.Database.Context
             // Index setup
             modelBuilder
                 .Entity<SubAggregation>()
-                .HasIndex(x => x.UtcDateTimeRecorded);
+                .HasIndex(x => x.UtcDateTimeRecorded)
+                .IncludeProperties(x => x.SubId);
         }
     }
 }
