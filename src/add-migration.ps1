@@ -1,4 +1,4 @@
-$env:ConnectionStrings__Sql="Data Source=(localdb)\MSSQLLocalDb;Initial Catalog=SteamScrapper;Integrated Security=true"
+$env:ConnectionStrings__Sql="Data Source=.;Initial Catalog=SteamScrapper;Integrated Security=true"
 
 $MigrationName = Read-Host "Enter the name of the migration: "
 
