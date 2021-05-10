@@ -7,6 +7,7 @@ A hobby project that I develop to play around with Redis and use it to coordinat
 Required:
 
 * MS SQL
+* RavenDB
 * Redis
 * Dotnet + Visual Studio
 
