@@ -1,9 +1,12 @@
+using System;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Serilog;
 using SteamScrapper.Common.Hosting;
 using SteamScrapper.Common.Providers;
 using SteamScrapper.Domain.Factories;
@@ -34,7 +37,32 @@ namespace SteamScrapper.SubScanner
 
         private static IHostBuilder CreateHostBuilder(string[] args)
         {
-            return Host.CreateDefaultBuilder(args)
+            return Host
+                .CreateDefaultBuilder(args)
+                .ConfigureLogging((context, builder) =>
+                {
+                    var config = context.Configuration;
+                    var loggerConfig = new LoggerConfiguration();
+                    var useElasticsearch = string.Equals("Elasticsearch", config["Serilog:Use"], StringComparison.OrdinalIgnoreCase);
+
+                    if (useElasticsearch)
+                    {
+                        loggerConfig = loggerConfig
+                            .WriteTo
+                            .Elasticsearch(config["Serilog:Elasticsearch:Address"], "steam-scrapper-sub-scanner-{0:yyyy.MM}");
+                    }
+                    else
+                    {
+                        loggerConfig = loggerConfig
+                            .WriteTo
+                            .Console();
+                    }
+
+                    Log.Logger = loggerConfig.CreateLogger();
+
+                    builder.ClearProviders();
+                    builder.AddSerilog();
+                })
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.Configure<SqlServerOptions>(hostContext.Configuration.GetSection(SqlServerOptions.SectionName));
