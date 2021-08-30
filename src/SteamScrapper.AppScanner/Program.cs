@@ -30,9 +30,16 @@ namespace SteamScrapper.AppScanner
 
         public static async Task Main(string[] args)
         {
-            var hostBuilder = CreateHostBuilder(args);
+            try
+            {
+                var hostBuilder = CreateHostBuilder(args);
 
-            await hostBuilder.Build().RunAsync();
+                await hostBuilder.Build().RunAsync();
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
 
         private static IHostBuilder CreateHostBuilder(string[] args)

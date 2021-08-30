@@ -32,10 +32,16 @@ namespace SteamScrapper.Crawler
 
         public static async Task Main(string[] args)
         {
-            var hostBuilder = CreateHostBuilder(args);
-            var host = hostBuilder.Build();
+            try
+            {
+                var hostBuilder = CreateHostBuilder(args);
 
-            await host.RunAsync();
+                await hostBuilder.Build().RunAsync();
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
 
         private static IHostBuilder CreateHostBuilder(string[] args)
