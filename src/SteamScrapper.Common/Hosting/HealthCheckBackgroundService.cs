@@ -51,19 +51,19 @@ namespace SteamScrapper.Common.Hosting
                 {
                     unhealthyCount = 0;
 
-                    logger.LogInformation("Overall health status is healthy.");
+                    logger.LogInformation("Overall health status is {HealthStatus}.", HealthStatus.Healthy);
                 }
                 else if (healthReport.Status == HealthStatus.Degraded)
                 {
                     unhealthyCount = 0;
 
-                    logger.LogWarning("Overall health status is degraded.");
+                    logger.LogWarning("Overall health status is {HealthStatus}.", HealthStatus.Degraded);
                 }
                 else
                 {
                     ++unhealthyCount;
 
-                    logger.LogCritical("Overall health status is unhealthy. Unhealthy status count: {@UnhealthyCount}", unhealthyCount);
+                    logger.LogWarning("Overall health status is {HealthStatus}. Unhealthy status count: {@UnhealthyCount}", HealthStatus.Unhealthy, unhealthyCount);
 
                     if (unhealthyCount >= healthCheckOptions.MaxUnhealthyCount)
                     {
