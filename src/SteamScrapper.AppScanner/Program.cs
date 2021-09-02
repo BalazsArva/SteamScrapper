@@ -48,6 +48,8 @@ namespace SteamScrapper.AppScanner
                 .CreateDefaultBuilder(args)
                 .ConfigureLogging((context, builder) =>
                 {
+                    var appInstanceId = Guid.NewGuid().ToString("n");
+
                     var config = context.Configuration;
                     var loggerConfig = new LoggerConfiguration();
                     var useElasticsearch = string.Equals("Elasticsearch", config["Serilog:Use"], StringComparison.OrdinalIgnoreCase);
@@ -65,7 +67,9 @@ namespace SteamScrapper.AppScanner
                             .Console();
                     }
 
-                    Log.Logger = loggerConfig.CreateLogger();
+                    Log.Logger = loggerConfig
+                        .Enrich.WithProperty("AppInstanceId", appInstanceId)
+                        .CreateLogger();
 
                     builder.ClearProviders();
                     builder.AddSerilog();
