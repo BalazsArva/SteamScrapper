@@ -19,14 +19,14 @@ namespace SteamScrapper.Common.Utilities.Links
             if (segmentsWithoutSlashes.Count < 3)
             {
                 throw new ArgumentException(
-                    $"The provided address is invalid. Valid addresses must contain the bundle Id after '{PageUrlPrefixes.Bundle}'.",
+                    $"The provided address '{address}' is invalid. Valid addresses must contain the bundle Id after '{PageUrlPrefixes.Bundle}'.",
                     nameof(address));
             }
 
             if (!long.TryParse(segmentsWithoutSlashes[2], out var bundleId) || bundleId < 1)
             {
                 throw new ArgumentException(
-                   $"The provided address is invalid. The bundle Id in a valid address must be a positive integer.",
+                   $"The provided address '{address}' is invalid. The bundle Id in a valid address must be a positive integer.",
                    nameof(address));
             }
 
@@ -45,14 +45,14 @@ namespace SteamScrapper.Common.Utilities.Links
             if (segmentsWithoutSlashes.Count < 3)
             {
                 throw new ArgumentException(
-                    $"The provided address is invalid. Valid addresses must contain the sub Id after '{PageUrlPrefixes.Sub}'.",
+                    $"The provided address '{address}' is invalid. Valid addresses must contain the sub Id after '{PageUrlPrefixes.Sub}'.",
                     nameof(address));
             }
 
             if (!long.TryParse(segmentsWithoutSlashes[2], out var subId) || subId < 1)
             {
                 throw new ArgumentException(
-                   $"The provided address is invalid. The sub Id in a valid address must be a positive integer.",
+                   $"The provided address '{address}' is invalid. The sub Id in a valid address must be a positive integer.",
                    nameof(address));
             }
 
@@ -71,14 +71,14 @@ namespace SteamScrapper.Common.Utilities.Links
             if (segmentsWithoutSlashes.Count < 3)
             {
                 throw new ArgumentException(
-                    $"The provided address is invalid. Valid addresses must contain the app Id after '{PageUrlPrefixes.App}'.",
+                    $"The provided address '{address}' is invalid. Valid addresses must contain the app Id after '{PageUrlPrefixes.App}'.",
                     nameof(address));
             }
 
             if (!long.TryParse(segmentsWithoutSlashes[2], out var appId) || appId < 1)
             {
                 throw new ArgumentException(
-                   $"The provided address is invalid. The app Id in a valid address must be a positive integer.",
+                   $"The provided address '{address}' is invalid. The app Id in a valid address must be a positive integer.",
                    nameof(address));
             }
 
