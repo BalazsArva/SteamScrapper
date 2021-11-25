@@ -1,0 +1,7 @@
+# Create the cluster
+docker-compose down
+docker-compose up -d
+docker exec -it redis-cluster-1 redis-cli -h 127.0.0.1 -p 37001 --cluster create 127.0.0.1:37001 127.0.0.1:37002 127.0.0.1:37003 127.0.0.1:37004 127.0.0.1:37005 127.0.0.1:37006 --cluster-replicas 1
+
+# To use cli, -c must be set to follow redirects for SET commands
+docker exec -it redis-cluster-1 redis-cli -h 127.0.0.1 -p 37001 -c
