@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+
+  # This is a dummy container where we expose the ports used by any cluster members (and the UI). See the "network_mode: 'container:redis-gateway'" setting
+  # for each Redis container.
+  # Why this is needed is because when running the cluster setup command in Redis CLI, we cannot use hostnames (e.g. redis-cluster-1), only IP addresses.
+  # But for some reason, when clients run outside of this network, e.g. the Redis instances each run in a container and the client app runs on Windows,
+  # clients have issues connecting to every instance, likely (but not sure) because the IPs the containers address each other and what the client app sees
+  # are different. The client library may connect to 1 instance, and then discover the rest of the cluster based on what the cluster members report think
+  # the IPs of the other instances are. When these IPs are kept within the boundaries of Docker and usable to the host, then the client app won't be able to
+  # talk to every instance.
+  # Normally, we could use "network_mode: host", but host only works on Linux. When we set up a dummy container like this and expose the ports, what we do
+  # is share the same network between each cluster member container, therefore each Redis instance can to talk to the rest of the cluster on the loopback
+  # address (127.0.0.1) and target their configured ports. Because the ports are exposed, we also allow any client apps to connect to all cluster members
+  # on 127.0.0.1:<port>. This ensures the internal and external IPs are identical, preventing issues from these mismatches.
+  redis-gateway:
+    container_name: redis-gateway
+    image: alpine:latest
+    restart: unless-stopped
+    ports:
+      - "37001:37001"
+      - "37002:37002"
+      - "37003:37003"
+      - "37004:37004"
+      - "37005:37005"
+      - "37006:37006"
+      - "8001:8001"
+    entrypoint: [ "sleep", "infinity" ]
+
+  redis-cluster-1:
+    depends_on:
+      - redis-gateway
+    container_name: redis-cluster-1
+    image: redis:6
+    restart: unless-stopped
+    network_mode: 'container:redis-gateway'
+    entrypoint: [ "redis-server", "--port", "37001", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
+
+  redis-cluster-2:
+    depends_on:
+      - redis-gateway
+    container_name: redis-cluster-2
+    image: redis:6
+    restart: unless-stopped
+    network_mode: 'container:redis-gateway'
+    entrypoint: [ "redis-server", "--port", "37002", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
+
+  redis-cluster-3:
+    depends_on:
+      - redis-gateway
+    container_name: redis-cluster-3
+    image: redis:6
+    restart: unless-stopped
+    network_mode: 'container:redis-gateway'
+    entrypoint: [ "redis-server", "--port", "37003", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
+
+  redis-cluster-4:
+    depends_on:
+      - redis-gateway
+    container_name: redis-cluster-4
+    image: redis:6
+    restart: unless-stopped
+    network_mode: 'container:redis-gateway'
+    entrypoint: [ "redis-server", "--port", "37004", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
+
+  redis-cluster-5:
+    depends_on:
+      - redis-gateway
+    container_name: redis-cluster-5
+    image: redis:6
+    restart: unless-stopped
+    network_mode: 'container:redis-gateway'
+    entrypoint: [ "redis-server", "--port", "37005", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
+
+  redis-cluster-6:
+    depends_on:
+      - redis-gateway
+    container_name: redis-cluster-6
+    image: redis:6
+    restart: unless-stopped
+    network_mode: 'container:redis-gateway'
+    entrypoint: [ "redis-server", "--port", "37006", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
+
+  redis-cluster-ui:
+    depends_on:
+      - redis-gateway
+    container_name: redis-cluster-ui
+    restart: unless-stopped
+    image: redislabs/redisinsight
+    network_mode: 'container:redis-gateway'
