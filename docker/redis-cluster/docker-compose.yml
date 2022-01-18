@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
 
-  # This is a dummy container where we expose the ports used by any cluster members (and the UI). See the "network_mode: 'container:redis-gateway'" setting
+  # This is a dummy container where we expose the ports used by any cluster members (and the UI). See the "network_mode: 'service:redis-gateway'" setting
   # for each Redis container.
   # Why this is needed is because when running the cluster setup command in Redis CLI, we cannot use hostnames (e.g. redis-cluster-1), only IP addresses.
   # But for some reason, when clients run outside of this network, e.g. the Redis instances each run in a container and the client app runs on Windows,
@@ -25,6 +25,8 @@ services:
       - "37004:37004"
       - "37005:37005"
       - "37006:37006"
+      - "37007:37007"
+      - "37008:37008"
       - "8001:8001"
     entrypoint: [ "sleep", "infinity" ]
 
@@ -34,7 +36,7 @@ services:
     container_name: redis-cluster-1
     image: redis:6
     restart: unless-stopped
-    network_mode: 'container:redis-gateway'
+    network_mode: 'service:redis-gateway'
     entrypoint: [ "redis-server", "--port", "37001", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
 
   redis-cluster-2:
@@ -43,7 +45,7 @@ services:
     container_name: redis-cluster-2
     image: redis:6
     restart: unless-stopped
-    network_mode: 'container:redis-gateway'
+    network_mode: 'service:redis-gateway'
     entrypoint: [ "redis-server", "--port", "37002", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
 
   redis-cluster-3:
@@ -52,7 +54,7 @@ services:
     container_name: redis-cluster-3
     image: redis:6
     restart: unless-stopped
-    network_mode: 'container:redis-gateway'
+    network_mode: 'service:redis-gateway'
     entrypoint: [ "redis-server", "--port", "37003", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
 
   redis-cluster-4:
@@ -61,7 +63,7 @@ services:
     container_name: redis-cluster-4
     image: redis:6
     restart: unless-stopped
-    network_mode: 'container:redis-gateway'
+    network_mode: 'service:redis-gateway'
     entrypoint: [ "redis-server", "--port", "37004", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
 
   redis-cluster-5:
@@ -70,7 +72,7 @@ services:
     container_name: redis-cluster-5
     image: redis:6
     restart: unless-stopped
-    network_mode: 'container:redis-gateway'
+    network_mode: 'service:redis-gateway'
     entrypoint: [ "redis-server", "--port", "37005", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
 
   redis-cluster-6:
@@ -79,8 +81,26 @@ services:
     container_name: redis-cluster-6
     image: redis:6
     restart: unless-stopped
-    network_mode: 'container:redis-gateway'
+    network_mode: 'service:redis-gateway'
     entrypoint: [ "redis-server", "--port", "37006", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
+
+  redis-cluster-7:
+    depends_on:
+      - redis-gateway
+    container_name: redis-cluster-7
+    image: redis:6
+    restart: unless-stopped
+    network_mode: 'service:redis-gateway'
+    entrypoint: [ "redis-server", "--port", "37007", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
+
+  redis-cluster-8:
+    depends_on:
+      - redis-gateway
+    container_name: redis-cluster-8
+    image: redis:6
+    restart: unless-stopped
+    network_mode: 'service:redis-gateway'
+    entrypoint: [ "redis-server", "--port", "37008", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
 
   redis-cluster-ui:
     depends_on:
@@ -88,4 +108,4 @@ services:
     container_name: redis-cluster-ui
     restart: unless-stopped
     image: redislabs/redisinsight
-    network_mode: 'container:redis-gateway'
+    network_mode: 'service:redis-gateway'
