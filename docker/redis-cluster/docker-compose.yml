@@ -84,24 +84,6 @@ services:
     network_mode: 'service:redis-gateway'
     entrypoint: [ "redis-server", "--port", "37006", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
 
-  redis-cluster-7:
-    depends_on:
-      - redis-gateway
-    container_name: redis-cluster-7
-    image: redis:6
-    restart: unless-stopped
-    network_mode: 'service:redis-gateway'
-    entrypoint: [ "redis-server", "--port", "37007", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
-
-  redis-cluster-8:
-    depends_on:
-      - redis-gateway
-    container_name: redis-cluster-8
-    image: redis:6
-    restart: unless-stopped
-    network_mode: 'service:redis-gateway'
-    entrypoint: [ "redis-server", "--port", "37008", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "10000" ]
-
   redis-cluster-ui:
     depends_on:
       - redis-gateway
